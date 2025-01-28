@@ -1,9 +1,19 @@
 import axios from "axios"
 
-export async function scrapeReddit(topic: string): Promise<{ content: string; keywords: string[] }> {
+interface RedditPost {
+  title: string
+  text: string
+}
+
+interface ScrapedData {
+  content: string
+  keywords: string[]
+}
+
+export async function scrapeReddit(topic: string): Promise<ScrapedData> {
   try {
     console.log(`Attempting to scrape Reddit for topic: ${topic}`)
-    const response = await axios.get("https://reddit-scraper2.p.rapidapi.com/sub_posts", {
+    const response = await axios.get<RedditPost[]>("https://reddit-scraper2.p.rapidapi.com/sub_posts", {
       params: {
         sub: "SaaS",
         sort: "TOP",
@@ -17,7 +27,7 @@ export async function scrapeReddit(topic: string): Promise<{ content: string; ke
 
     console.log("Reddit scraping successful. Processing content...")
     const posts = response.data
-    const relevantContent = posts.map((post: any) => `${post.title}\n${post.text}`).join("\n\n")
+    const relevantContent = posts.map((post: RedditPost) => `${post.title}\n${post.text}`).join("\n\n")
 
     if (!relevantContent || relevantContent.trim() === "") {
       throw new Error("Scraped Reddit content is empty")
@@ -25,7 +35,7 @@ export async function scrapeReddit(topic: string): Promise<{ content: string; ke
 
     // Extract keywords
     const words = relevantContent.toLowerCase().split(/\W+/)
-    const wordCounts = words.reduce((acc: Record<string, number>, word) => {
+    const wordCounts: Record<string, number> = words.reduce((acc: Record<string, number>, word: string) => {
       if (word.length > 3) {
         acc[word] = (acc[word] || 0) + 1
       }
@@ -33,9 +43,9 @@ export async function scrapeReddit(topic: string): Promise<{ content: string; ke
     }, {})
 
     const keywords = Object.entries(wordCounts)
-      .sort(([, a], [, b]) => b - a)
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .slice(0, 20)
-      .map(([word]) => word)
+      .map(([word]: [string, number]) => word)
 
     console.log(`Extracted ${keywords.length} keywords from Reddit content`)
     return { content: relevantContent, keywords }
