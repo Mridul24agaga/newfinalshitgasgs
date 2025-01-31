@@ -1,9 +1,11 @@
 "use client"
 
+import { Button } from "./Button"
+
 const features = [
   {
-    title: "Keyword Research",
-    description: "Discover profitable keywords without complex analysis.",
+    title: "AI-Powered Keyword Research",
+    description: "Discover high-impact keywords with our advanced AI algorithms.",
     icon: (
       <svg
         width="24"
@@ -16,19 +18,17 @@ const features = [
         strokeLinejoin="round"
         className="w-8 h-8"
       >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <line x1="10" y1="9" x2="8" y2="9" />
+        <path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10Z" />
+        <path d="m15 9-6 6" />
+        <path d="m9 9 6 6" />
       </svg>
     ),
     bgColor: "bg-[#FFFFCB]",
     cardBg: "bg-[#FFFFCB]/30",
   },
   {
-    title: "Content Editor",
-    description: "Get AI-powered guidance to create top-ranking content.",
+    title: "Smart Content Optimizer",
+    description: "Enhance your content's SEO performance with AI-driven suggestions.",
     icon: (
       <svg
         width="24"
@@ -52,8 +52,8 @@ const features = [
     cardBg: "bg-[#FFF0E3]/30",
   },
   {
-    title: "Rankings Tracker",
-    description: "Monitor the progress and performance of your keywords.",
+    title: "Real-Time Rank Tracker",
+    description: "Monitor your SEO progress with up-to-the-minute ranking data.",
     icon: (
       <svg
         width="24"
@@ -74,8 +74,8 @@ const features = [
     cardBg: "bg-[#E6EAFF]/30",
   },
   {
-    title: "Automatic Publisher",
-    description: "Effortlessly schedule and publish your optimized content.",
+    title: "Backlink Analyzer",
+    description: "Uncover powerful link-building opportunities to boost your authority.",
     icon: (
       <svg
         width="24"
@@ -88,9 +88,8 @@ const features = [
         strokeLinejoin="round"
         className="w-8 h-8"
       >
-        <rect width="18" height="18" x="3" y="3" rx="2" />
-        <path d="M3 9h18" />
-        <path d="M9 21V9" />
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
       </svg>
     ),
     bgColor: "bg-[#E1F6FF]",
@@ -103,9 +102,12 @@ export function Features() {
     <section className="py-24">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
-          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">SEO Made Simple, Effective, And Scalable</h2>
-          <p className="text-lg text-gray-500 md:text-xl">
-            Designed to Drive Traffic, Boost Rankings, and Grow Your Business
+          <div className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm text-blue-500">
+            Why GetMoreSEO?
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight sm:text-6xl">Supercharge Your SEO Strategy</h2>
+          <p className="max-w-[600px] text-lg text-gray-500 md:text-xl">
+            Unlock the power of AI-driven SEO tools to skyrocket your website's rankings and organic traffic.
           </p>
         </div>
 
@@ -113,7 +115,7 @@ export function Features() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className={`group relative cursor-pointer rounded-xl border border-black ${feature.cardBg} p-6 transition-all duration-200 hover:shadow-lg`}
+              className={`group relative cursor-pointer rounded-xl border border-gray-200 ${feature.cardBg} p-6 transition-all duration-200 hover:shadow-lg`}
             >
               <div className={`mb-8 h-32 w-full rounded-lg ${feature.bgColor} flex items-center justify-center`}>
                 <div className="text-gray-800">{feature.icon}</div>
@@ -138,6 +140,15 @@ export function Features() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-16 flex justify-center">
+          <Button
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full text-lg transition-colors duration-300"
+          >
+            Get Started
+          </Button>
         </div>
       </div>
     </section>

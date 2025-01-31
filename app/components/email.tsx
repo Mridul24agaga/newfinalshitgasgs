@@ -5,7 +5,7 @@ import { Button } from "./Button"
 export default function EmailSection() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+      <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
         <div className="grid lg:grid-cols-2">
           <div className="p-10 space-y-8">
             <div>

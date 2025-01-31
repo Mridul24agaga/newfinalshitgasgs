@@ -30,6 +30,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-type-animation": "^3.2.0",
+    "recharts": "^2.15.1",
     "shadcn": "^2.1.8",
     "snoowrap": "^1.23.0",
     "tailwind-merge": "^2.6.0"
