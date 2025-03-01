@@ -1,92 +1,89 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Plus, Minus } from "lucide-react"
 
-export default function FAQ() {
-  const [activeQuestion, setActiveQuestion] = useState(0)
+const faqs = [
+  {
+    question: "What is the 5-layer system, and how does it improve content quality?",
+    answer:
+      "Our 5-layer system combines expert writers, AI technology, and rigorous quality control to create exceptional content. Each piece goes through expert SEO writers, experienced SaaS founders' review, ICP research technology analysis, deep AI research layer, and final quality review team. This comprehensive approach ensures content that's not only engaging but also strategically aligned with your business goals.",
+  },
+  {
+    question: "Do you use AI to generate blogs, or is it human-written?",
+    answer:
+      "We utilize a hybrid approach that we call 'Human-Led, AI-Powered.' Our content is primarily written by expert human writers who leverage AI tools for research, optimization, and enhancement. This combination ensures the content maintains a natural, engaging tone while benefiting from AI-driven insights and data-backed recommendations.",
+  },
+  {
+    question: "How is this different from other blog-writing tools or services?",
+    answer:
+      "Unlike traditional content services or pure AI tools, we offer a unique blend of human expertise and advanced technology. Our platform integrates deep industry knowledge, proprietary ICP research technology, and a multi-stage quality control process. This results in content that's not just well-written, but strategically crafted to engage your target audience and drive business results.",
+  },
+  {
+    question: "Will my blogs be SEO-optimized and rank on Google?",
+    answer:
+      "Yes, SEO optimization is built into every step of our content creation process. Our writers are SEO experts who understand search intent, keyword optimization, and content structure. Combined with our AI-powered research tools and industry best practices, we create content specifically designed to perform well in search rankings while maintaining readability and engagement.",
+  },
+  {
+    question: "Can I customize the tone and style of my content?",
+    answer:
+      "We understand that brand voice is crucial. Before starting any project, we work with you to understand your brand's tone, style, and communication preferences. Our writers can adapt to various styles - from professional and technical to casual and conversational. We also maintain a style guide for your brand to ensure consistency across all content pieces.",
+  },
+]
 
-  const questions = [
-    {
-      question: "Do I need technical SEO knowledge to use SeoRocket?",
-      answer:
-        "Not at all! SeoRocket.ai is designed to be user-friendly, even for those without a technical SEO background. Our intuitive interface and AI-powered tools guide you through the optimization process, making it easy to create content that ranks.",
-    },
-    {
-      question: "How quickly can I expect to see results?",
-      answer:
-        "Results vary by industry and competition level, but most users see improvements in their content quality and search rankings within 4-6 weeks of consistent use.",
-    },
-    {
-      question: "Will using SeoRocket guarantee a #1 ranking on Google?",
-      answer:
-        "While we provide powerful tools and best practices for SEO optimization, no tool can guarantee #1 rankings. We help you create high-quality, optimized content that has the best possible chance of ranking well.",
-    },
-    {
-      question: "Can I try SeoRocket before committing to a subscription?",
-      answer:
-        "Yes! We offer a free trial period so you can explore all our features and see the value SeoRocket brings to your content strategy.",
-    },
-  ]
+export default function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid lg:grid-cols-[1.2fr,1fr] gap-16 items-start">
-        <div className="space-y-6">
-          <div className="animate-fade-in-up">
-            <div className="flex items-center gap-2 text-gray-600 mb-4">
-              <div className="w-6 h-[1px] bg-gray-600"></div>
-              <div>Frequently Asked Questions</div>
-            </div>
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900 max-w-2xl">
-              Everything You Need To Know About Boosting Your Search Rankings
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {questions.map((item, index) => (
-              <div
-                key={index}
-                className={`rounded-lg p-4 cursor-pointer transition-all duration-300 ease-in-out ${
-                  activeQuestion === index ? "bg-[#4F46E5] text-white" : "bg-white border text-gray-900"
-                } animate-fade-in-up`}
-                style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => setActiveQuestion(activeQuestion === index ? -1 : index)}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[15px] font-medium">{item.question}</span>
-                  <div
-                    className={`transform transition-transform duration-300 ${activeQuestion === index ? "rotate-180" : ""}`}
-                  >
-                    {activeQuestion === index ? (
-                      <Minus className="h-5 w-5 flex-shrink-0" />
-                    ) : (
-                      <Plus
-                        className={`h-5 w-5 flex-shrink-0 ${
-                          activeQuestion === index ? "text-white" : "text-[#4F46E5]"
-                        }`}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div
-                  className={`mt-2 text-[15px] text-white/90 overflow-hidden transition-all duration-300 ease-in-out ${
-                    activeQuestion === index ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  {item.answer}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-[#FFF9E6] rounded-3xl p-8 animate-fade-in-right">
-          {/* Add your score interface image here */}
-          <div className="text-gray-400">Score Interface Placeholder</div>
-        </div>
+    <section className="max-w-4xl mx-auto px-4 py-16">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">Have Questions?</h2>
+        <p className="text-gray-600">If you can't find what you're looking for, feel free to reach out!</p>
       </div>
-    </div>
+
+      <div className="space-y-4">
+        {faqs.map((faq, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white"
+          >
+            <button
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full px-6 py-4 flex items-center justify-between text-left"
+            >
+              <span className="font-medium text-gray-900">
+                <span className="text-[#FF8A00] mr-2">{index + 1}.</span>
+                {faq.question}
+              </span>
+              <span className="ml-4 flex-shrink-0">
+                {openIndex === index ? (
+                  <Minus className="h-5 w-5 text-[#FF8A00]" />
+                ) : (
+                  <Plus className="h-5 w-5 text-[#FF8A00]" />
+                )}
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {openIndex === index && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="px-6 pb-4 text-gray-600">{faq.answer}</div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        ))}
+      </div>
+    </section>
   )
 }
 

@@ -1,37 +1,79 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
+import { motion, useAnimation } from "framer-motion"
 
 export function Navbar() {
+  const [lastScrollY, setLastScrollY] = useState(0)
+  const controls = useAnimation()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      if (currentScrollY > lastScrollY) {
+        controls.start({ y: "-100%" })
+      } else {
+        controls.start({ y: 0 })
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [lastScrollY, controls])
+
   return (
-    <nav className="w-full py-4 px-6 bg-white">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#10B981] rounded-full" />
-          <span className="text-gray-900 text-xl font-medium">Texta.ai</span>
-        </div>
+    <motion.header
+      className="fixed top-0 left-0 right-0 z-50"
+      initial={{ y: 0 }}
+      animate={controls}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <nav className="bg-white rounded-full shadow-lg px-6 py-2 flex items-center justify-between">
+          <Link href="/" className="flex-shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Blogosocial Logo"
+              width={200}
+              height={40}
+              className="w-auto h-8"
+            />
+          </Link>
 
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
-            Blog Automation
-          </Link>
-          <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
-            Email/Letter Writer
-          </Link>
-          <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
-            Writing Assistant
-          </Link>
-          <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
-            Pricing
-          </Link>
-        </div>
+          <div className="hidden md:flex items-center space-x-8">
+            <NavLink href="/about">About</NavLink>
+            <NavLink href="/team">Team</NavLink>
+            <NavLink href="/vision">Vision</NavLink>
+            <NavLink href="/mission">Mission</NavLink>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <button className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors">Log In</button>
-          <button className="px-6 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-full transition-colors">
-            Try for Free
-          </button>
-        </div>
+          <div className="flex items-center space-x-4">
+            <button className="hidden md:flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full border border-gray-300 hover:border-gray-400">
+              <Image src="/google.svg" alt="Google" width={20} height={20} />
+              <span>Join with Google</span>
+            </button>
+            <Link href="/signup" className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full transition-colors font-medium">
+              Start for free
+            </Link>
+          </div>
+        </nav>
       </div>
-    </nav>
+    </motion.header>
+  )
+}
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-gray-600 hover:text-gray-900 transition-colors">
+      {children}
+    </Link>
   )
 }
 

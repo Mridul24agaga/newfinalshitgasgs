@@ -10,41 +10,41 @@ import EmailSection from "./components/email"
 import WritingSection from "./components/writingsection"
 import FAQ from "./components/faq"
 import Footer from "./components/footer"
-import VideoSection from "./components/video-section"
+import { ProblemSolution } from "./components/video-section"
 import Pricing from "./components/pricing"
 import ContentProblems from "./components/frustration"
 import StatsSection from "./components/stats"
 import IntroducingSection from "./components/introduction"
 import MetricsSection from "./components/metrics"
-
+import BlogsocialStats from "./components/blogosocial"
+import ScrollSection from "./components/scroll-section"
+import PricingSection from "./components/pricing-section"
+import FlowSection from "./components/flow-section"
+import IntegrationsSection from "./components/integrations"
+import LanguageScroll from "./components/language"
+import EarlyBirdOffer from "./components/offer"
+import CTASection from "./components/cta"
 export default function Page() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
       <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-[1400px] mx-auto rounded-2xl overflow-hidden shadow-xl bg-gradient-to-t from-[#000033] via-[#000066] to-[#0066ff]">
+        <div className="max-w-[1400px] mx-auto rounded-2xl overflow-hidden  bg-gradient-to-t from-[#000033] via-[#000066] to-[#0066ff]">
           <Hero />
         </div>
       </div>
-      <VideoSection/>
+      <ProblemSolution/>
+      <BlogsocialStats/>
+      <ScrollSection/>
       <ContentProblems/>
-      <StatsSection/>
-      <IntroducingSection/>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-[1400px] mx-auto">
-          <Features />
-        </div>
-      </div>
-      <Writer/>
-      <EmailSection/>
-      <WritingSection/>
-      <MetricsSection/>
-      <Keyword/>
-      <Content/>
-      <Rank/>
-      <Planner/>
-      <Pricing/>
+      <PricingSection/>
+      <FlowSection/>
+      <IntegrationsSection/>
+      <LanguageScroll/>
+      <EarlyBirdOffer/>
       <FAQ/>
+      <CTASection/>
+      
       <Footer/>
     </main>
   )

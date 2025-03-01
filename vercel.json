@@ -1,0 +1,21 @@
+{
+    "builds": [
+      {
+        "src": "package.json",
+        "use": "@vercel/next"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/$1"
+      }
+    ],
+    "build": {
+      "env": {
+        "PYTHON_VERSION": "3.9"
+      }
+    }
+  }
+  
+  

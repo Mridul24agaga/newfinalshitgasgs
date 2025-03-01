@@ -1,106 +1,143 @@
-"use client"
+import { Twitter, Linkedin, CheckCircle2 } from "lucide-react"
 
-import { motion } from "framer-motion"
-import { Trash2, TrendingDown, Clock, XCircle } from "lucide-react"
-import { spaceGrotesk } from "./fonts"
+interface ProfileCardProps {
+  name: string
+  title: string
+  handle: string
+  bio: string
+  experiences: string[]
+  avatar: string
+  avatarBg?: string
+}
 
-export default function ContentProblems() {
-  const cards = [
+const ProfileCard = ({ name, title, handle, bio, experiences, avatar, avatarBg }: ProfileCardProps) => {
+  return (
+    <div className="rounded-xl border border-gray-200 p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex gap-4">
+          <div className={`relative rounded-full ${avatarBg || "bg-gray-100"} p-0.5`}>
+            <img
+              src={avatar || "/placeholder.svg?height=64&width=64"}
+              alt={name}
+              className="h-16 w-16 rounded-full object-cover"
+            />
+            <span className="absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-400"></span>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">{name}</h3>
+            <p className="text-sm text-gray-600">{title}</p>
+            <a
+              href={`https://twitter.com/${handle.replace("@", "")}`}
+              className="text-sm font-medium text-[#FF8A3D] hover:underline"
+            >
+              {handle}
+            </a>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href={`https://twitter.com/${handle.replace("@", "")}`}
+            className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <Twitter className="h-5 w-5" />
+          </a>
+          <a href="#" className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+            <Linkedin className="h-5 w-5" />
+          </a>
+        </div>
+      </div>
+
+      <p className="mt-4 text-gray-600">{bio}</p>
+
+      <ul className="mt-4 space-y-2">
+        {experiences.map((experience, index) => (
+          <li key={index} className="flex items-center gap-2 text-gray-600">
+            <CheckCircle2 className="h-5 w-5 text-[#FF8A3D]" />
+            <span>{experience}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+export default function FoundersAndProfiles() {
+  const profiles = [
     {
-      icon: Trash2,
-      title: "Low quality, generic content, poor ideas",
-      bgColor: "#1C155B",
-      iconColor: "white",
-      textColor: "white",
-      delay: 0.2,
+      name: "Krissmann Gupta",
+      title: "Founder | Growth Expert",
+      handle: "@KrissmannGupta",
+      bio: "Building SaaS products for startups. Expert in growth hacking and Marketing.",
+      experiences: [
+        "Indie Hacker and Marketer",
+        "Ex-Growth Hacker at Kraya",
+        "Ex-Product Manager at CattleGuru",
+        "Founder MarkupX | Streamers",
+        "Multiple startup exits",
+      ],
+      avatar: "/placeholder.svg?height=64&width=64",
     },
     {
-      icon: TrendingDown,
-      title: "No return on investment",
-      bgColor: "#3DFEA0",
-      iconColor: "#1C155B",
-      textColor: "#1C155B",
-      delay: 0.4,
-    },
-    {
-      icon: Clock,
-      title: "Countless hours of wasted time",
-      bgColor: "#1C155B",
-      iconColor: "white",
-      textColor: "white",
-      delay: 0.6,
+      name: "Mridul",
+      title: "Web Developer | AI Expert",
+      handle: "@Innvisionagency",
+      bio: "Technology & automation expert with deep expertise in AI.",
+      experiences: [
+        "Freelancer at innvision agency",
+        "Web developer at multiple startups",
+        "AI/ML Expert",
+        "Indie Hacker",
+      ],
+      avatar: "/placeholder.svg?height=64&width=64",
+      avatarBg: "bg-[#FFD7BA]",
     },
   ]
 
   return (
-    <section className={`py-20 px-4 bg-white ${spaceGrotesk.variable}`}>
-      <div className="max-w-7xl mx-auto">
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex justify-center mb-8"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 bg-red-50">
-            <XCircle className="w-4 h-4 text-red-500" />
-            <span className="text-sm text-red-500 font-medium">Content Isn't Easy</span>
-          </div>
-        </motion.div>
+    <div>
+      {/* Founders Section */}
+      <div className="bg-[#FFF1E6] py-16 text-center">
+        <div className="container mx-auto max-w-4xl px-4">
+          <h1 className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
+            <span className="text-[#FF8A3D]">By</span> <span className="text-black">Founders</span>{" "}
+            <span className="text-[#FF8A3D]">For</span> <span className="text-black">Founders</span>
+          </h1>
 
-        {/* Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-[56px] font-bold mb-6 font-space-grotesk tracking-[-0.02em] leading-[1.1]">
-            Writing content can be frustrating
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Let's be honest, creating content can be time-consuming and, when done wrong, can backfire. Do you really
-            need that extra burden?
+          <p className="mx-auto mb-16 max-w-2xl text-lg text-gray-700">
+            We've been in your shoes. We understand the challenges of scaling startups and the critical role of organic
+            growth.
           </p>
-        </motion.div>
 
-        {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {cards.map((card, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: card.delay }}
-              className="relative group"
-            >
-              <div
-                className="rounded-3xl aspect-square flex flex-col items-center justify-center p-8 text-center"
-                style={{ backgroundColor: card.bgColor }}
-              >
-                {/* Icon Container */}
-                <div
-                  className="w-24 h-24 rounded-2xl flex items-center justify-center mb-6"
-                  style={{
-                    backgroundColor: card.bgColor === "#3DFEA0" ? "rgba(28, 21, 91, 0.1)" : "rgba(255, 255, 255, 0.1)",
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  <card.icon className="w-12 h-12" style={{ color: card.iconColor }} />
-                </div>
-                {/* Title */}
-                <h3
-                  className="text-lg font-medium leading-tight max-w-[200px] font-space-grotesk"
-                  style={{ color: card.textColor }}
-                >
-                  {card.title}
-                </h3>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold md:text-5xl">10+</div>
+              <div className="text-sm font-medium uppercase tracking-wider text-gray-600">
+                Years Combined Experience
               </div>
-            </motion.div>
+            </div>
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold md:text-5xl">15+</div>
+              <div className="text-sm font-medium uppercase tracking-wider text-gray-600">Startups Scaled</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold md:text-5xl">$10M+</div>
+              <div className="text-sm font-medium uppercase tracking-wider text-gray-600">
+                Revenue Generated for Clients
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Cards Section */}
+      <div className="container mx-auto max-w-6xl px-4 py-8 bg-white">
+        <div className="grid gap-6 md:grid-cols-2">
+          {profiles.map((profile, index) => (
+            <ProfileCard key={index} {...profile} />
           ))}
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
