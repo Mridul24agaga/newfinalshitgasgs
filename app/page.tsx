@@ -25,9 +25,11 @@ import EarlyBirdOffer from "./components/offer"
 import BlogSection from "./components/blogpost"
 import CTASection from "./components/cta"
 import Footer from "./components/foot"
+import AnnouncementBanner from "./components/navit"
 export default function Page() {
   return (
     <main className="min-h-screen bg-white">
+      <AnnouncementBanner/>
       <Navbar />
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-[1400px] mx-auto rounded-2xl overflow-hidden  bg-gradient-to-t from-[#000033] via-[#000066] to-[#0066ff]">

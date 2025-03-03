@@ -13,10 +13,10 @@ export function ProblemSolution() {
             alt="Arrow"
             className="absolute -top-12 -left-16 w-16 h-16"
           />
-          <h2 className="text-4xl md:text-5xl font-bold mb-2">Your problem</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-2">Your problem <br/></h2>
         </div>
         <div className="relative inline-block">
-          <h2 className="text-4xl md:text-5xl font-bold">Our solution</h2>
+          <h2 className="text-4xl md:text-5xl font-bold"> Our solution</h2>
           <img
             src="arrow.png"
             alt="Arrow"
@@ -31,7 +31,7 @@ export function ProblemSolution() {
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
               <Image
-                src="/placeholder.svg?height=48&width=48"
+                src="/123.jpg"
                 alt="User avatar"
                 width={48}
                 height={48}
@@ -48,7 +48,7 @@ export function ProblemSolution() {
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
               <Image
-                src="/placeholder.svg?height=48&width=48"
+                src="/124.jpg"
                 alt="User avatar"
                 width={48}
                 height={48}
@@ -65,7 +65,7 @@ export function ProblemSolution() {
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
               <Image
-                src="/placeholder.svg?height=48&width=48"
+                src="/125.jpg"
                 alt="User avatar"
                 width={48}
                 height={48}
