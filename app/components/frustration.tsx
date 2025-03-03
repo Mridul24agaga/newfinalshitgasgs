@@ -8,9 +8,24 @@ interface ProfileCardProps {
   experiences: string[]
   avatar: string
   avatarBg?: string
+  twitterLink?: string
+  linkedinLink?: string
 }
 
-const ProfileCard = ({ name, title, handle, bio, experiences, avatar, avatarBg }: ProfileCardProps) => {
+const ProfileCard = ({
+  name,
+  title,
+  handle,
+  bio,
+  experiences,
+  avatar,
+  avatarBg,
+  twitterLink,
+  linkedinLink,
+}: ProfileCardProps) => {
+  // Default Twitter link based on handle if custom link not provided
+  const defaultTwitterLink = `https://twitter.com/${handle.replace("@", "")}`
+
   return (
     <div className="rounded-xl border border-gray-200 p-6">
       <div className="flex items-start justify-between">
@@ -26,24 +41,30 @@ const ProfileCard = ({ name, title, handle, bio, experiences, avatar, avatarBg }
           <div>
             <h3 className="text-xl font-semibold text-gray-900">{name}</h3>
             <p className="text-sm text-gray-600">{title}</p>
-            <a
-              href={`https://twitter.com/${handle.replace("@", "")}`}
-              className="text-sm font-medium text-[#FF8A3D] hover:underline"
-            >
+            <a href={twitterLink || defaultTwitterLink} className="text-sm font-medium text-[#FF8A3D] hover:underline">
               {handle}
             </a>
           </div>
         </div>
         <div className="flex gap-2">
           <a
-            href={`https://twitter.com/${handle.replace("@", "")}`}
+            href={twitterLink || defaultTwitterLink}
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             <Twitter className="h-5 w-5" />
           </a>
-          <a href="#" className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
-            <Linkedin className="h-5 w-5" />
-          </a>
+          {linkedinLink && (
+            <a
+              href={linkedinLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            >
+              <Linkedin className="h-5 w-5" />
+            </a>
+          )}
         </div>
       </div>
 
@@ -76,6 +97,8 @@ export default function FoundersAndProfiles() {
         "Multiple startup exits",
       ],
       avatar: "/krissmann.jpg",
+      twitterLink: "https://twitter.com/KrissmannGupta",
+      linkedinLink: "https://linkedin.com/in/krissmann-gupta",
     },
     {
       name: "Mridul",
@@ -90,6 +113,8 @@ export default function FoundersAndProfiles() {
       ],
       avatar: "/mridul.jpg",
       avatarBg: "bg-[#FFD7BA]",
+      twitterLink: "https://twitter.com/Innvisionagency",
+      linkedinLink: "https://linkedin.com/in/mridulthareja",
     },
   ]
 
