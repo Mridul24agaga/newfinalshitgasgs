@@ -2,15 +2,16 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { FormEvent, ChangeEvent } from "react"
-import { createClient } from '@supabase/supabase-js'
+import type { FormEvent, ChangeEvent } from "react"
+import { createClient } from "@supabase/supabase-js"
+import Script from "next/script"
 
 // Initialize Supabase client with error checking
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase URL and Anon Key must be provided in environment variables')
+  throw new Error("Supabase URL and Anon Key must be provided in environment variables")
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -36,7 +37,7 @@ function AfterPayment() {
     pointOfView: "",
     creativityLevel: "",
     lengthPreferred: "",
-    linking: ""
+    linking: "",
   })
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -52,62 +53,62 @@ function AfterPayment() {
 
     try {
       const { data, error } = await supabase
-        .from('user_signups')
-        .insert([{
-          name: formData.name,
-          startup_name: formData.startupName,
-          website_launched: formData.websiteLaunched,
-          website_link: formData.websiteLink || null,
-          email: formData.email,
-          problem: formData.problem || null,
-          solutions: formData.solutions || null,
-          usp: formData.usp || null,
-          keywords: formData.keywords || null,
-          country_language: formData.countryLanguage || null,
-          article_type: formData.articleType || null,
-          tone: formData.tone || null,
-          target_audience: formData.targetAudience || null,
-          point_of_view: formData.pointOfView || null,
-          creativity_level: formData.creativityLevel || null,
-          length_preferred: formData.lengthPreferred || null,
-          linking: formData.linking || null
-        }])
+        .from("user_signups")
+        .insert([
+          {
+            name: formData.name,
+            startup_name: formData.startupName,
+            website_launched: formData.websiteLaunched,
+            website_link: formData.websiteLink || null,
+            email: formData.email,
+            problem: formData.problem || null,
+            solutions: formData.solutions || null,
+            usp: formData.usp || null,
+            keywords: formData.keywords || null,
+            country_language: formData.countryLanguage || null,
+            article_type: formData.articleType || null,
+            tone: formData.tone || null,
+            target_audience: formData.targetAudience || null,
+            point_of_view: formData.pointOfView || null,
+            creativity_level: formData.creativityLevel || null,
+            length_preferred: formData.lengthPreferred || null,
+            linking: formData.linking || null,
+          },
+        ])
         .select()
 
       if (error) {
-        throw new Error(error.message || 'Unknown error occurred during insertion')
+        throw new Error(error.message || "Unknown error occurred during insertion")
       }
 
-      console.log('Successfully inserted data:', data)
+      console.log("Successfully inserted data:", data)
       setStep("success")
     } catch (error: any) {
-      console.error('Detailed error:', {
+      console.error("Detailed error:", {
         message: error.message,
         details: error.details,
         hint: error.hint,
-        code: error.code
+        code: error.code,
       })
-      setErrorMessage(`Failed to submit form: ${error.message || 'Unknown error'}`)
+      setErrorMessage(`Failed to submit form: ${error.message || "Unknown error"}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const target = e.target
     const { name, value } = target
-    
+
     if (target instanceof HTMLInputElement && target.type === "checkbox") {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: target.checked
+        [name]: target.checked,
       }))
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }))
     }
   }
@@ -116,20 +117,26 @@ function AfterPayment() {
     <div className="max-w-2xl mx-auto p-6 mb-8 bg-gray-100 rounded-lg">
       <h2 className="text-2xl font-bold mb-4">GUIDELINES</h2>
       <ul className="list-disc pl-5 space-y-2 text-gray-700">
-        <li>After you submit the form or we complete the explanatory meeting, our experts will begin working, and the process will take seven days. On the eighth day, you will receive all pending blogs according to your plan and will start receiving blogs regularly thereafter.</li>
-        <li>You will also gain dashboard access on the eighth day, after our research is completed. There, you can connect your Google Search Console and website for auto-publishing and tracking.</li>
-        <li>For any doubts, updates, or changes, you can email us at [insert email] or message us on social media. After the eighth day, you can modify your settings anytime.</li>
+        <li>
+          After you submit the form or we complete the explanatory meeting, our experts will begin working, and the
+          process will take seven days. On the eighth day, you will receive all pending blogs according to your plan and
+          will start receiving blogs regularly thereafter.
+        </li>
+        <li>
+          You will also gain dashboard access on the eighth day, after our research is completed. There, you can connect
+          your Google Search Console and website for auto-publishing and tracking.
+        </li>
+        <li>
+          For any doubts, updates, or changes, you can email us at [insert email] or message us on social media. After
+          the eighth day, you can modify your settings anytime.
+        </li>
         <li>Please keep us informed about any updates so our team can stay aligned with your needs.</li>
       </ul>
     </div>
   )
 
   const renderChoice = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-2xl mx-auto p-6 text-center"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto p-6 text-center">
       <h2 className="text-2xl font-bold mb-6">How would you like to proceed?</h2>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button
@@ -149,48 +156,33 @@ function AfterPayment() {
   )
 
   const renderCallBooking = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-2xl mx-auto p-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Book a Call</h2>
-      <p className="text-gray-600 mb-6">
-        Schedule a call with our team to discuss your needs. Click below to choose a time slot:
-      </p>
-      <a
-        href="https://calendly.com/your-link"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-      >
-        Schedule Now
-      </a>
-      <button
-        onClick={() => setStep("choice")}
-        className="mt-4 text-gray-600 hover:text-gray-800"
-      >
+      <p className="text-gray-600 mb-6">Schedule a call with our team to discuss your needs and set up your account:</p>
+
+      {/* Calendly Inline Widget */}
+      <div
+        className="calendly-inline-widget"
+        data-url="https://calendly.com/blogosocial-info/blogosocial-setup"
+        style={{ minWidth: "320px", height: "700px" }}
+      ></div>
+
+      <Script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async />
+
+      <button onClick={() => setStep("choice")} className="mt-4 text-gray-600 hover:text-gray-800">
         Back to options
       </button>
     </motion.div>
   )
 
   const renderForm = () => (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-2xl mx-auto p-6"
-    >
-      {errorMessage && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
-          {errorMessage}
-        </div>
-      )}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto p-6">
+      {errorMessage && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">{errorMessage}</div>}
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Personal Section */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Personal Information</h2>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Your Name *</label>
             <input
@@ -255,7 +247,7 @@ function AfterPayment() {
         {/* Company Section */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Company Information</h2>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Problem You Solve</label>
             <textarea
@@ -305,7 +297,7 @@ function AfterPayment() {
         {/* Blog Settings */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Blog Settings</h2>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Country and Language</label>
             <input
@@ -429,9 +421,9 @@ function AfterPayment() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`flex-1 py-3 px-6 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex-1 py-3 px-6 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isLoading ? 'Submitting...' : 'Submit'}
+            {isLoading ? "Submitting..." : "Submit"}
           </button>
         </div>
       </form>
@@ -439,11 +431,7 @@ function AfterPayment() {
   )
 
   const renderSuccess = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="max-w-2xl mx-auto p-6 text-center"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto p-6 text-center">
       <h2 className="text-3xl font-bold text-gray-900 mb-4">Submission Successful!</h2>
       <p className="text-gray-600 mb-6">
         Thank you for your submission. Our team will reach out to you soon to discuss next steps.
@@ -473,3 +461,4 @@ function AfterPayment() {
 }
 
 export default AfterPayment
+
