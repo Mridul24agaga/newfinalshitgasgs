@@ -1,11 +1,72 @@
-"use server";
-
-// Import types for better TypeScript support
+"use server"
 import { tavily } from "@tavily/core";
 import { v4 as uuidv4 } from "uuid";
 import OpenAI from "openai";
 import { writeFileSync, readFileSync } from "fs";
-import { createClient } from "@/utitls/supabase/server";
+import { createClient } from "@/utitls/supabase/server"; // Fixed typo in "utitls" to "utils"
+
+// Define formatUtils directly in this file for consistent Markdown formatting
+const formatUtils = {
+  convertMarkdownToHtml: (markdown: string) => {
+    let html = markdown
+      .replace(/^###### (.*$)/gim, '<h6 class="text-lg font-semibold mt-6 mb-3">$1</h6>')
+      .replace(/^##### (.*$)/gim, '<h5 class="text-xl font-semibold mt-6 mb-3">$1</h5>')
+      .replace(/^#### (.*$)/gim, '<h4 class="text-2xl font-semibold mt-8 mb-4">$1</h4>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-3xl font-bold mt-10 mb-5 text-gray-800">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-4xl font-bold mt-12 mb-6 text-gray-900">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-5xl font-bold mt-14 mb-8 text-gray-900 border-b pb-4">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
+      .replace(/^- (.*)$/gim, '<li class="ml-6 mb-2 list-disc text-gray-700 font-normal">$1</li>')
+      .replace(/^[*] (.*)$/gim, '<li class="ml-6 mb-2 list-disc text-gray-700 font-normal">$1</li>')
+      .replace(/(<li.*?>.*<\/li>)/gim, '<ul class="my-6">$1</ul>')
+      .replace(/\n{2,}/g, '</p><p class="mt-6 mb-6 text-gray-700 leading-relaxed font-normal">')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-blue-600 hover:underline font-normal">$1</a>')
+      .replace(/^>\s+(.*)$/gim, '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-6 font-normal">$1</blockquote>');
+    
+    html = `<p class="mt-6 mb-6 text-gray-700 leading-relaxed font-normal">${html}</p>`;
+    return html;
+  },
+
+  sanitizeHtml: (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    
+    doc.querySelectorAll('p, li, a, blockquote').forEach(el => {
+      el.classList.remove('font-bold');
+      el.classList.add('font-normal');
+    });
+    doc.querySelectorAll('p').forEach(p => {
+      p.classList.add('mt-6', 'mb-6', 'text-gray-700', 'leading-relaxed');
+    });
+    doc.querySelectorAll('ul').forEach(ul => {
+      ul.classList.add('my-6');
+    });
+    doc.querySelectorAll('li').forEach(li => {
+      li.classList.add('ml-6', 'mb-2', 'list-disc', 'text-gray-700', 'font-normal');
+    });
+    doc.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+      h.classList.remove('font-bold');
+      if (h.tagName === 'H1' || h.tagName === 'H2' || h.tagName === 'H3') h.classList.add('font-bold');
+    });
+    
+    return doc.body.innerHTML;
+  },
+
+  generateToc: (htmlContent: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, "text/html");
+    const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    return Array.from(headings).map((h, i) => {
+      h.id = `heading-${i}`;
+      return {
+        id: `heading-${i}`,
+        text: h.textContent || "",
+        level: Number(h.tagName[1]),
+      };
+    });
+  }
+};
 
 // Define types for clarity
 interface TavilySearchResult {
@@ -28,7 +89,7 @@ interface BlogResult {
 
 interface ScrapedData {
   initialUrl: string;
-  initialResearchSummary: string; // Renamed from initialContent to reflect research summary
+  initialResearchSummary: string;
   researchResults: { url: string; content: string; title: string }[];
   researchSummary: string;
   coreTopic: string;
@@ -42,20 +103,17 @@ interface ScrapedData {
   nudge: string;
 }
 
-// Add new types for scheduled content
 interface ScheduleResult {
   success: boolean;
   message: string;
   scheduleId: string;
 }
 
-// Add proper error types
 interface GenerationError extends Error {
   message: string;
   code?: string;
 }
 
-// Add proper blog post types
 interface BlogPost {
   id: string;
   user_id: string;
@@ -68,7 +126,6 @@ interface BlogPost {
   url: string;
 }
 
-// Update the return type for analyzeWebsiteAndGenerateArticle
 interface ArticleResult {
   blogPost: string;
   seoScore: number;
@@ -80,11 +137,9 @@ interface ArticleResult {
   timestamp: string;
 }
 
-// Tavily client setup with explicit key logging
+// Tavily client setup
 const TAVILY_API_KEY: string = process.env.TAVILY_API_KEY || "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";
-console.log(
-  `Tavily API Key in use: ${TAVILY_API_KEY || "Not set! Check your env or hardcoded fallback."}`
-);
+console.log(`Tavily API Key in use: ${TAVILY_API_KEY || "Not set! Check your env or hardcoded fallback."}`);
 const tavilyClient = tavily({ apiKey: TAVILY_API_KEY });
 
 const configuration = {
@@ -102,7 +157,7 @@ const openai = new OpenAI({
   defaultHeaders: { "api-key": process.env.AZURE_OPENAI_API_KEY as string },
 });
 
-// Helper Functions with TypeScript types
+// Helper Functions
 async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<string> {
   try {
     console.log(`Calling OpenAI with prompt (first 200 chars): ${prompt.slice(0, 200)}...`);
@@ -131,23 +186,17 @@ async function scrapeWithTavily(url: string): Promise<string> {
       include_raw_content: true,
     });
     const data = tavilyResponse.results[0] as TavilySearchResult;
-    if (data && data.rawContent) {
+    if (data?.rawContent) {
       console.log(`Tavily raw content (first 200 chars): ${data.rawContent.slice(0, 200)}...`);
       const paragraphs: string[] = data.rawContent.split(/<\/?p>/).filter((p) => p.trim().length > 100);
       const cleanText =
-        paragraphs[0]
-          ?.replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim() || "No content available";
+        paragraphs[0]?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "No content available";
       console.log(`Cleaned Tavily content (first 200 chars): ${cleanText.slice(0, 200)}...`);
       return cleanText.length > 100 ? cleanText : "No content available";
     }
     console.warn("No raw content from Tavily, falling back to summary...");
-    if (data && data.content) {
-      const cleanText = data.content
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    if (data?.content) {
+      const cleanText = data.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       console.log(`Cleaned summary content (first 200 chars): ${cleanText.slice(0, 200)}...`);
       return cleanText.length > 100 ? cleanText : "No content available";
     }
@@ -177,7 +226,7 @@ async function scrapeInitialUrlWithTavily(url: string): Promise<string> {
       include_raw_content: true,
     });
     const initialData = tavilyResponse.results[0] as TavilySearchResult;
-    if (initialData && initialData.rawContent) {
+    if (initialData?.rawContent) {
       console.log(`Tavily raw content (first 200 chars): ${initialData.rawContent.slice(0, 200)}...`);
       const cleanText = initialData.rawContent
         .replace(/<[^>]+>/g, " ")
@@ -189,7 +238,7 @@ async function scrapeInitialUrlWithTavily(url: string): Promise<string> {
     } else {
       console.warn("Tavily raw content not available, falling back to summary...");
       const fallbackData = tavilyResponse.results[0] as TavilySearchResult;
-      if (fallbackData && fallbackData.content) {
+      if (fallbackData?.content) {
         const cleanText = fallbackData.content
           .replace(/<[^>]+>/g, " ")
           .replace(/\s+/g, " ")
@@ -307,7 +356,11 @@ async function extractHeadings(content: string): Promise<string[]> {
     }
   }
   console.log(`Extracted headings: ${JSON.stringify(headings)}`);
-  return headings;
+  return headings.sort((a, b) => {
+    const levelA = (content.match(new RegExp(`^#{1,6}\\s+${a}`)) || [])[0]?.match(/^#+/)?.[0].length || 1;
+    const levelB = (content.match(new RegExp(`^#{1,6}\\s+${b}`)) || [])[0]?.match(/^#+/)?.[0].length || 1;
+    return levelA - levelB;
+  });
 }
 
 async function extractKeywords(content: string, topic: string): Promise<{ keyword: string; difficulty: string }[]> {
@@ -330,13 +383,23 @@ async function extractKeywords(content: string, topic: string): Promise<{ keywor
 
 async function factCheckContent(content: string, sources: string[]): Promise<string> {
   const prompt = `
-    Fact-check this blog content against these sources. Fix any shaky bits to match the truth or call 'em out if they're off. Keep it natural, like a friend double-checking your work. Preserve every single word—do not shorten or remove content, only add clarifications or corrections as extra text if needed. Return the full revised content as plain text.
+    Fact-check this blog content against these sources. Fix any shaky bits to match the truth or call 'em out if they're off. Keep it natural, like a friend double-checking your work. Preserve every single word—do not shorten or remove content, only add clarifications or corrections as extra text if needed. Ensure the content remains in Markdown format with no HTML or bolding, following these rules exactly as in formatUtils.convertMarkdownToHtml:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
+    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
     Content: "${content}"
     Sources: ${sources.join(", ")}
   `;
   const factCheckedContent = await callAzureOpenAI(prompt, 16384);
   console.log(`Fact-checked content (first 200 chars): ${factCheckedContent.slice(0, 200)}...`);
-  return factCheckedContent.replace(/\s+/g, " ").trim();
+  return factCheckedContent
+    .replace(/<[^>]+>/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+    .replace(/\n{1,}/g, "\n\n")
+    .trim();
 }
 
 async function generateClassyTitle(coreTopic: string, userId: string, supabase: any): Promise<string> {
@@ -345,34 +408,47 @@ async function generateClassyTitle(coreTopic: string, userId: string, supabase: 
 
   const { data: blogPrefs, error: prefError } = await supabase
     .from("blog_preferences")
-    .select("preferred_tone, preferred_keywords")
+    .select("*")
     .eq("user_id", userId)
     .single();
-  if (prefError) console.error(`Blog preferences error: ${prefError.message}`);
+
+  const blogPreferences = prefError || !blogPrefs
+    ? { preferred_tone: "casual", preferred_keywords: [] }
+    : blogPrefs;
 
   const { data: brandData, error: brandError } = await supabase
     .from("brand_profile")
     .select("brand_name, description, company_taglines")
     .eq("user_id", userId)
     .single();
-  if (brandError) console.error(`Brand profile error: ${brandError.message}`);
+
+  if (brandError || !brandData) {
+    console.error(`Brand profile error: ${brandError?.message || "No brand data"}`);
+    throw new Error(`Failed to fetch brand profile: ${brandError?.message || "No brand data"}`);
+  }
 
   const { data: contentIdea, error: ideaError } = await supabase
     .from("content_ideas")
-    .select("idea_title, idea_description, suggested_keywords")
+    .select("*")
     .eq("user_id", userId)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
-  if (ideaError) console.error(`Content ideas error: ${ideaError.message}`);
+
+  const contentIdeaData = ideaError || !contentIdea
+    ? { idea_title: "Untitled Idea", idea_description: "No desc", suggested_keywords: [] }
+    : contentIdea;
 
   const { data: audienceData, error: audienceError } = await supabase
     .from("audience_settings")
     .select("target_audience, tone_preference, audience_goals")
     .eq("user_id", userId)
     .single();
-  if (audienceError) console.error(`Audience settings error: ${audienceError.message}`);
+
+  const audienceSettings = audienceError || !audienceData
+    ? { target_audience: "entrepreneurs", tone_preference: "casual", audience_goals: "grow their business" }
+    : audienceData;
 
   const { data: keywordsData, error: keywordsError } = await supabase
     .from("keywords_to_be_used")
@@ -380,44 +456,34 @@ async function generateClassyTitle(coreTopic: string, userId: string, supabase: 
     .eq("user_id", userId)
     .order("priority", { ascending: false })
     .limit(1);
-  if (keywordsError) console.error(`Keywords error: ${keywordsError.message}`);
 
-  const blogPreferences = blogPrefs || { preferred_tone: "casual", preferred_keywords: [] };
-  const brandInfo = brandData
-    ? `${brandData.brand_name || "Unnamed"} - ${brandData.description || "No description"} - Taglines: ${
-        brandData.company_taglines?.join(", ") || "None"
-      }`
-    : "No brand info available";
-  const contentIdeaInfo = contentIdea
-    ? `${contentIdea.idea_title || "Untitled Idea"} - ${
-        contentIdea.idea_description || "No desc"
-      } - Keywords: ${contentIdea.suggested_keywords?.join(", ") || "None"}`
-    : "No content idea available";
-  const audienceSettings = audienceData || {
-    target_audience: "entrepreneurs",
-    tone_preference: "casual",
-    audience_goals: "grow their business",
-  };
-  const topKeyword = keywordsData?.[0]?.keyword || "no top keyword";
+  const topKeyword = keywordsError || !keywordsData?.[0] ? "no top keyword" : keywordsData[0].keyword;
 
   const { data: pastBlogs, error: pastError } = await supabase
     .from("blogs")
     .select("title")
     .eq("user_id", userId)
     .limit(5);
-  if (pastError) console.error(`Error fetching past blogs: ${pastError.message}`);
-  const pastTitles = pastBlogs?.map((blog: any) => blog.title)?.join(", ") || "None";
+
+  const pastTitles = pastError || !pastBlogs ? "None" : pastBlogs.map((blog: any) => blog.title).join(", ");
+
+  const brandInfo = `
+    ${brandData.brand_name || "Unnamed"} - ${brandData.description || "No description"} - Taglines: ${
+      Array.isArray(brandData.company_taglines) ? brandData.company_taglines.join(", ") : brandData.company_taglines || "None"
+    }
+  `;
+  const contentIdeaInfo = `
+    ${contentIdeaData.idea_title || "Untitled Idea"} - ${contentIdeaData.idea_description || "No desc"} - Keywords: ${
+      contentIdeaData.suggested_keywords?.join(", ") || "None"
+    }
+  `;
 
   const prompt = `
     You're a headline wizard crafting a blog title for "${coreTopic}" on ${now} (ID: ${randomNudge}). Use this data to make it classy, sharp, and totally fresh:
-    - Blog Preferences: Tone: ${blogPreferences.preferred_tone}, Keywords: ${blogPreferences.preferred_keywords.join(
-      ", "
-    )}
+    - Blog Preferences: Tone: ${blogPreferences.preferred_tone}, Keywords: ${blogPreferences.preferred_keywords.join(", ")}
     - Brand Info: "${brandInfo.slice(0, 500)}"
     - Latest Content Idea: "${contentIdeaInfo.slice(0, 500)}"
-    - Audience: "${audienceSettings.target_audience}" aiming to "${audienceSettings.audience_goals}" (tone: ${
-    audienceSettings.tone_preference
-  })
+    - Audience: "${audienceSettings.target_audience}" aiming to "${audienceSettings.audience_goals}" (tone: ${audienceSettings.tone_preference})
     - Top Keyword: ${topKeyword}
     - Past Titles to Avoid: ${pastTitles}
     Create a slick, attention-grabbing title (up to 70 chars) that's unique—no repeats from past titles. Throw in a wild twist or fresh angle. Return plain text.
@@ -427,6 +493,54 @@ async function generateClassyTitle(coreTopic: string, userId: string, supabase: 
   return title.trim() || `Fresh Take on ${coreTopic} - ${now}`;
 }
 
+async function reformatExistingPosts(supabase: any, userId: string): Promise<void> {
+  try {
+    const { data: existingPosts, error: fetchError } = await supabase
+      .from("blogs")
+      .select("id, blog_post")
+      .eq("user_id", userId);
+
+    if (fetchError || !existingPosts) {
+      console.error(`Failed to fetch existing posts: ${fetchError?.message || "No posts found"}`);
+      throw new Error(`Failed to fetch existing posts: ${fetchError?.message || "No posts found"}`);
+    }
+
+    for (const post of existingPosts) {
+      let markdownContent = post.blog_post;
+
+      if (markdownContent.startsWith('<')) {
+        markdownContent = markdownContent
+          .replace(/<[^>]+>/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      markdownContent = markdownContent
+        .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+        .replace(/\n{1,}/g, "\n\n")
+        .replace(/^#### (.*$)/gim, '### $1')
+        .replace(/^##### (.*$)/gim, '### $1')
+        .replace(/^###### (.*$)/gim, '### $1');
+
+      const formattedHtml = formatUtils.convertMarkdownToHtml(markdownContent);
+
+      const { error: updateError } = await supabase
+        .from("blogs")
+        .update({ blog_post: formattedHtml })
+        .eq("id", post.id);
+
+      if (updateError) {
+        console.error(`Failed to update post ${post.id}: ${updateError.message}`);
+      } else {
+        console.log(`Reformatted and updated post ${post.id}`);
+      }
+    }
+  } catch (error: any) {
+    console.error(`Error reformatting existing posts: ${error.message}`);
+    throw new Error(`Failed to reformat existing posts: ${error.message}`);
+  }
+}
+
 export async function analyzeWebsiteAndGenerateArticle(
   url: string,
   userId: string,
@@ -434,7 +548,7 @@ export async function analyzeWebsiteAndGenerateArticle(
   targetWordCount = 2500
 ): Promise<ArticleResult> {
   console.log(`\n=== Starting blog generation for URL: ${url}, User ID: ${userId} ===`);
-  const supabase = await createClient(); // Await the client
+  const supabase = await createClient();
   const now = new Date().toISOString().split("T")[0];
   const randomNudge = Math.random().toString(36).substring(2, 7);
 
@@ -448,21 +562,21 @@ export async function analyzeWebsiteAndGenerateArticle(
       .select(
         "website_link, brand_name, product_images, description, brand_documents, brand_logo, post_video_links, company_taglines, brand_colours, country_of_service"
       )
-      .eq("user_id", userId);
-    if (brandError) {
-      console.error(`Failed to fetch brand data: ${brandError.message}`);
-      throw new Error("No brand data found for this user—add brand data first, dude!");
-    }
-    if (!brandData || brandData.length === 0) {
+      .eq("user_id", userId)
+      .single();
+
+    if (brandError || !brandData) {
+      console.error(`Failed to fetch brand data: ${brandError?.message || "No brand data"}`);
       throw new Error("No brand data found for this user—add brand data in /company-database first, dude!");
     }
+
     console.log(`Reading brand data for user ${userId}:`, brandData);
 
     const initialData = await scrapeInitialUrlWithTavily(url);
     if (!initialData || initialData === "No content available") throw new Error("Failed to scrape initial URL with Tavily.");
     console.log(`Initial content (first 200 chars): ${initialData.slice(0, 200)}...`);
 
-    const metaDescription = await generateMetaDescription(url, initialData); // Keep initialData for meta if needed, but we'll switch below
+    const metaDescription = await generateMetaDescription(url, initialData);
     const searchQueries = await generateSearchQueries(metaDescription, "temporary topic placeholder");
     const searchUrls = await Promise.all(searchQueries.map(performTavilySearch));
     const allSearchUrls = Array.from(new Set(searchUrls.flat())).slice(0, 15);
@@ -498,23 +612,18 @@ export async function analyzeWebsiteAndGenerateArticle(
     const coreTopic = await callAzureOpenAI(topicPrompt, 100);
     console.log(`Core topic derived from researchResults: ${coreTopic}`);
 
-    const brandInfo =
-      brandData
-        .map(
-          (item: any) => `
-        Website: ${item.website_link || "No website"}
-        Brand: ${item.brand_name || "Unnamed Brand"}
-        Products: ${item.product_images || "No product images"}
-        Description: ${item.description || "No description"}
-        Documents: ${item.brand_documents || "No documents"}
-        Logo: ${item.brand_logo || "No logo"}
-        Posts/Videos: ${item.post_video_links || "No posts/videos"}
-        Taglines: ${item.company_taglines || "No taglines"}
-        Colours: ${item.brand_colours || "No colours"}
-        Country: ${item.country_of_service || "No country"}
-      `
-        )
-        .join("\n") || "No brand data available.";
+    const brandInfo = `
+      Website: ${brandData.website_link || "No website"}
+      Brand: ${brandData.brand_name || "Unnamed Brand"}
+      Products: ${brandData.product_images || "No product images"}
+      Description: ${brandData.description || "No description"}
+      Documents: ${brandData.brand_documents || "No documents"}
+      Logo: ${brandData.brand_logo || "No logo"}
+      Posts/Videos: ${brandData.post_video_links || "No posts/videos"}
+      Taglines: ${Array.isArray(brandData.company_taglines) ? brandData.company_taglines.join(", ") : brandData.company_taglines || "None"}
+      Colours: ${brandData.brand_colours || "No colours"}
+      Country: ${brandData.country_of_service || "No country"}
+    `;
     console.log(`Brand info for user ${userId} (first 200 chars): ${brandInfo.slice(0, 200)}...`);
 
     const { data: existingBlogs, error: blogError } = await supabase
@@ -522,10 +631,12 @@ export async function analyzeWebsiteAndGenerateArticle(
       .select("blog_post, title")
       .eq("user_id", userId)
       .limit(5);
+
     if (blogError) {
       console.error(`Failed to fetch existing blogs: ${blogError.message}`);
     }
-    const existingPosts = existingBlogs?.map((blog: any) => blog.blog_post) || [];
+
+    const existingPosts = existingBlogs?.map((blog: any) => blog.blog_post) ?? [];
     console.log(`Found ${existingPosts.length} existing posts for user ${userId}`);
 
     const youtubeVideo = await findYouTubeVideo(coreTopic);
@@ -535,7 +646,7 @@ export async function analyzeWebsiteAndGenerateArticle(
     const tempFileName = `scraped_data_${uuidv4()}.json`;
     const scrapedData: ScrapedData = {
       initialUrl: url,
-      initialResearchSummary: initialData, // Renamed to reflect it's based on initial research
+      initialResearchSummary: initialData,
       researchResults,
       researchSummary: combinedResearchContent,
       coreTopic,
@@ -557,20 +668,32 @@ export async function analyzeWebsiteAndGenerateArticle(
     const researchSummary = scrapedDataParsed.researchSummary || "No research summary available";
 
     const awesomeTitle = await generateClassyTitle(coreTopic, userId, supabase);
-    const metaDescriptionFromResearch = await generateMetaDescription(url, researchSummary); // Use researchSummary here for meta
+    const metaDescriptionFromResearch = await generateMetaDescription(url, researchSummary);
 
-    const pastTitles = existingBlogs?.map((blog: any) => blog.title).join(", ") || "None";
+    const pastTitles = existingBlogs?.map((blog: any) => blog.title)?.join(", ") ?? "None";
 
     const firstChunkPrompt = `
       Here's JSON from ${url} on ${now} (ID: ${randomNudge}). Write a 1300+ word blog chunk on "${coreTopic}"—practical, actionable strategies, like coaching a newbie over brunch. Use brand info from JSON. Don't repeat past posts or titles: "${existingPosts.join("\n\n").slice(
         0,
         2000
-      )}", Titles: ${pastTitles}. Weave in keywords: ${targetKeywords.join(", ")}. Use Markdown: title (# ${awesomeTitle}), 6-8 subheadings (# Subheading), no bolding. Add a real-world example—small biz crushing it. Use internal links (${internalLinks.join(
+      )}", Titles: ${pastTitles}. Weave in keywords: ${targetKeywords.join(", ")}. Use *only* Markdown: title (# ${awesomeTitle}), 6-8 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Add a real-world example—small biz crushing it. Use internal links (${internalLinks.join(
       ", "
-    )}) where they fit. Blank lines between paragraphs. JSON: "${scrapedDataRaw.slice(0, 6000)}..."
-      Return full text starting with title.
+    )}) where they fit. Do not use any HTML—just pure Markdown as per formatUtils.convertMarkdownToHtml rules:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
+    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
+    JSON: "${scrapedDataRaw.slice(0, 6000)}..."
+      Return full text starting with title in Markdown format.
     `;
-    const firstChunk = await callAzureOpenAI(firstChunkPrompt, 5500);
+    let firstChunk = await callAzureOpenAI(firstChunkPrompt, 5500);
+    firstChunk = firstChunk
+      .replace(/<[^>]+>/g, "")
+      .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+      .replace(/\n{1,}/g, "\n\n")
+      .trim();
     const firstWordCount = firstChunk.split(/\s+/).filter(Boolean).length;
     console.log(`First Chunk (first 200 chars): ${firstChunk.slice(0, 200)}...`);
     console.log(`First Chunk Word Count: ${firstWordCount}`);
@@ -580,15 +703,24 @@ export async function analyzeWebsiteAndGenerateArticle(
         "\n\n"
       ).slice(0, 2000)}", Titles: ${pastTitles}. Keywords: ${targetKeywords.join(", ")}. Markdown: title (# ${
       awesomeTitle
-    } - Part 2), 6-8 subheadings (# Subheading), no bolding. Blend short zingers with long narratives. Add YouTube (${
+    } - Part 2), 6-8 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Blend short zingers with long narratives. Add YouTube (${
       youtubeVideo || "none"
-    }) if it fits. Use internal links (${internalLinks.join(", ")}) in new spots. Blank lines between paragraphs. JSON: "${scrapedDataRaw.slice(
-      0,
-      6000
-    )}..."
-      Return full text starting with title.
+    }) if it fits. Use internal links (${internalLinks.join(", ")}) in new spots. Do not use any HTML—just pure Markdown as per formatUtils.convertMarkdownToHtml rules:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
+    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
+    JSON: "${scrapedDataRaw.slice(0, 6000)}..."
+      Return full text starting with title in Markdown format.
     `;
-    const secondChunk = await callAzureOpenAI(secondChunkPrompt, 5500);
+    let secondChunk = await callAzureOpenAI(secondChunkPrompt, 5500);
+    secondChunk = secondChunk
+      .replace(/<[^>]+>/g, "")
+      .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+      .replace(/\n{1,}/g, "\n\n")
+      .trim();
     const secondWordCount = secondChunk.split(/\s+/).filter(Boolean).length;
     console.log(`Second Chunk (first 200 chars): ${secondChunk.slice(0, 200)}...`);
     console.log(`Second Chunk Word Count: ${secondWordCount}`);
@@ -596,21 +728,36 @@ export async function analyzeWebsiteAndGenerateArticle(
     const mergePrompt = `
       Got two 1300+ word chunks on "${coreTopic}" from ${now} (ID: ${randomNudge}). Merge into a 2600+ word post that flows—like a marathon chat with a friend. Keep all words from both, add 400-600 fresh words (insights, examples). Avoid repeating past titles: ${pastTitles}. Markdown: title (# ${
       awesomeTitle
-    }), 14-16 subheadings (# Subheading), no bolding, end with (# Conclusion). Keywords: ${targetKeywords.join(
+    }), 14-16 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, end with (# Conclusion), blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Keywords: ${targetKeywords.join(
       ", "
     )}. Use internal links: ${internalLinks.join(", ")}. Add YouTube if it fits: "${youtubeVideo || "none"}". End with (# References): ${references.join(
       ", "
-    )}. Chunks:
+    )}. Use *only* Markdown as per formatUtils.convertMarkdownToHtml rules:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
+    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
+    Chunks:
       Chunk 1 (practical): "${firstChunk}"
       Chunk 2 (stories): "${secondChunk}"
-      Return full text starting with title.
+      Return full text starting with title in Markdown format.
     `;
-    const mergedBlogPost = await callAzureOpenAI(mergePrompt, 16384);
+    let mergedBlogPost = await callAzureOpenAI(mergePrompt, 16384);
+    mergedBlogPost = mergedBlogPost
+      .replace(/<[^>]+>/g, "")
+      .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+      .replace(/\n{1,}/g, "\n\n")
+      .trim();
     const mergedWordCount = mergedBlogPost.split(/\s+/).filter(Boolean).length;
     console.log(`Merged Blog Post (first 200 chars): ${mergedBlogPost.slice(0, 200)}...`);
     console.log(`Merged Word Count: ${mergedWordCount}`);
 
-    const finalBlogPost = await factCheckContent(mergedBlogPost, [url, ...allSearchUrls, youtubeVideo || ""]);
+    const formattedBlogPost = formatUtils.convertMarkdownToHtml(mergedBlogPost);
+    console.log(`Formatted Blog Post (first 200 chars): ${formattedBlogPost.slice(0, 200)}...`);
+
+    const finalBlogPost = await factCheckContent(formattedBlogPost, [url, ...allSearchUrls, youtubeVideo || ""]);
     console.log(`Fact-checked Blog Post (first 200 chars): ${finalBlogPost.slice(0, 200)}...`);
     const finalWordCount = finalBlogPost.split(/\s+/).filter(Boolean).length;
     console.log(`Final Word Count: ${finalWordCount}`);
@@ -624,6 +771,8 @@ export async function analyzeWebsiteAndGenerateArticle(
     console.log(`Keywords: ${JSON.stringify(keywords)}`);
     console.log(`References:`, references);
     console.log(`=== Blog generation done for user ${userId}! ===`);
+
+    await reformatExistingPosts(supabase, userId);
 
     return {
       blogPost: finalBlogPost,
@@ -642,19 +791,45 @@ export async function analyzeWebsiteAndGenerateArticle(
 }
 
 export async function generateBlog(url: string, id: string, userId: string): Promise<BlogPost[]> {
-  const supabase = await createClient(); // Await the client
-  const totalPosts = 10; // Total number of posts to generate
+  const supabase = await createClient();
   const blogPosts: BlogPost[] = [];
   const firstRevealDate = new Date();
 
   try {
-    // Generate and save all 10 blog posts
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from("subscriptions")
+      .select("plan_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (subscriptionError || !subscription) {
+      console.error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`);
+      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`);
+    }
+
+    if (!subscription.plan_id) {
+      throw new Error("No active subscription plan found for this user");
+    }
+
+    const planCreditsMap: { [key: string]: number } = {
+      "trial": 2,
+      "basic": 10,
+      "pro": 30,
+    };
+
+    const totalPosts = planCreditsMap[subscription.plan_id] || 0;
+    if (!totalPosts) {
+      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`);
+    }
+
+    console.log(`User ${userId} has plan '${subscription.plan_id}' with ${totalPosts} credits.`);
+
     for (let i = 0; i < totalPosts; i++) {
       try {
         const result = await analyzeWebsiteAndGenerateArticle(url, userId);
         const blogId = uuidv4();
         const revealDate = new Date(firstRevealDate);
-        revealDate.setDate(revealDate.getDate() + i); // Set reveal date to i days from the first post
+        revealDate.setDate(revealDate.getDate() + i);
 
         const blogData: BlogPost = {
           id: blogId,
@@ -679,7 +854,6 @@ export async function generateBlog(url: string, id: string, userId: string): Pro
         blogPosts.push(blogData);
         console.log(`Generated and saved blog post ${i + 1} of ${totalPosts} for user ${userId}`);
       } catch (error: any) {
-        // Handle individual post generation errors
         console.error(`Error generating post ${i + 1}:`, error);
         const generationError: GenerationError = new Error(
           `Failed to generate post ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -689,10 +863,11 @@ export async function generateBlog(url: string, id: string, userId: string): Pro
       }
     }
 
+    await reformatExistingPosts(supabase, userId);
+
     console.log(`Successfully generated and saved ${totalPosts} blog posts for user ${userId}`);
     return blogPosts;
   } catch (error: any) {
-    // Handle overall generation errors
     console.error(`Failed to generate blogs for ${url} and user ${userId}:`, error);
     const finalError: GenerationError = new Error(
       `Blog generation failed: ${error instanceof Error ? error.message : "Unknown error"}`

@@ -1,12 +1,11 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import type { User } from "@supabase/supabase-js"
-import { ArrowLeft, Globe } from "lucide-react"
-import Image from "next/image"
+import { Menu } from "lucide-react"
 import { Sidebar } from "@/app/components/sidebar"
 
 // Define the ContentIdea interface
@@ -23,6 +22,11 @@ interface ContentIdea {
   etc: string | null
 }
 
+interface Subscription {
+  plan_id: string
+  credits: number
+}
+
 // Placeholder for callAzureOpenAI function (replace with actual implementation)
 async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<string> {
   return JSON.stringify([
@@ -35,23 +39,28 @@ async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<strin
 }
 
 export default function ContentIdeasPage() {
-  const [youtubeVideos, setYoutubeVideos] = useState<string>("")
-  const [posts, setPosts] = useState<string>("")
-  const [reddit, setReddit] = useState<string>("")
-  const [quora, setQuora] = useState<string>("")
-  const [document, setDocument] = useState<string>("")
-  const [giveIdeas, setGiveIdeas] = useState<string>("")
-  const [giveTopics, setGiveTopics] = useState<string>("")
-  const [etc, setEtc] = useState<string>("")
+  const [contentIdea, setContentIdea] = useState<ContentIdea>({
+    user_id: "",
+    youtube_videos: "",
+    posts: "",
+    reddit: "",
+    quora: "",
+    document: "",
+    give_ideas: "",
+    give_topics: "",
+    etc: "",
+  })
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchContentIdeas = async () => {
+    const fetchData = async () => {
       setIsLoading(true)
       try {
         const {
@@ -59,58 +68,54 @@ export default function ContentIdeasPage() {
           error: authError,
         } = await supabase.auth.getUser()
         if (authError || !user) {
-          throw new Error("You gotta log in first, man!")
+          throw new Error("You must be logged in to view this page.")
         }
 
-        const { data, error } = await supabase.from("content_ideas").select("*").eq("user_id", user.id)
+        const [contentIdeasResponse, subscriptionResponse] = await Promise.all([
+          supabase.from("content_ideas").select("*").eq("user_id", user.id),
+          supabase.from("subscriptions").select("*").eq("user_id", user.id).single(),
+        ])
 
-        if (error) {
-          throw new Error(`Failed to fetch content ideas: ${error.message}`)
+        if (contentIdeasResponse.error) {
+          throw new Error(`Failed to fetch content ideas: ${contentIdeasResponse.error.message}`)
         }
 
-        if (data && data.length > 0) {
-          const latestIdea = data.reduce((latest, current) =>
+        if (subscriptionResponse.error) {
+          throw new Error(`Failed to fetch subscription: ${subscriptionResponse.error.message}`)
+        }
+
+        if (contentIdeasResponse.data && contentIdeasResponse.data.length > 0) {
+          const latestIdea = contentIdeasResponse.data.reduce((latest, current) =>
             latest.id && current.id && latest.id > current.id ? latest : current,
           )
-          setYoutubeVideos(latestIdea.youtube_videos || "")
-          setPosts(latestIdea.posts || "")
-          setReddit(latestIdea.reddit || "")
-          setQuora(latestIdea.quora || "")
-          setDocument(latestIdea.document || "")
-          setGiveIdeas(latestIdea.give_ideas || "")
-          setGiveTopics(latestIdea.give_topics || "")
-          setEtc(latestIdea.etc || "")
+          setContentIdea({ ...latestIdea, user_id: user.id })
         } else {
-          setYoutubeVideos("")
-          setPosts("")
-          setReddit("")
-          setQuora("")
-          setDocument("")
-          setGiveIdeas("")
-          setGiveTopics("")
-          setEtc("")
+          setContentIdea((prev) => ({ ...prev, user_id: user.id }))
+        }
+
+        if (subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data)
         }
       } catch (error) {
-        console.error(`Error fetching content ideas: ${error instanceof Error ? error.message : "Unknown error"}`)
-        setError(`Failed to load content ideas: ${error instanceof Error ? error.message : "Unknown error"}`)
+        console.error(`Error fetching data: ${error instanceof Error ? error.message : "Unknown error"}`)
+        setError(`Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchContentIdeas()
+    fetchData()
   }, [supabase])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setContentIdea((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const trimmedYoutubeVideos = youtubeVideos.trim()
-    const trimmedPosts = posts.trim()
-    const trimmedReddit = reddit.trim()
-    const trimmedQuora = quora.trim()
-    const trimmedDocument = document.trim()
-    const trimmedGiveIdeas = giveIdeas.trim()
-    const trimmedGiveTopics = giveTopics.trim()
-    const trimmedEtc = etc.trim()
+    const trimmedGiveIdeas = contentIdea.give_ideas?.trim()
+    const trimmedGiveTopics = contentIdea.give_topics?.trim()
 
     if (!trimmedGiveIdeas && !trimmedGiveTopics) {
       setMessage("Give us some ideas or topics to generate more for your blog, dude!")
@@ -128,45 +133,16 @@ export default function ContentIdeasPage() {
         error: authError,
       } = await supabase.auth.getUser()
       if (authError || !user) {
-        throw new Error("You gotta log in first, man!")
+        throw new Error("You must be logged in to save content ideas.")
       }
 
-      const contentIdeasData: ContentIdea = {
-        user_id: (user as User).id,
-        youtube_videos: trimmedYoutubeVideos || null,
-        posts: trimmedPosts || null,
-        reddit: trimmedReddit || null,
-        quora: trimmedQuora || null,
-        document: trimmedDocument || null,
-        give_ideas: trimmedGiveIdeas || null,
-        give_topics: trimmedGiveTopics || null,
-        etc: trimmedEtc || null,
-      }
+      const { error: upsertError } = await supabase.from("content_ideas").upsert({
+        ...contentIdea,
+        user_id: user.id,
+      })
 
-      const { data: existingData, error: fetchError } = await supabase
-        .from("content_ideas")
-        .select("*")
-        .eq("user_id", user.id)
-
-      if (fetchError) {
-        throw new Error(`Failed to check existing content ideas: ${fetchError.message}`)
-      }
-
-      let result
-      if (existingData && existingData.length > 0) {
-        const latestIdea = existingData.reduce((latest, current) =>
-          latest.id && current.id && latest.id > current.id ? latest : current,
-        )
-        result = await supabase.from("content_ideas").update(contentIdeasData).eq("id", latestIdea.id)
-      } else {
-        result = await supabase.from("content_ideas").insert(contentIdeasData).select()
-        if (!result.data || result.data.length === 0) {
-          throw new Error("No data returned after insertion")
-        }
-      }
-
-      if (result.error) {
-        throw new Error(`Failed to save content ideas: ${result.error.message}`)
+      if (upsertError) {
+        throw new Error(`Failed to save content ideas: ${upsertError.message}`)
       }
 
       if (trimmedGiveIdeas || trimmedGiveTopics) {
@@ -183,63 +159,21 @@ export default function ContentIdeasPage() {
           ideas = ["Default Idea 1", "Default Idea 2"]
         }
 
-        console.log(`Generated additional ideas/topics for user ${(user as User).id}: ${JSON.stringify(ideas)}`)
-
-        const updatedContentIdeasData: ContentIdea = {
-          ...contentIdeasData,
-          give_ideas: `${trimmedGiveIdeas || ""} ${ideas.join(", ")}`.trim(),
-        }
+        const updatedGiveIdeas = `${trimmedGiveIdeas || ""} ${ideas.join(", ")}`.trim()
 
         const { error: updateError } = await supabase
           .from("content_ideas")
-          .update(updatedContentIdeasData)
-          .eq(
-            "id",
-            existingData?.length > 0
-              ? existingData[0].id
-              : result.data && result.data.length > 0
-                ? result.data[0].id
-                : null,
-          )
+          .update({ give_ideas: updatedGiveIdeas })
+          .eq("user_id", user.id)
 
         if (updateError) {
           throw new Error(`Failed to update content ideas with additional ideas: ${updateError.message}`)
         }
+
+        setContentIdea((prev) => ({ ...prev, give_ideas: updatedGiveIdeas }))
       }
 
-      const { data: updatedData, error: fetchUpdatedError } = await supabase
-        .from("content_ideas")
-        .select("*")
-        .eq("user_id", user.id)
-
-      if (fetchUpdatedError) {
-        throw new Error(`Failed to re-fetch updated content ideas: ${fetchUpdatedError.message}`)
-      }
-
-      if (updatedData && updatedData.length > 0) {
-        const latestIdea = updatedData.reduce((latest, current) =>
-          latest.id && current.id && latest.id > current.id ? latest : current,
-        )
-        setYoutubeVideos(latestIdea.youtube_videos || "")
-        setPosts(latestIdea.posts || "")
-        setReddit(latestIdea.reddit || "")
-        setQuora(latestIdea.quora || "")
-        setDocument(latestIdea.document || "")
-        setGiveIdeas(latestIdea.give_ideas || "")
-        setGiveTopics(latestIdea.give_topics || "")
-        setEtc(latestIdea.etc || "")
-      } else {
-        setYoutubeVideos("")
-        setPosts("")
-        setReddit("")
-        setQuora("")
-        setDocument("")
-        setGiveIdeas("")
-        setGiveTopics("")
-        setEtc("")
-      }
-
-      console.log(`Content ideas saved/updated for user_id ${(user as User).id}`)
+      console.log(`Content ideas saved/updated for user_id ${user.id}`)
       setSuccess("Content ideas saved/updated, bro! Ready for blog inspiration.")
     } catch (error: unknown) {
       console.error(`Error saving content ideas: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -252,155 +186,71 @@ export default function ContentIdeasPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200">
-        <Sidebar />
+      <div
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
+        <Sidebar subscription={subscription} />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button onClick={() => router.back()} className="flex items-center text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              <span>Back</span>
-            </button>
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
 
-            <div className="flex items-center gap-4">
-              <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                <Globe className="h-5 w-5" />
-                <Image src="/placeholder.svg" alt="US Flag" width={20} height={15} className="rounded" />
-              </button>
-              <button className="bg-[#2EF297] text-black font-medium px-4 py-1.5 rounded-full hover:bg-[#29DB89] transition-colors">
-                Upgrade ✨
-              </button>
-              <button className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="sr-only">User menu</span>👤
-              </button>
-            </div>
-          </div>
-        </header>
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64 transition-all duration-300 ease-in-out">
+        {/* Hamburger Menu */}
+        <button
+          className="fixed top-4 left-4 z-40 md:hidden bg-orange-500 text-white p-2 rounded-md"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">{isSidebarOpen ? "Close menu" : "Open menu"}</span>
+        </button>
 
         {/* Main Content */}
-        <main className="p-6">
+        <main className="p-6 pt-16 md:pt-6">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold mb-4 text-gray-900">Content Ideas</h1>
             <p className="mb-6 text-gray-600">
               Add content ideas and topics to inspire your blogs, tied to your account!
             </p>
             <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow-sm rounded-lg p-6">
-              <div>
-                <label htmlFor="youtubeVideos" className="block text-sm font-medium text-gray-700 mb-1">
-                  YouTube Videos (comma-separated URLs)
-                </label>
-                <input
-                  type="text"
-                  id="youtubeVideos"
-                  value={youtubeVideos}
-                  onChange={(e) => setYoutubeVideos(e.target.value)}
-                  placeholder="e.g., https://youtube.com/video1, https://youtube.com/video2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="posts" className="block text-sm font-medium text-gray-700 mb-1">
-                  Posts (comma-separated URLs or text)
-                </label>
-                <input
-                  type="text"
-                  id="posts"
-                  value={posts}
-                  onChange={(e) => setPosts(e.target.value)}
-                  placeholder="e.g., https://blog.com/post1, Interesting post text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="reddit" className="block text-sm font-medium text-gray-700 mb-1">
-                  Reddit (comma-separated URLs or text)
-                </label>
-                <input
-                  type="text"
-                  id="reddit"
-                  value={reddit}
-                  onChange={(e) => setReddit(e.target.value)}
-                  placeholder="e.g., https://reddit.com/r/topic, Interesting Reddit thread"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="quora" className="block text-sm font-medium text-gray-700 mb-1">
-                  Quora (comma-separated URLs or text)
-                </label>
-                <input
-                  type="text"
-                  id="quora"
-                  value={quora}
-                  onChange={(e) => setQuora(e.target.value)}
-                  placeholder="e.g., https://quora.com/question, Useful Quora answer"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="document" className="block text-sm font-medium text-gray-700 mb-1">
-                  Document (URL or path)
-                </label>
-                <input
-                  type="text"
-                  id="document"
-                  value={document}
-                  onChange={(e) => setDocument(e.target.value)}
-                  placeholder="e.g., https://docs.com/file.pdf, /path/to/doc"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="giveIdeas" className="block text-sm font-medium text-gray-700 mb-1">
-                  Give Ideas (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="giveIdeas"
-                  value={giveIdeas}
-                  onChange={(e) => setGiveIdeas(e.target.value)}
-                  placeholder="e.g., AI innovations, Marketing tips"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="giveTopics" className="block text-sm font-medium text-gray-700 mb-1">
-                  Give Topics (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="giveTopics"
-                  value={giveTopics}
-                  onChange={(e) => setGiveTopics(e.target.value)}
-                  placeholder="e.g., Future of AI, SEO Strategies"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="etc" className="block text-sm font-medium text-gray-700 mb-1">
-                  Etc (additional notes or URLs)
-                </label>
-                <input
-                  type="text"
-                  id="etc"
-                  value={etc}
-                  onChange={(e) => setEtc(e.target.value)}
-                  placeholder="e.g., Other ideas, https://extra.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isLoading}
-                />
-              </div>
+              {[
+                {
+                  id: "youtube_videos",
+                  label: "YouTube Videos",
+                  placeholder: "e.g., https://youtube.com/video1, https://youtube.com/video2",
+                },
+                { id: "posts", label: "Posts", placeholder: "e.g., https://blog.com/post1, Interesting post text" },
+                {
+                  id: "reddit",
+                  label: "Reddit",
+                  placeholder: "e.g., https://reddit.com/r/topic, Interesting Reddit thread",
+                },
+                { id: "quora", label: "Quora", placeholder: "e.g., https://quora.com/question, Useful Quora answer" },
+                { id: "document", label: "Document", placeholder: "e.g., https://docs.com/file.pdf, /path/to/doc" },
+                { id: "give_ideas", label: "Give Ideas", placeholder: "e.g., AI innovations, Marketing tips" },
+                { id: "give_topics", label: "Give Topics", placeholder: "e.g., Future of AI, SEO Strategies" },
+                { id: "etc", label: "Etc", placeholder: "e.g., Other ideas, https://extra.com" },
+              ].map((field) => (
+                <div key={field.id}>
+                  <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
+                    {field.label} {field.id !== "document" && "(comma-separated)"}
+                  </label>
+                  <input
+                    type="text"
+                    id={field.id}
+                    name={field.id}
+                    value={contentIdea[field.id as keyof ContentIdea] || ""}
+                    onChange={handleInputChange}
+                    placeholder={field.placeholder}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                    disabled={isLoading}
+                  />
+                </div>
+              ))}
               {message && <p className="text-orange-500 mt-2">{message}</p>}
               {error && <p className="text-red-500 mt-2">{error}</p>}
               {success && <p className="text-green-500 mt-2">{success}</p>}

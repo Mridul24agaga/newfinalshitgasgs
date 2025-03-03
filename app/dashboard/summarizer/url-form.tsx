@@ -14,8 +14,10 @@ export default function URLForm() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [generationProgress, setGenerationProgress] = useState<number>(0)
-  const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60) // 15 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState<number>(0) // Dynamic based on plan
   const [isGenerated, setIsGenerated] = useState<boolean>(false)
+  const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [totalPosts, setTotalPosts] = useState<number>(0)
   const router = useRouter()
   const supabase = createClient()
 
@@ -30,14 +32,31 @@ export default function URLForm() {
       } = await supabase.auth.getUser()
       if (user) {
         const { data, error } = await supabase.from("blogs").select("id").eq("user_id", user.id).limit(1)
-
         if (error) throw error
         if (data && data.length > 0) {
           setIsGenerated(true)
         }
+
+        // Fetch subscription to set initial plan info
+        const { data: subscription, error: subError } = await supabase
+          .from("subscriptions")
+          .select("plan_id")
+          .eq("user_id", user.id)
+          .single()
+        if (subError) throw subError
+        if (subscription && subscription.plan_id) {
+          setUserPlan(subscription.plan_id)
+          const planCreditsMap: { [key: string]: number } = {
+            "trial": 2,
+            "basic": 10,
+            "pro": 30,
+          }
+          setTotalPosts(planCreditsMap[subscription.plan_id] || 0)
+          setTimeRemaining((planCreditsMap[subscription.plan_id] || 0) * 1.5 * 60) // 1.5 minutes per post
+        }
       }
     } catch (error) {
-      console.error("Error checking existing content:", error)
+      console.error("Error checking existing content or subscription:", error)
     }
   }
 
@@ -47,13 +66,13 @@ export default function URLForm() {
       timer = setInterval(() => {
         setTimeRemaining((prevTime) => prevTime - 1)
         setGenerationProgress((prevProgress) => {
-          const newProgress = prevProgress + 100 / (15 * 60) // Increase progress every second
+          const newProgress = prevProgress + 100 / (totalPosts * 1.5 * 60) // Adjust progress based on total posts
           return newProgress > 100 ? 100 : newProgress
         })
       }, 1000)
     }
     return () => clearInterval(timer)
-  }, [isLoading, timeRemaining])
+  }, [isLoading, timeRemaining, totalPosts])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -64,7 +83,6 @@ export default function URLForm() {
     setIsLoading(true)
     setError(null)
     setGenerationProgress(0)
-    setTimeRemaining(15 * 60)
 
     try {
       const {
@@ -111,20 +129,48 @@ export default function URLForm() {
         throw new Error("No content ideas found—add content ideas in /company-database/ideas first")
       }
 
-      console.log(`Generating blog posts for URL: ${url}, User ID: ${user.id}`)
+      // Fetch user's subscription plan and set totalPosts
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .select("plan_id")
+        .eq("user_id", user.id)
+        .single()
+      if (subscriptionError) {
+        throw new Error(`Failed to fetch subscription: ${subscriptionError.message}`)
+      }
+      if (!subscription || !subscription.plan_id) {
+        throw new Error("No active subscription found")
+      }
+
+      const planCreditsMap: { [key: string]: number } = {
+        "trial": 2,
+        "basic": 10,
+        "pro": 30,
+      }
+      const postsToGenerate = planCreditsMap[subscription.plan_id]
+      if (!postsToGenerate) {
+        throw new Error(`Invalid subscription plan: ${subscription.plan_id}`)
+      }
+
+      setUserPlan(subscription.plan_id)
+      setTotalPosts(postsToGenerate)
+      setTimeRemaining(postsToGenerate * 1.5 * 60) // 1.5 minutes per post
+
+      console.log(`Generating ${postsToGenerate} blog posts for URL: ${url}, User ID: ${user.id}, Plan: ${subscription.plan_id}`)
       const newId = uuidv4()
 
       const result = await generateBlog(url, newId, user.id)
 
-      if (!result || result.length === 0) {
-        throw new Error("Failed to generate blog posts")
+      if (result && result.length > 0) {
+        console.log(`Successfully generated ${result.length} blog posts`)
+        setGenerationProgress(100)
+        setIsGenerated(true)
+      } else {
+        throw new Error("No blog posts were generated")
       }
-
-      setGenerationProgress(100)
-      setIsGenerated(true)
     } catch (error: any) {
-      console.error(`Error generating content: ${error.message}`)
-      setError(`Failed to generate content: ${error.message}`)
+      console.error(`Error generating content:`, error)
+      setError(`Failed to generate content: ${error.message || "An unexpected error occurred"}`)
     } finally {
       setIsLoading(false)
     }
@@ -165,6 +211,12 @@ export default function URLForm() {
               </div>
             </div>
 
+            {userPlan && !isLoading && (
+              <div className="text-sm text-orange-700">
+                Your plan: <span className="font-semibold capitalize">{userPlan}</span> ({totalPosts} blog posts)
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl animate-pulse">
                 <div className="flex items-start">
@@ -183,7 +235,7 @@ export default function URLForm() {
                   <div className="flex items-center">
                     <Loader2 className="animate-spin h-5 w-5 text-blue-500 mr-3" />
                     <span className="text-sm font-medium text-blue-800">
-                      Generating blog posts... {generationProgress < 10 ? "First post" : "Remaining posts"}
+                      Generating {totalPosts} blog posts... {generationProgress < 10 ? "First post" : `${Math.floor(generationProgress / (100 / totalPosts)) + 1}/${totalPosts}`}
                     </span>
                   </div>
                   <span className="text-sm font-medium text-blue-800">Time remaining: {formatTime(timeRemaining)}</span>
@@ -224,4 +276,3 @@ export default function URLForm() {
     </div>
   )
 }
-

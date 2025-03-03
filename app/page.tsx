@@ -9,7 +9,6 @@ import Writer from "./components/deep1"
 import EmailSection from "./components/email"
 import WritingSection from "./components/writingsection"
 import FAQ from "./components/faq"
-import Footer from "./components/footer"
 import { ProblemSolution } from "./components/video-section"
 import Pricing from "./components/pricing"
 import ContentProblems from "./components/frustration"
@@ -23,7 +22,9 @@ import FlowSection from "./components/flow-section"
 import IntegrationsSection from "./components/integrations"
 import LanguageScroll from "./components/language"
 import EarlyBirdOffer from "./components/offer"
+import BlogSection from "./components/blogpost"
 import CTASection from "./components/cta"
+import Footer from "./components/foot"
 export default function Page() {
   return (
     <main className="min-h-screen bg-white">
@@ -35,8 +36,8 @@ export default function Page() {
       </div>
       <ProblemSolution/>
       <BlogsocialStats/>
-      <ScrollSection/>
       <ContentProblems/>
+      <BlogSection/>
       <PricingSection/>
       <FlowSection/>
       <IntegrationsSection/>

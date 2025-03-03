@@ -36,31 +36,20 @@ export function Navbar() {
       transition={{ duration: 0.3 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <nav className="bg-white rounded-full shadow-lg px-6 py-2 flex items-center justify-between">
+        <nav className="bg-white rounded-full border border-gray-200 px-6 py-2 flex items-center justify-between">
           <Link href="/" className="flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Blogosocial Logo"
-              width={200}
-              height={40}
-              className="w-auto h-8"
-            />
+            <Image src="/logo.png" alt="Blogosocial Logo" width={200} height={40} className="w-auto h-8" />
           </Link>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <NavLink href="/about">About</NavLink>
-            <NavLink href="/team">Team</NavLink>
-            <NavLink href="/vision">Vision</NavLink>
-            <NavLink href="/mission">Mission</NavLink>
-          </div>
+          
 
           <div className="flex items-center space-x-4">
-            <button className="hidden md:flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full border border-gray-300 hover:border-gray-400">
-              <Image src="/google.svg" alt="Google" width={20} height={20} />
-              <span>Join with Google</span>
-            </button>
-            <Link href="/signup" className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full transition-colors font-medium">
-              Start for free
+           
+            <Link
+              href="#pricing"
+              className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full transition-colors font-medium"
+            >
+              Start Now
             </Link>
           </div>
         </nav>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 
 interface PricingTier {
   name: string
@@ -10,75 +10,105 @@ interface PricingTier {
     monthly: number
     annually: number
   }
-  credits: number
+  blogs: {
+    monthly: number
+    annually: number
+  }
   features: string[]
   isBestValue?: boolean
+  paymentLink: {
+    monthly: string
+    annually: string
+  }
 }
 
 const pricingTiers: PricingTier[] = [
   {
-    name: "Lite",
-    description: "For creators just starting out",
+    name: "Trial",
+    description: "Experience our strategic blogging service with a one-time trial",
     price: {
-      monthly: 815,
-      annually: 815 * 0.5 * 12, // 50% discount for annual
+      monthly: 7,
+      annually: 7,
     },
-    credits: 100,
+    blogs: {
+      monthly: 2,
+      annually: 2,
+    },
     features: [
-      "AI Clips & Captions",
-      "AI Video Generator",
-      "AI Video Resizing to 16:9, 9:16, 1:1",
-      "Full HD 1080p Exports",
-      "Basic TikTok Publishing",
+      "2 professionally written blog posts trial",
+      "Basic SEO optimization",
+      "Content strategy consultation",
+      "Standard support",
     ],
+    paymentLink: {
+      monthly: "https://checkout.dodopayments.com/buy/pdt_bSXwqeQHE0s6c8h6xicza",
+      annually: "https://checkout.dodopayments.com/buy/pdt_bSXwqeQHE0s6c8h6xicza",
+    },
   },
   {
-    name: "Essential",
-    description: "For creators just starting out",
+    name: "Starter",
+    description: "Ideal for growing your online presence",
     price: {
-      monthly: 1759,
-      annually: 1759 * 0.5 * 12,
+      monthly: 74,
+      annually: 59,
     },
-    credits: 300,
+    blogs: {
+      monthly: 10,
+      annually: 10,
+    },
     features: [
-      "Everything in Lite, plus:",
-      "Premium access to 10+ AI Tools",
-      "AI Filter & Silence Removal",
-      "AI Influencer, AI Writer & more",
-      "1-Click Schedule to 7 Social Platforms",
-      "Bring Your Own Content & Schedule",
-      "AI Content Planner",
+      "10 professionally written blog posts per month",
+      "Comprehensive content strategy",
+      "Advanced SEO optimization",
+      "Social media integration",
+      "Monthly performance reports",
+      "Email support",
     ],
+    paymentLink: {
+      monthly: "https://checkout.dodopayments.com/buy/pdt_9Buf4nLX6lHbdbPEchvoI",
+      annually: "https://checkout.dodopayments.com/buy/pdt_Z4Diw1kvIgpbFZs7ljfnu",
+    },
   },
   {
-    name: "Growth",
-    description: "For creators just starting out",
+    name: "Professional",
+    description: "For businesses serious about content marketing",
     price: {
-      monthly: 2102,
-      annually: 2102 * 0.5 * 12,
+      monthly: 147,
+      annually: 119,
     },
-    credits: 600,
+    blogs: {
+      monthly: 30,
+      annually: 30,
+    },
     features: [
-      "Everything in Essential, plus:",
-      "Unlimited Social Scheduling",
-      "Bulk Publishing",
-      "Advanced AI Analytics",
-      "Custom Templates & Brand Kit",
-      "AI Carousel & more",
-      "Priority Support",
+      "30 professionally written blog posts per month",
+      "Advanced content strategy and planning",
+      "Premium SEO tools and optimization",
+      "Full suite of social media integrations",
+      "Content performance analytics",
+      "Dedicated account manager",
+      "Priority support",
     ],
     isBestValue: true,
+    paymentLink: {
+      monthly: "https://checkout.dodopayments.com/buy/pdt_I9yAEB0jgVzOYo8uDiSX3",
+      annually: "https://checkout.dodopayments.com/buy/pdt_zYXfbCA92y3XSQlIKcAZi",
+    },
   },
 ]
 
 export default function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(false)
 
+  const getYearlyTotal = (monthlyPrice: number) => {
+    return monthlyPrice * 12
+  }
+
   return (
-    <section className="bg-white py-16">
+    <section id="pricing" className="bg-white py-16">
       <div className="container mx-auto max-w-6xl px-4">
         <div className="text-center">
-          <h2 className="mb-8 text-3xl font-bold text-gray-900">We've got a plan that's perfect for you.</h2>
+          <h2 className="mb-8 text-3xl font-bold text-gray-900">Strategic Blogging Solutions Tailored for You</h2>
 
           {/* Billing Toggle */}
           <div className="mb-12 inline-flex items-center gap-4 rounded-full bg-gray-100 p-1">
@@ -98,7 +128,9 @@ export default function PricingSection() {
             >
               <span className="flex items-center gap-2">
                 Annually
-                <span className="text-xs font-normal text-emerald-600">(Save up to 50% with annual billing)</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  67% + 20% OFF
+                </span>
               </span>
             </button>
           </div>
@@ -114,7 +146,9 @@ export default function PricingSection() {
               >
                 {tier.isBestValue && (
                   <div className="absolute -top-3 right-4 rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white">
-                    ✨ Best Value
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" /> Best Value
+                    </span>
                   </div>
                 )}
 
@@ -122,27 +156,54 @@ export default function PricingSection() {
                 <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
 
                 <div className="mt-6">
-                  <div className="flex items-baseline">
-                    <span className="text-2xl font-semibold">₹</span>
-                    <span className="text-4xl font-bold">
-                      {isAnnual ? (tier.price.annually / 12).toFixed(0) : tier.price.monthly}
-                    </span>
+                  {tier.name !== "Trial" && !isAnnual && (
+                    <div className="mb-2 text-xs font-medium text-rose-600">NET 67% OFF</div>
+                  )}
+                  {tier.name !== "Trial" && isAnnual && (
+                    <div className="mb-2 text-xs font-medium text-rose-600">NET 67% + EXTRA 20% OFF</div>
+                  )}
+
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-2xl font-semibold">$</span>
+                    <span className="text-4xl font-bold">{isAnnual ? tier.price.annually : tier.price.monthly}</span>
                     <span className="ml-2 text-gray-600">/month</span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">{tier.credits} credits</p>
+
+                  {isAnnual && tier.name !== "Trial" && (
+                    <div className="mt-1 text-sm text-gray-600">${tier.price.annually * 12} billed yearly</div>
+                  )}
+
+                  <p className="mt-1 text-sm text-gray-600">
+                    {isAnnual ? tier.blogs.annually : tier.blogs.monthly} expert-written blogs per month
+                  </p>
                 </div>
 
-                <button
-                  className={`mt-6 w-full rounded-lg py-3 text-sm font-medium transition-all ${
+                <a
+                  href={
+                    tier.name === "Trial"
+                      ? tier.paymentLink.monthly
+                      : isAnnual
+                        ? tier.paymentLink.annually
+                        : tier.paymentLink.monthly
+                  }
+                  className={`mt-6 block w-full rounded-lg py-3 text-center text-sm font-medium transition-all ${
                     tier.isBestValue
                       ? "bg-gray-900 text-white hover:bg-gray-800"
                       : "border border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Upgrade to {tier.name}
-                </button>
+                  {tier.name === "Trial" ? "Start Trial" : `Choose ${tier.name}`}
+                </a>
 
-                <p className="mt-3 text-xs text-gray-500">Billed monthly. Cancel Anytime.</p>
+                <p className="mt-3 text-xs text-gray-500">
+                  {tier.name === "Trial"
+                    ? "One-time payment, no subscription"
+                    : isAnnual
+                      ? "Billed annually. Cancel anytime."
+                      : "Billed monthly. Cancel anytime."}
+                </p>
 
                 <div className="mt-8">
                   <p className="mb-4 text-sm font-medium text-gray-900">Includes:</p>

@@ -75,7 +75,7 @@ export default function FoundersAndProfiles() {
         "Founder MarkupX | Streamers",
         "Multiple startup exits",
       ],
-      avatar: "/placeholder.svg?height=64&width=64",
+      avatar: "/krissmann.jpg",
     },
     {
       name: "Mridul",
@@ -88,7 +88,7 @@ export default function FoundersAndProfiles() {
         "AI/ML Expert",
         "Indie Hacker",
       ],
-      avatar: "/placeholder.svg?height=64&width=64",
+      avatar: "/mridul.jpg",
       avatarBg: "bg-[#FFD7BA]",
     },
   ]

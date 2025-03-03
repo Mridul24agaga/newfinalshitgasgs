@@ -33,6 +33,7 @@ export default function SignUpPage() {
     const formData = new FormData(event.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const username = formData.get("username") as string
 
     if (passwordStrength(password) < 3) {
       setError("Password is too weak. Please include uppercase, lowercase, numbers, and special characters.")
@@ -40,11 +41,14 @@ export default function SignUpPage() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${location.origin}/auth/callback`,
+        data: {
+          username,
+        },
       },
     })
 
@@ -54,8 +58,8 @@ export default function SignUpPage() {
       return
     }
 
-    router.refresh()
-    router.push("/dashboard")
+    setIsLoading(false)
+    setError("Sign up successful! Please check your email to verify your account.")
   }
 
   async function handleGoogleSignUp() {
@@ -127,6 +131,22 @@ export default function SignUpPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                placeholder="Choose a username"
+                aria-label="Username"
+              />
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address

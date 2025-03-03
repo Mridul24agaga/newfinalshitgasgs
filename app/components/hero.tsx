@@ -1,9 +1,36 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import Link from "next/link"
+import { Play, Pause } from "lucide-react"
 
 export function Hero() {
+  const [isPlaying, setIsPlaying] = useState(true)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((error) => {
+        console.error("Autoplay was prevented:", error)
+        setIsPlaying(false)
+      })
+    }
+  }, [])
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play()
+        setIsPlaying(true)
+      } else {
+        videoRef.current.pause()
+        setIsPlaying(false)
+      }
+    }
+  }
+
   return (
     <div className="relative min-h-screen bg-white">
       {/* Background Grid Pattern */}
@@ -28,16 +55,19 @@ export function Hero() {
         </motion.div>
 
         {/* Main Content */}
-        <div className="text-center space-y-8">
+        <div className="text-center space-y-8 sm:space-y-10">
           <motion.h1
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-tight"
           >
-            Strategic Blogging <span className="text-orange-500">Loved by</span>
-            <br />
-            Readers Ranked by <span className="text-orange-500">Google</span>
+            <span className="block">
+              Strategic Blogging <span className="text-orange-500">Loved</span>
+            </span>
+            <span className="block">
+              by Readers <span className="text-orange-500">Ranked</span> by Google
+            </span>
           </motion.h1>
 
           <motion.p
@@ -55,13 +85,19 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <button className="flex items-center gap-2 px-6 py-3 text-gray-600 bg-white rounded-full border border-gray-200 hover:border-gray-300 transition-colors">
+            <Link
+              href="#pricing"
+              className="flex items-center gap-2 px-6 py-3 text-gray-600 bg-white rounded-full border border-gray-200 hover:border-gray-300 transition-colors"
+            >
               <Image src="/google.svg" alt="Google" width={20} height={20} />
-              Join with Google
-            </button>
-            <button className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full transition-colors font-medium">
+              Join with google
+            </Link>
+            <Link
+              href="#pricing"
+              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full transition-colors font-medium"
+            >
               Start for free
-            </button>
+            </Link>
           </motion.div>
 
           {/* Video Section */}
@@ -72,10 +108,42 @@ export function Hero() {
             className="mt-16 max-w-4xl mx-auto"
           >
             <div className="relative rounded-3xl border-4 border-orange-500 aspect-video overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                <span className="text-2xl font-bold text-gray-400">VIDEO</span>
-              </div>
+              <video
+                ref={videoRef}
+                className="absolute inset-0 w-full h-full object-cover"
+                poster="/videoo.mp4"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                autoPlay
+                muted
+                loop
+                playsInline
+              >
+                <source src="/videooo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+
+              <motion.div
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute bottom-4 right-4 cursor-pointer"
+                onClick={handlePlayPause}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center justify-center w-12 h-12 bg-orange-500 rounded-full"
+                >
+                  {isPlaying ? <Pause className="w-6 h-6 text-white" /> : <Play className="w-6 h-6 text-white ml-1" />}
+                </motion.div>
+              </motion.div>
             </div>
+
+            <p className="text-sm text-gray-500 mt-4">
+              Watch how our strategic blogging platform helps businesses rank higher on Google
+            </p>
           </motion.div>
         </div>
       </div>

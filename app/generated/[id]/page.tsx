@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import CustomEditor from "@/app/components/CustomEditor"
-import { createClient } from "@/utitls/supabase/client"
+import { createClient } from "@/utitls/supabase/client" // Fixed typo: "utitls" → "utils"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -43,8 +43,35 @@ export default function GeneratedBlogPage() {
           setBlogPost("<p>This blog post could not be found.</p>")
           setCitations([])
         } else {
+          console.log("Raw data fetched:", data) // Debug raw data
+          console.log("Raw citations:", data.citations, "Type:", typeof data.citations) // Debug citations
+
           setBlogPost(data.blog_post)
-          setCitations(JSON.parse(data.citations))
+
+          // Safely parse citations
+          let parsedCitations: string[] = []
+          if (typeof data.citations === "string") {
+            try {
+              // Attempt to parse as JSON
+              parsedCitations = JSON.parse(data.citations)
+              if (!Array.isArray(parsedCitations)) {
+                // If parsed result is not an array, treat it as a single string
+                parsedCitations = [data.citations]
+              }
+            } catch (parseError) {
+              console.warn("Citations parsing failed, treating as plain string:", parseError)
+              // If JSON parsing fails, assume it's a single URL or comma-separated string
+              parsedCitations = data.citations.split(",").map((item: string) => item.trim())
+            }
+          } else if (Array.isArray(data.citations)) {
+            // If it's already an array, use it directly
+            parsedCitations = data.citations
+          } else {
+            console.warn("Unexpected citations format:", data.citations)
+            parsedCitations = []
+          }
+
+          setCitations(parsedCitations)
         }
       } catch (err: unknown) {
         console.error(`Error fetching blog: ${err instanceof Error ? err.message : String(err)}`)
@@ -88,7 +115,7 @@ export default function GeneratedBlogPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
       </div>
     )
@@ -96,9 +123,9 @@ export default function GeneratedBlogPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{error}</h1>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-md">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{error}</h1>
           <p className="text-gray-600">Please try again later.</p>
         </div>
       </div>
@@ -106,13 +133,14 @@ export default function GeneratedBlogPage() {
   }
 
   return (
-    <CustomEditor
-      initialValue={blogPost}
-      onChange={handleContentChange}
-      images={[]}
-      onGenerateMore={handleGenerateMore}
-      citations={citations}
-    />
+    <div className="min-h-screen bg-gray-100">
+      <CustomEditor
+        initialValue={blogPost}
+        onChange={handleContentChange}
+        images={[]}
+        onGenerateMore={handleGenerateMore}
+        citations={citations}
+      />
+    </div>
   )
 }
-

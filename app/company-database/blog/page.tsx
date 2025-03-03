@@ -5,8 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { ArrowLeft, Globe } from "lucide-react"
-import Image from "next/image"
+import { Menu } from "lucide-react"
 import { Sidebar } from "@/app/components/sidebar"
 
 interface BlogPreference {
@@ -24,6 +23,11 @@ interface BlogPreference {
   call_to_action: string | null
   internal_linking: string | null
   external_linking: string | null
+}
+
+interface Subscription {
+  plan_id: string
+  credits: number
 }
 
 export default function BlogPreferencesPage() {
@@ -45,11 +49,13 @@ export default function BlogPreferencesPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchBlogPreferences = async () => {
+    const fetchData = async () => {
       setIsLoading(true)
       try {
         const {
@@ -60,16 +66,27 @@ export default function BlogPreferencesPage() {
           throw new Error("You must be logged in to view this page.")
         }
 
-        const { data, error } = await supabase.from("blog_preferences").select("*").eq("user_id", user.id).single()
+        const [blogPreferencesResponse, subscriptionResponse] = await Promise.all([
+          supabase.from("blog_preferences").select("*").eq("user_id", user.id).single(),
+          supabase.from("subscriptions").select("*").eq("user_id", user.id).single(),
+        ])
 
-        if (error && error.code !== "PGRST116") {
-          throw new Error(`Failed to fetch blog preferences: ${error.message}`)
+        if (blogPreferencesResponse.error && blogPreferencesResponse.error.code !== "PGRST116") {
+          throw new Error(`Failed to fetch blog preferences: ${blogPreferencesResponse.error.message}`)
         }
 
-        if (data) {
-          setBlogPreference({ ...data, user_id: user.id })
+        if (subscriptionResponse.error) {
+          throw new Error(`Failed to fetch subscription: ${subscriptionResponse.error.message}`)
+        }
+
+        if (blogPreferencesResponse.data) {
+          setBlogPreference({ ...blogPreferencesResponse.data, user_id: user.id })
         } else {
           setBlogPreference((prev) => ({ ...prev, user_id: user.id }))
+        }
+
+        if (subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data)
         }
       } catch (error) {
         setError(error instanceof Error ? error.message : "An unknown error occurred")
@@ -78,7 +95,7 @@ export default function BlogPreferencesPage() {
       }
     }
 
-    fetchBlogPreferences()
+    fetchData()
   }, [supabase])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -106,37 +123,31 @@ export default function BlogPreferencesPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200">
-        <Sidebar />
+      <div
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
+        <Sidebar subscription={subscription} />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button onClick={() => router.back()} className="flex items-center text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              <span>Back</span>
-            </button>
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
 
-            <div className="flex items-center gap-4">
-              <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-                <Globe className="h-5 w-5" />
-                <Image src="/placeholder.svg" alt="US Flag" width={20} height={15} className="rounded" />
-              </button>
-              <button className="bg-[#2EF297] text-black font-medium px-4 py-1.5 rounded-full hover:bg-[#29DB89] transition-colors">
-                Upgrade ✨
-              </button>
-              <button className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="sr-only">User menu</span>👤
-              </button>
-            </div>
-          </div>
-        </header>
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64 transition-all duration-300 ease-in-out">
+        {/* Hamburger Menu */}
+        <button
+          className="fixed top-4 left-4 z-40 md:hidden bg-orange-500 text-white p-2 rounded-md"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">{isSidebarOpen ? "Close menu" : "Open menu"}</span>
+        </button>
 
         {/* Main Content */}
-        <main className="p-6">
+        <main className="p-6 pt-16 md:pt-6">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-900">Create Blog Setting</h1>

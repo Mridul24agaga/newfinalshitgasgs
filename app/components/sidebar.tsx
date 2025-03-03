@@ -8,7 +8,7 @@ import { PenLine, LayoutGrid, Lightbulb, BarChart2, FileText, Database, Home, Ch
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Content Planner", href: "/url-form", icon: PenLine },
+  { name: "Content Planner", href: "/dashboard/summarizer", icon: PenLine },
   {
     name: "Company Database",
     icon: Database,
@@ -21,9 +21,32 @@ const navigation = [
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  subscription: {
+    plan_id: string
+    credits: number
+  } | null
+}
+
+export function Sidebar({ subscription }: SidebarProps) {
   const pathname = usePathname()
   const [openSubmenu, setOpenSubmenu] = useState("Company Database")
+
+  const getCreditsForPlan = (plan: string | undefined) => {
+    switch (plan) {
+      case "basic":
+        return 10
+      case "pro":
+        return 30
+      case "trial":
+        return 2
+      default:
+        return 0 // No plan or unrecognized plan
+    }
+  }
+
+  const totalCredits = subscription ? getCreditsForPlan(subscription.plan_id) : 0
+  const remainingCredits = subscription ? subscription.credits : 0
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
@@ -35,9 +58,11 @@ export function Sidebar() {
       </div>
 
       <div className="px-4 mt-2 mb-8">
-        <button className="w-full bg-orange-500 text-white font-medium py-3.5 rounded-xl hover:bg-orange-600 transition-colors">
-          Get Started
-        </button>
+        <Link href="/dashboard/summarizer">
+          <button className="w-full bg-orange-500 text-white font-medium py-3.5 rounded-xl hover:bg-orange-600 transition-colors">
+            Get Started
+          </button>
+        </Link>
       </div>
 
       <nav className="flex-1 px-4 overflow-y-auto">
@@ -46,13 +71,29 @@ export function Sidebar() {
           const isActive =
             pathname === item.href || (item.subItems && item.subItems.some((subItem) => pathname === subItem.href))
 
+          if (item.href && !item.subItems) {
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
+                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
+                )}
+              >
+                <Icon className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                {item.name}
+              </Link>
+            )
+          }
+
           return (
             <div key={item.name}>
               <div
                 className={cn(
                   "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
                   item.href ? "cursor-pointer" : "cursor-default",
-                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
                 )}
                 onClick={() => item.subItems && setOpenSubmenu(openSubmenu === item.name ? "" : item.name)}
               >
@@ -62,7 +103,7 @@ export function Sidebar() {
                   <ChevronDown
                     className={cn(
                       "ml-auto w-4 h-4 transition-transform",
-                      openSubmenu === item.name ? "transform rotate-180" : "",
+                      openSubmenu === item.name ? "transform rotate-180" : ""
                     )}
                   />
                 )}
@@ -78,7 +119,7 @@ export function Sidebar() {
                         href={subItem.href}
                         className={cn(
                           "flex items-center px-4 py-2 text-[14px] font-medium rounded-lg transition-colors",
-                          isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                          isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
                         )}
                       >
                         <SubIcon className="w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px]" />
@@ -98,22 +139,30 @@ export function Sidebar() {
           <div className="grid grid-cols-2 gap-1">
             <div>
               <p className="text-sm font-medium text-black">Credits</p>
-              <p className="text-sm text-gray-500">SEO Credits</p>
+              <p className="text-sm text-gray-500">Total Credits</p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium text-black">8</p>
-              <p className="text-sm text-gray-500">7</p>
+              <p className="text-sm font-medium text-black">{remainingCredits}</p>
+              <p className="text-sm text-gray-500">{totalCredits}</p>
             </div>
           </div>
           <div className="flex items-center justify-between pt-1">
-            <button className="text-sm text-orange-500 font-medium hover:text-orange-600">Free Trial</button>
-            <button className="bg-black text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1">
+            {subscription?.plan_id ? (
+              <span className="text-sm font-medium text-black">
+                {subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1)} Plan
+              </span>
+            ) : (
+              <span className="text-sm font-medium text-gray-500">No Plan</span>
+            )}
+            <Link
+              href="/upgrade"
+              className="bg-black text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1"
+            >
               Upgrade <span className="text-orange-500">↗</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
     </div>
   )
 }
-
