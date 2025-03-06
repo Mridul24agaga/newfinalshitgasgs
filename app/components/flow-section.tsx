@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Users, Crown, FileSearch, Sparkles, UserCheck, ArrowRight } from "lucide-react"
+import { Users, Crown, FileSearch, BarChart2, UserCheck, ArrowRight } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 
 const flowItems = [
@@ -28,10 +28,10 @@ const flowItems = [
   },
   {
     number: 4,
-    icon: Sparkles,
-    title: "Deep research AI layer",
+    icon: BarChart2,
+    title: "Performance Analytics",
     description:
-      "Advanced AI algorithms that enhance human creativity with data-driven insights and content optimization.",
+      "Comprehensive tracking and analysis of content performance metrics to continuously optimize your strategy and maximize ROI.",
   },
   {
     number: 5,
@@ -56,107 +56,38 @@ export default function FlowSection() {
         />
       </div>
 
-      {/* Quote Bubble */}
-      <div className="absolute left-4 top-8 md:left-12 md:top-12 max-w-[250px] z-10 hidden md:block">
-        <div className="relative">
-          <div className="absolute -left-2 -top-2 h-4 w-4 rotate-45 bg-white border border-gray-300" />
-          <div className="rounded-xl bg-white p-5 text-sm border border-gray-300 shadow-sm">
-            <blockquote className="italic text-gray-700">
-              <p>
-                "AI isn't enough. Creativity needs a human-powered system-brain built for blogs that engage and
-                convert!"
-              </p>
-            </blockquote>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="container mx-auto max-w-6xl relative z-10 pb-16">
+      <div className="container mx-auto max-w-6xl relative z-10">
         <motion.div
-          className="mb-20 text-center"
+          className="mb-16 text-center"
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
         >
+          {/* Pill Label */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-block mb-6"
+          >
+            <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">Our Process</span>
+          </motion.div>
+
+          {/* Heading with Highlight */}
           <h2 id="flow-section-title" className="mb-4 text-3xl md:text-4xl lg:text-5xl font-bold">
-            <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              "Human-Led,{" "}
-            </span>
-            <span className="text-orange-500">AI-Powered</span>
-            <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">"</span>
+            <span className="bg-[#e3ff40] px-3 py-1">5-Layer System</span> for Content Excellence
           </h2>
-          <p className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-700 max-w-3xl mx-auto">
-            Our 5-Layer System Gets Results!
+
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Our comprehensive approach ensures your content stands out and delivers results.
           </p>
-          <div className="mt-6 w-24 h-1 bg-gradient-to-r from-gray-400 to-gray-300 mx-auto rounded-full"></div>
         </motion.div>
 
-        {/* Flow Diagram */}
         <div className="relative">
-          {/* SVG Connectors - Desktop Only */}
-          <div className="hidden lg:block absolute inset-0 pointer-events-none" aria-hidden="true">
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 1000 500"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <path
-                d="M200 120 C 300 120, 350 250, 400 250"
-                stroke="url(#gradient1)"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M600 250 C 650 250, 700 120, 800 120"
-                stroke="url(#gradient2)"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M200 380 C 300 380, 350 250, 400 250"
-                stroke="url(#gradient3)"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M600 250 C 650 250, 700 380, 800 380"
-                stroke="url(#gradient4)"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <defs>
-                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#d1d5db" />
-                  <stop offset="100%" stopColor="#9ca3af" />
-                </linearGradient>
-                <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#9ca3af" />
-                  <stop offset="100%" stopColor="#d1d5db" />
-                </linearGradient>
-                <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#d1d5db" />
-                  <stop offset="100%" stopColor="#9ca3af" />
-                </linearGradient>
-                <linearGradient id="gradient4" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#9ca3af" />
-                  <stop offset="100%" stopColor="#d1d5db" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-
-          {/* Mobile Connectors */}
-          <div
-            className="lg:hidden absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-300 pointer-events-none"
-            aria-hidden="true"
-          />
-
           {/* Flow Items */}
-          <div className="grid gap-8 md:gap-10 md:grid-cols-2 lg:grid-cols-3 mb-16">
+          <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3 mb-8">
             {flowItems.map((item, index) => (
               <motion.div
                 key={item.number}
@@ -173,10 +104,14 @@ export default function FlowSection() {
                 }`}
               >
                 <div
-                  className="rounded-xl bg-white p-8 border border-gray-200 hover:border-gray-300 transition-all duration-300 shadow-sm hover:shadow-md group"
+                  className="rounded-xl bg-white p-6 sm:p-8 border-2 border-gray-100 hover:border-gray-200 transition-all duration-300 shadow-sm hover:shadow-md group h-full"
+                  style={{
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
+                    background: "linear-gradient(to bottom right, rgba(255, 255, 255, 1), rgba(249, 250, 251, 0.8))",
+                  }}
                   tabIndex={0}
                 >
-                  <div className="mb-5 flex items-center gap-4">
+                  <div className="mb-4 flex items-center gap-4">
                     <span className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 text-xl font-bold text-gray-700 group-hover:bg-gray-200 transition-colors">
                       {item.number}
                     </span>
@@ -184,7 +119,7 @@ export default function FlowSection() {
                       <item.icon className="h-5 w-5 text-gray-700" aria-hidden="true" />
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-xl mb-3 group-hover:text-gray-900 transition-colors">
+                  <h3 className="font-semibold text-gray-800 text-xl mb-2 group-hover:text-gray-900 transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-gray-600 group-hover:text-gray-700 transition-colors">{item.description}</p>
@@ -199,14 +134,14 @@ export default function FlowSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.8 }}
-            className="mt-16 flex justify-center lg:justify-end"
+            className="flex justify-end mt-4"
           >
             <Button
               variant="secondary"
-              className="group bg-white text-gray-800 hover:bg-gray-50 border-2 border-gray-300 transition-all duration-300 ease-in-out transform hover:scale-105 px-8 py-4 rounded-full shadow-lg hover:shadow-xl"
+              className="group bg-white text-gray-800 hover:bg-gray-50 border-2 border-gray-200 transition-all duration-300 ease-in-out transform hover:scale-105 px-6 py-3 rounded-full shadow-sm hover:shadow-md"
             >
-              <span className="text-lg font-semibold">Want to Explore more?</span>
-              <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-2" aria-hidden="true" />
+              <span className="text-base font-medium">Want to Explore more?</span>
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               <span className="sr-only">Learn more about our 5-layer system</span>
             </Button>
           </motion.div>

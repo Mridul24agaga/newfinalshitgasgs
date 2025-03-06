@@ -40,6 +40,65 @@ export function Hero() {
         ))}
       </div>
 
+      {/* Decorative Icons - Hidden on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Target icon - top left */}
+        <div className="absolute top-32 left-8 hidden lg:block">
+          <div className="w-16 h-16">
+            <Image
+              src="/marketing.svg"
+              alt="Target icon"
+              width={64}
+              height={64}
+              className="w-full h-full"
+            />
+            {/* Replace with: src="/icons/target-icon.svg" */}
+          </div>
+        </div>
+
+        {/* Support icon - top right */}
+        <div className="absolute top-40 right-8 hidden lg:block">
+          <div className="w-16 h-16">
+            <Image
+              src="/group.svg"
+              alt="Support icon"
+              width={64}
+              height={64}
+              className="w-full h-full"
+            />
+            {/* Replace with: src="/icons/support-icon.svg" */}
+          </div>
+        </div>
+
+        {/* Idea icon - bottom left */}
+        <div className="absolute bottom-32 left-16 hidden lg:block">
+          <div className="w-14 h-14">
+            <Image
+              src="/charts-pc.svg"
+              alt="Idea icon"
+              width={56}
+              height={56}
+              className="w-full h-full"
+            />
+            {/* Replace with: src="/icons/idea-icon.svg" */}
+          </div>
+        </div>
+
+        {/* Analytics icon - bottom right */}
+        <div className="absolute bottom-40 right-16 hidden lg:block">
+          <div className="w-14 h-14">
+            <Image
+              src="/idea.svg"
+              alt="Analytics icon"
+              width={56}
+              height={56}
+              className="w-full h-full"
+            />
+            {/* Replace with: src="/icons/analytics-icon.svg" */}
+          </div>
+        </div>
+      </div>
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         {/* Warning Banner */}
         <motion.div

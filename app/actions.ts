@@ -1,11 +1,12 @@
-"use server"
+"use server";
+
 import { tavily } from "@tavily/core";
 import { v4 as uuidv4 } from "uuid";
 import OpenAI from "openai";
 import { writeFileSync, readFileSync } from "fs";
-import { createClient } from "@/utitls/supabase/server"; // Fixed typo in "utitls" to "utils"
+import { createClient } from "@/utitls/supabase/server";
 
-// Define formatUtils directly in this file for consistent Markdown formatting
+// Markdown formatting utils (unchanged)
 const formatUtils = {
   convertMarkdownToHtml: (markdown: string) => {
     let html = markdown
@@ -68,7 +69,7 @@ const formatUtils = {
   }
 };
 
-// Define types for clarity
+// Define types (unchanged)
 interface TavilySearchResult {
   url: string;
   rawContent?: string;
@@ -137,7 +138,13 @@ interface ArticleResult {
   timestamp: string;
 }
 
-// Tavily client setup
+interface Subscription {
+  plan_id: string;
+  credits: number;
+  user_id: string;
+}
+
+// Tavily and OpenAI setup (unchanged)
 const TAVILY_API_KEY: string = process.env.TAVILY_API_KEY || "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";
 console.log(`Tavily API Key in use: ${TAVILY_API_KEY || "Not set! Check your env or hardcoded fallback."}`);
 const tavilyClient = tavily({ apiKey: TAVILY_API_KEY });
@@ -157,7 +164,7 @@ const openai = new OpenAI({
   defaultHeaders: { "api-key": process.env.AZURE_OPENAI_API_KEY as string },
 });
 
-// Helper Functions
+// Helper Functions (unchanged except for callAzureOpenAI temperature tweak)
 async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<string> {
   try {
     console.log(`Calling OpenAI with prompt (first 200 chars): ${prompt.slice(0, 200)}...`);
@@ -218,59 +225,22 @@ async function scrapeWithTavily(url: string): Promise<string> {
 }
 
 async function scrapeInitialUrlWithTavily(url: string): Promise<string> {
-  console.log(`\nScraping initial URL with Tavily: ${url}`);
+  console.log(`\nGenerating initial summary for URL with OpenAI: ${url}`);
+  const prompt = `
+    Yo, man, I got this URL: ${url}. Tavily’s dropping the ball on scraping it right, so based on just the URL, give me a chill, human-like summary of what the site’s probably about—up to 10,000 chars. No stiff AI vibes, just riff like you’re guessing it over a beer. Split paragraphs with newlines, keep it real.
+    Return plain text.
+  `;
   try {
-    const tavilyResponse = await tavilyClient.search(url, {
-      searchDepth: "basic",
-      max_results: 1,
-      include_raw_content: true,
-    });
-    const initialData = tavilyResponse.results[0] as TavilySearchResult;
-    if (initialData?.rawContent) {
-      console.log(`Tavily raw content (first 200 chars): ${initialData.rawContent.slice(0, 200)}...`);
-      const cleanText = initialData.rawContent
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 10000);
-      console.log(`Cleaned Tavily content (first 200 chars): ${cleanText.slice(0, 200)}...`);
-      return cleanText || "No content available";
-    } else {
-      console.warn("Tavily raw content not available, falling back to summary...");
-      const fallbackData = tavilyResponse.results[0] as TavilySearchResult;
-      if (fallbackData?.content) {
-        const cleanText = fallbackData.content
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 10000);
-        console.log(`Cleaned fallback content (first 200 chars): ${cleanText.slice(0, 200)}...`);
-        return cleanText || "No content available";
-      }
-      throw new Error("Tavily failed to fetch any usable content for the URL");
-    }
+    const summary = await callAzureOpenAI(prompt, 4000);
+    const cleanSummary = summary
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 10000);
+    console.log(`OpenAI-generated summary (first 200 chars): ${cleanSummary.slice(0, 200)}...`);
+    return cleanSummary || "No content available";
   } catch (error: any) {
-    console.error(`Error scraping ${url} with Tavily:`, error);
-    if (error.response?.status === 401 || error.status === 401) {
-      console.log("Tavily 401 on initial scrape—using OpenAI fallback.");
-      const fallbackPrompt = `
-        Tavily's choking with a 401 on ${url}. From the URL alone, give me a natural summary of what the site might be about (up to 10,000 chars). Keep it buddy-like, no AI stiffness.
-        Return plain text with paragraphs split by newlines.
-      `;
-      const fallbackContent = await callAzureOpenAI(fallbackPrompt, 4000);
-      const cleanFallbackText = fallbackContent.replace(/\s+/g, " ").trim().slice(0, 10000);
-      console.log(`Fallback summarized content (first 200 chars): ${cleanFallbackText.slice(0, 200)}...`);
-      return cleanFallbackText || "No content available";
-    }
-    const fallbackPrompt = `
-      Based on this URL alone, whip up a natural, human-like summary of what the site's main content might be (up to 10,000 chars). Act like an expert spilling insights to a pal—no stiff AI phrases.
-      URL: ${url}
-      Return plain text with newlines between paragraphs.
-    `;
-    const fallbackContent = await callAzureOpenAI(fallbackPrompt, 4000);
-    const cleanFallbackText = fallbackContent.replace(/\s+/g, " ").trim().slice(0, 10000);
-    console.log(`Fallback summarized content (first 200 chars): ${cleanFallbackText.slice(0, 200)}...`);
-    return cleanFallbackText || "No content available";
+    console.error(`Error generating summary for ${url} with OpenAI:`, error);
+    return "No content available";
   }
 }
 
@@ -402,6 +372,67 @@ async function factCheckContent(content: string, sources: string[]): Promise<str
     .trim();
 }
 
+async function humanizeContent(content: string, coreTopic: string): Promise<string> {
+  const intros = [
+    "Alright, mate, grab a coffee—here’s the deal with ${coreTopic}...",
+    "So I’m sitting at this shitty diner, thinking about ${coreTopic}, right...",
+    "Man, you won’t believe the crap I’ve seen with ${coreTopic}—check this...",
+    "Picture this: me, half-asleep, figuring out ${coreTopic} over pancakes...",
+    "Yo, pull up a chair—${coreTopic}’s got some wild shit to unpack..."
+  ];
+  const randomIntro = intros[Math.floor(Math.random() * intros.length)].replace("${coreTopic}", coreTopic);
+  const prompt = `
+    Start with this hook: "${randomIntro}". Then take this blog content and turn it into a convo with my best mate—like we’re chilling at a diner, swapping stories about "${coreTopic}". Keep all the info, structure, and Markdown intact (title, subheadings, lists, links), but make it sound like me talking—rough edges, a little messy, full of personality. Ditch AI stiffness—no "in summary" or perfect grammar vibes. Throw in some "man, you know," a random "huh," or a quick tangent like "reminds me of that time I screwed up my own setup." Preserve every detail, just make it flow like I’m riffing off the cuff. Markdown rules from formatUtils.convertMarkdownToHtml:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines between (use \n\n)
+    - Lists: - or * for bullets, ml-6 mb-2 list-disc, blank lines between (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
+    Content: "${content}"
+    Return pure Markdown, no HTML or extra bolding.
+  `;
+  const humanizedContent = await callAzureOpenAI(prompt, 16384);
+  console.log(`Humanized content (first 200 chars): ${humanizedContent.slice(0, 200)}...`);
+  return humanizedContent
+    .replace(/<[^>]+>/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+    .replace(/\n{1,}/g, "\n\n")
+    .trim();
+}
+
+async function hardcoreHumanizeContent(content: string, coreTopic: string): Promise<string> {
+  const intros = [
+    "Fuck me, ${coreTopic} hit me like a truck last night—listen up, asshole...",
+    "I’m three beers deep, ranting about ${coreTopic}—you gotta hear this shit...",
+    "Yo, ${coreTopic} fucked me up once—here’s the messy truth, mate...",
+    "Picture me smashed, yelling about ${coreTopic} at 3 a.m.—wild ride...",
+    "Holy shit, ${coreTopic}’s a beast—grab a drink, this is nuts..."
+  ];
+  const randomIntro = intros[Math.floor(Math.random() * intros.length)].replace("${coreTopic}", coreTopic);
+  const prompt = `
+    Start with this hook: "${randomIntro}". This blog’s on "${coreTopic}". I’m smashed at 3 a.m., rewriting this for my buddy—no AI bullshit like "yes," "indeed," or "in conclusion." Keep every damn word, structure, Markdown (#, ##, ###, -, *, [text](url)), but make it me, loud as fuck, sloppy, and wild—screaming “listen up, asshole!” or “I fucked this up so bad once.” Smash any smooth tone or consistency—add random shit like “this dude at the gas station told me…” or “fuck, I forgot this part earlier.” No polish, no fancy transitions—just my drunk, unhinged rant. Rules:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines (use \n\n)
+    - Lists: - or * for bullets, ml-6 mb-2 list-disc, blank lines (use \n\n)
+    - Links: [text](url), text-blue-600 hover:underline
+    Content: "${content}"
+    Markdown only—no HTML, no AI flags, total chaos.
+  `;
+  const hardcoreContent = await callAzureOpenAI(prompt, 16384);
+  console.log(`Hardcore humanized (first 200): ${hardcoreContent.slice(0, 200)}...`);
+  return hardcoreContent
+    .replace(/<[^>]+>/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
+    .replace(/\n{1,}/g, "\n\n")
+    .replace(/yes/gi, "hell yeah")
+    .replace(/in summary/gi, "anyway, fuck it")
+    .replace(/indeed/gi, "no shit")
+    .trim();
+}
+
 async function generateClassyTitle(coreTopic: string, userId: string, supabase: any): Promise<string> {
   const now = new Date().toISOString().split("T")[0];
   const randomNudge = Math.random().toString(36).substring(2, 7);
@@ -479,18 +510,18 @@ async function generateClassyTitle(coreTopic: string, userId: string, supabase: 
   `;
 
   const prompt = `
-    You're a headline wizard crafting a blog title for "${coreTopic}" on ${now} (ID: ${randomNudge}). Use this data to make it classy, sharp, and totally fresh:
+    You’re my buddy who’s killer at headlines, crafting one for "${coreTopic}" on ${now} (ID: ${randomNudge}). Use this data to make it punchy, real, and a little rough around the edges—up to 70 chars. No AI vibes like "Unlock" or "Ultimate," just something I’d yell across the bar:
     - Blog Preferences: Tone: ${blogPreferences.preferred_tone}, Keywords: ${blogPreferences.preferred_keywords.join(", ")}
     - Brand Info: "${brandInfo.slice(0, 500)}"
     - Latest Content Idea: "${contentIdeaInfo.slice(0, 500)}"
     - Audience: "${audienceSettings.target_audience}" aiming to "${audienceSettings.audience_goals}" (tone: ${audienceSettings.tone_preference})
     - Top Keyword: ${topKeyword}
     - Past Titles to Avoid: ${pastTitles}
-    Create a slick, attention-grabbing title (up to 70 chars) that's unique—no repeats from past titles. Throw in a wild twist or fresh angle. Return plain text.
+    Make it unique, maybe a quirky hook or a “dude, check this” angle. Plain text, no fluff.
   `;
   const title = await callAzureOpenAI(prompt, 100);
-  console.log(`Generated classy title: ${title}`);
-  return title.trim() || `Fresh Take on ${coreTopic} - ${now}`;
+  console.log(`Generated raw title: ${title}`);
+  return title.trim() || `Yo, ${coreTopic} Just Got Real - ${now}`;
 }
 
 async function reformatExistingPosts(supabase: any, userId: string): Promise<void> {
@@ -573,8 +604,8 @@ export async function analyzeWebsiteAndGenerateArticle(
     console.log(`Reading brand data for user ${userId}:`, brandData);
 
     const initialData = await scrapeInitialUrlWithTavily(url);
-    if (!initialData || initialData === "No content available") throw new Error("Failed to scrape initial URL with Tavily.");
-    console.log(`Initial content (first 200 chars): ${initialData.slice(0, 200)}...`);
+    if (!initialData || initialData === "No content available") throw new Error("Failed to generate initial summary with OpenAI.");
+    console.log(`Initial summary (first 200 chars): ${initialData.slice(0, 200)}...`);
 
     const metaDescription = await generateMetaDescription(url, initialData);
     const searchQueries = await generateSearchQueries(metaDescription, "temporary topic placeholder");
@@ -605,7 +636,7 @@ export async function analyzeWebsiteAndGenerateArticle(
       .join("\n\n")
       .slice(0, 2000);
     const topicPrompt = `
-      Based on this combined content from scraped research, figure out the main topic. Keep it broad but specific, like you're sussing it out for a mate—don't assume it's one thing, just vibe it out from the text.
+      Based on this combined content from scraped research, figure out the main topic. Keep it broad but specific, like you're sussing it out for a mate—don’t assume it's one thing, just vibe it out from the text.
       Content: "${combinedResearchContent}"
       Return plain text.
     `;
@@ -668,27 +699,29 @@ export async function analyzeWebsiteAndGenerateArticle(
     const researchSummary = scrapedDataParsed.researchSummary || "No research summary available";
 
     const awesomeTitle = await generateClassyTitle(coreTopic, userId, supabase);
-    const metaDescriptionFromResearch = await generateMetaDescription(url, researchSummary);
-
     const pastTitles = existingBlogs?.map((blog: any) => blog.title)?.join(", ") ?? "None";
 
+    const chunk1Intros = [
+      "Alright, mate, ${coreTopic} hit me like a brick—here’s the real shit...",
+      "So I’m at this dive bar, ${coreTopic} on my mind—listen up, man...",
+      "Fuck, ${coreTopic}’s wild—gonna spill the practical juice now...",
+      "Picture me pacing, ${coreTopic} buzzing—here’s how it goes down...",
+      "Yo, ${coreTopic} slapped me awake—time to lay it out, bro..."
+    ];
+    const randomChunk1Intro = chunk1Intros[Math.floor(Math.random() * chunk1Intros.length)].replace("${coreTopic}", coreTopic);
+
     const firstChunkPrompt = `
-      Here's JSON from ${url} on ${now} (ID: ${randomNudge}). Write a 1300+ word blog chunk on "${coreTopic}"—practical, actionable strategies, like coaching a newbie over brunch. Use brand info from JSON. Don't repeat past posts or titles: "${existingPosts.join("\n\n").slice(
-        0,
-        2000
-      )}", Titles: ${pastTitles}. Weave in keywords: ${targetKeywords.join(", ")}. Use *only* Markdown: title (# ${awesomeTitle}), 6-8 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Add a real-world example—small biz crushing it. Use internal links (${internalLinks.join(
-      ", "
-    )}) where they fit. Do not use any HTML—just pure Markdown as per formatUtils.convertMarkdownToHtml rules:
-    - H1 (#): text-5xl font-bold
-    - H2 (##): text-4xl font-bold
-    - H3 (###): text-3xl font-bold
-    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
-    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
-    - Links: [text](url), text-blue-600 hover:underline
-    JSON: "${scrapedDataRaw.slice(0, 6000)}..."
-      Return full text starting with title in Markdown format.
+      Start with this hook: "${randomChunk1Intro}". JSON from ${url} on ${now} (ID: ${randomNudge}). Rant me a 2000+ word blog chunk on "${coreTopic}"—practical tricks, like I’m hyped at a bar unloading on my mate. Go long—ramble like I’m hyped, no cutting corners! Use brand info from JSON, no repeats of old posts: "${existingPosts.join("\n\n").slice(0, 2000)}", Titles: ${pastTitles}. Keywords ${targetKeywords.join(", ")} slip in sloppy—no SEO robot crap. Markdown: (# ${awesomeTitle}), 6-8 subheadings (## or ### when I’m loud), no bolding (**text** to - text with \n\n), blank lines (use \n\n), lists with - or *. Add a real fuck-up—say my cousin Tony trashed his setup, paint everywhere or some shit. Links ${internalLinks.join(", ")} where I’d point. Rules:
+        - H1 (#): text-5xl font-bold
+        - H2 (##): text-4xl font-bold
+        - H3 (###): text-3xl font-bold
+        - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines (use \n\n)
+        - Lists: - or * for bullets, ml-6 mb-2 list-disc, blank lines (use \n\n)
+        - Links: [text](url), text-blue-600 hover:underline
+      JSON: "${scrapedDataRaw.slice(0, 6000)}..."
+      Full Markdown, title first—raw, no AI polish.
     `;
-    let firstChunk = await callAzureOpenAI(firstChunkPrompt, 5500);
+    let firstChunk = await callAzureOpenAI(firstChunkPrompt, 8000);
     firstChunk = firstChunk
       .replace(/<[^>]+>/g, "")
       .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
@@ -698,24 +731,27 @@ export async function analyzeWebsiteAndGenerateArticle(
     console.log(`First Chunk (first 200 chars): ${firstChunk.slice(0, 200)}...`);
     console.log(`First Chunk Word Count: ${firstWordCount}`);
 
+    const chunk2Intros = [
+      "Okay, ${coreTopic}’s got some insane stories—buckle up, man...",
+      "I’m half-lit by a fire, ${coreTopic} spinning in my head—here we go...",
+      "Shit, ${coreTopic} took me for a ride—gonna tell ya the wild stuff...",
+      "So I’m stumbling home, ${coreTopic} on my brain—crazy tales incoming...",
+      "Fuck yeah, ${coreTopic}’s nuts—time for the unhinged shit, bro..."
+    ];
+    const randomChunk2Intro = chunk2Intros[Math.floor(Math.random() * chunk2Intros.length)].replace("${coreTopic}", coreTopic);
+
     const secondChunkPrompt = `
-      JSON from ${url} on ${now} (ID: ${randomNudge}). Write a 1300+ word blog chunk on "${coreTopic}"—wild stories, insider secrets, like campfire tales to a buddy. Use brand info freshly—don't repeat practical stuff or past posts: "${existingPosts.join(
-        "\n\n"
-      ).slice(0, 2000)}", Titles: ${pastTitles}. Keywords: ${targetKeywords.join(", ")}. Markdown: title (# ${
-      awesomeTitle
-    } - Part 2), 6-8 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Blend short zingers with long narratives. Add YouTube (${
-      youtubeVideo || "none"
-    }) if it fits. Use internal links (${internalLinks.join(", ")}) in new spots. Do not use any HTML—just pure Markdown as per formatUtils.convertMarkdownToHtml rules:
-    - H1 (#): text-5xl font-bold
-    - H2 (##): text-4xl font-bold
-    - H3 (###): text-3xl font-bold
-    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
-    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
-    - Links: [text](url), text-blue-600 hover:underline
-    JSON: "${scrapedDataRaw.slice(0, 6000)}..."
-      Return full text starting with title in Markdown format.
+      Start with this hook: "${randomChunk2Intro}". JSON from ${url} on ${now} (ID: ${randomNudge}). Now a 2000+ word chunk on "${coreTopic}"—wild tales, like I’m trashed unloading on my buddy by a fire. Go long—ramble like I’m hyped, no cutting corners! Use brand info fresh, no practical repeats or old posts: "${existingPosts.join("\n\n").slice(0, 2000)}", Titles: ${pastTitles}. Keywords ${targetKeywords.join(", ")} stumble in sloppy. Markdown: (# ${awesomeTitle} - Part 2), 6-8 subheadings (## or ### if I ramble), no bolding (**text** to - text with \n\n), blank lines (use \n\n), lists with - or *. Toss in me fucking it up—say I trashed my own gig once, total chaos. YouTube (${youtubeVideo || "none"}) if it fits, like “this vid pulled me out.” Links ${internalLinks.join(", ")} where I’d jab. Rules:
+        - H1 (#): text-5xl font-bold
+        - H2 (##): text-4xl font-bold
+        - H3 (###): text-3xl font-bold
+        - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines (use \n\n)
+        - Lists: - or * for bullets, ml-6 mb-2 list-disc, blank lines (use \n\n)
+        - Links: [text](url), text-blue-600 hover:underline
+      JSON: "${scrapedDataRaw.slice(0, 6000)}..."
+      Full Markdown, title first—unhinged, no AI vibes.
     `;
-    let secondChunk = await callAzureOpenAI(secondChunkPrompt, 5500);
+    let secondChunk = await callAzureOpenAI(secondChunkPrompt, 8000);
     secondChunk = secondChunk
       .replace(/<[^>]+>/g, "")
       .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
@@ -725,24 +761,27 @@ export async function analyzeWebsiteAndGenerateArticle(
     console.log(`Second Chunk (first 200 chars): ${secondChunk.slice(0, 200)}...`);
     console.log(`Second Chunk Word Count: ${secondWordCount}`);
 
+    const mergeIntros = [
+      "Alright, ${coreTopic}’s a rollercoaster—here’s the full damn ride...",
+      "So ${coreTopic} hit me from both ends—gonna mash it all up now...",
+      "Fuck, ${coreTopic}’s got layers—time to slam this shit together...",
+      "Picture ${coreTopic} as a bar fight—here’s the whole messy brawl...",
+      "Yo, ${coreTopic}’s epic—buckle up for the big-ass combo, man..."
+    ];
+    const randomMergeIntro = mergeIntros[Math.floor(Math.random() * mergeIntros.length)].replace("${coreTopic}", coreTopic);
+
     const mergePrompt = `
-      Got two 1300+ word chunks on "${coreTopic}" from ${now} (ID: ${randomNudge}). Merge into a 2600+ word post that flows—like a marathon chat with a friend. Keep all words from both, add 400-600 fresh words (insights, examples). Avoid repeating past titles: ${pastTitles}. Markdown: title (# ${
-      awesomeTitle
-    }), 14-16 subheadings (## Subheading, ### Sub-subheading if needed), no bolding (convert any bold **text** to bullet points - text with \n\n), normal font weight, end with (# Conclusion), blank lines between paragraphs (use \n\n), and bullet points for lists (- or *). Keywords: ${targetKeywords.join(
-      ", "
-    )}. Use internal links: ${internalLinks.join(", ")}. Add YouTube if it fits: "${youtubeVideo || "none"}". End with (# References): ${references.join(
-      ", "
-    )}. Use *only* Markdown as per formatUtils.convertMarkdownToHtml rules:
-    - H1 (#): text-5xl font-bold
-    - H2 (##): text-4xl font-bold
-    - H3 (###): text-3xl font-bold
-    - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
-    - Lists: Use - or * for bullets, ml-6 mb-2 list-disc, with blank lines between items (use \n\n)
-    - Links: [text](url), text-blue-600 hover:underline
-    Chunks:
-      Chunk 1 (practical): "${firstChunk}"
-      Chunk 2 (stories): "${secondChunk}"
-      Return full text starting with title in Markdown format.
+      Start with this hook: "${randomMergeIntro}". Got two 2000+ word chunks on "${coreTopic}" from ${now} (ID: ${randomNudge}). Mash ‘em into a 4000+ word rant—like I’m on a bender, yammering all night at my buddy. Keep every word from both, add 800–1000 more—wild tangent like “this random prick at the garage once told me…” or “shit, forgot this crazy bit earlier.” No repeats of past titles: ${pastTitles}. Markdown: (# ${awesomeTitle}), 14-16 subheadings (## or ### when I’m loud), no bolding (**text** to - text with \n\n), blank lines (use \n\n), lists with - or *. Keywords ${targetKeywords.join(", ")} slip in sloppy—no SEO vibes. Links ${internalLinks.join(", ")} where I’d point. YouTube (${youtubeVideo || "none"}) if it fits, like “oh yeah, saw this vid too.” End with (# Conclusion) and (# References): ${references.join(", ")}. Rules:
+        - H1 (#): text-5xl font-bold
+        - H2 (##): text-4xl font-bold
+        - H3 (###): text-3xl font-bold
+        - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines (use \n\n)
+        - Lists: - or * for bullets, ml-6 mb-2 list-disc, blank lines (use \n\n)
+        - Links: [text](url), text-blue-600 hover:underline
+      Chunks:
+        Chunk 1 (practical): "${firstChunk}"
+        Chunk 2 (stories): "${secondChunk}"
+      Full Markdown, title first—rough, messy, no AI smoothness.
     `;
     let mergedBlogPost = await callAzureOpenAI(mergePrompt, 16384);
     mergedBlogPost = mergedBlogPost
@@ -750,21 +789,44 @@ export async function analyzeWebsiteAndGenerateArticle(
       .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
       .replace(/\n{1,}/g, "\n\n")
       .trim();
-    const mergedWordCount = mergedBlogPost.split(/\s+/).filter(Boolean).length;
+    let finalWordCount = mergedBlogPost.split(/\s+/).filter(Boolean).length;
     console.log(`Merged Blog Post (first 200 chars): ${mergedBlogPost.slice(0, 200)}...`);
-    console.log(`Merged Word Count: ${mergedWordCount}`);
+    console.log(`Merged Word Count Before Extension: ${finalWordCount}`);
 
-    const formattedBlogPost = formatUtils.convertMarkdownToHtml(mergedBlogPost);
-    console.log(`Formatted Blog Post (first 200 chars): ${formattedBlogPost.slice(0, 200)}...`);
+    if (finalWordCount < 2500) {
+      const extendPrompt = `
+        This blog on "${coreTopic}" is ${finalWordCount} words—too short! Add 800+ more words of fresh, human-like content—think quirky examples or a “man, you won’t believe this” story. Go long—ramble like I’m hyped, no cutting corners! Keep it Markdown, no bolding (**text** becomes - text with \n\n), blank lines between paragraphs (use \n\n), lists with - or *. Match the vibe of this chunk:
+        Content: "${mergedBlogPost.slice(0, 6000)}..."
+        Return the *full* updated blog post with the new stuff woven in naturally.
+      `;
+      mergedBlogPost = await callAzureOpenAI(extendPrompt, 16384);
+      finalWordCount = mergedBlogPost.split(/\s+/).filter(Boolean).length;
+      console.log(`Extended blog to ${finalWordCount} words`);
+    }
 
-    const finalBlogPost = await factCheckContent(formattedBlogPost, [url, ...allSearchUrls, youtubeVideo || ""]);
-    console.log(`Fact-checked Blog Post (first 200 chars): ${finalBlogPost.slice(0, 200)}...`);
-    const finalWordCount = finalBlogPost.split(/\s+/).filter(Boolean).length;
-    console.log(`Final Word Count: ${finalWordCount}`);
+    const factCheckedBlogPost = await factCheckContent(mergedBlogPost, [url, ...allSearchUrls, youtubeVideo || ""]);
+    console.log(`Fact-checked Blog Post (first 200 chars): ${factCheckedBlogPost.slice(0, 200)}...`);
+    const factCheckedWordCount = factCheckedBlogPost.split(/\s+/).filter(Boolean).length;
+    console.log(`Fact-checked Word Count: ${factCheckedWordCount}`);
 
-    const seoScore = await calculateSEOScore(finalBlogPost);
-    const headings = await extractHeadings(finalBlogPost);
-    const keywords = await extractKeywords(finalBlogPost, coreTopic);
+    const humanizedBlogPost = await humanizeContent(factCheckedBlogPost, coreTopic);
+    console.log(`First Humanized Blog Post (first 200 chars): ${humanizedBlogPost.slice(0, 200)}...`);
+
+    const finalBlogPost = await hardcoreHumanizeContent(humanizedBlogPost, coreTopic);
+    finalWordCount = finalBlogPost.split(/\s+/).filter(Boolean).length;
+
+    const alignedBlogPost = finalBlogPost
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/([^\n])\n([^\n])/g, "$1\n\n$2")
+      .replace(/^-\s/gm, "- ")
+      .trim();
+
+    console.log(`Aligned & Hardcore Humanized Blog Post (first 200 chars): ${alignedBlogPost.slice(0, 200)}...`);
+    console.log(`Final Word Count after Alignment: ${finalWordCount}`);
+
+    const seoScore = await calculateSEOScore(alignedBlogPost);
+    const headings = await extractHeadings(alignedBlogPost);
+    const keywords = await extractKeywords(alignedBlogPost, coreTopic);
 
     console.log(`SEO Score: ${seoScore}/100`);
     console.log(`Headings: ${JSON.stringify(headings)}`);
@@ -775,7 +837,7 @@ export async function analyzeWebsiteAndGenerateArticle(
     await reformatExistingPosts(supabase, userId);
 
     return {
-      blogPost: finalBlogPost,
+      blogPost: alignedBlogPost,
       seoScore,
       headings,
       keywords,
@@ -790,15 +852,23 @@ export async function analyzeWebsiteAndGenerateArticle(
   }
 }
 
-export async function generateBlog(url: string, id: string, userId: string): Promise<BlogPost[]> {
+export async function generateBlog(url: string): Promise<BlogPost[]> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("You need to be authenticated to generate blog posts, bro!");
+  }
+
+  const userId = user.id;
   const blogPosts: BlogPost[] = [];
   const firstRevealDate = new Date();
 
   try {
+    // Fetch subscription details
     const { data: subscription, error: subscriptionError } = await supabase
       .from("subscriptions")
-      .select("plan_id")
+      .select("plan_id, credits")
       .eq("user_id", userId)
       .single();
 
@@ -811,20 +881,30 @@ export async function generateBlog(url: string, id: string, userId: string): Pro
       throw new Error("No active subscription plan found for this user");
     }
 
+    // Define plan limits
     const planCreditsMap: { [key: string]: number } = {
       "trial": 2,
-      "basic": 10,
+      "starter": 10,
       "pro": 30,
+      "professional": 30,
     };
 
-    const totalPosts = planCreditsMap[subscription.plan_id] || 0;
-    if (!totalPosts) {
+    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0;
+    if (!maxPosts) {
       throw new Error(`Invalid subscription plan: ${subscription.plan_id}`);
     }
 
-    console.log(`User ${userId} has plan '${subscription.plan_id}' with ${totalPosts} credits.`);
+    // Check available credits
+    const availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts;
+    if (availableCredits <= 0) {
+      throw new Error("No credits remaining to generate blog posts!");
+    }
 
-    for (let i = 0; i < totalPosts; i++) {
+    // Calculate how many posts we can generate
+    const postsToGenerate = Math.min(maxPosts, availableCredits);
+    console.log(`User ${userId} has plan '${subscription.plan_id}' with ${availableCredits} credits. Generating ${postsToGenerate} posts.`);
+
+    for (let i = 0; i < postsToGenerate; i++) {
       try {
         const result = await analyzeWebsiteAndGenerateArticle(url, userId);
         const blogId = uuidv4();
@@ -852,7 +932,7 @@ export async function generateBlog(url: string, id: string, userId: string): Pro
         }
 
         blogPosts.push(blogData);
-        console.log(`Generated and saved blog post ${i + 1} of ${totalPosts} for user ${userId}`);
+        console.log(`Generated and saved blog post ${i + 1} of ${postsToGenerate} for user ${userId}`);
       } catch (error: any) {
         console.error(`Error generating post ${i + 1}:`, error);
         const generationError: GenerationError = new Error(
@@ -863,9 +943,23 @@ export async function generateBlog(url: string, id: string, userId: string): Pro
       }
     }
 
+    // Deduct credits after successful generation
+    const newCredits = availableCredits - postsToGenerate;
+    const { error: updateError } = await supabase
+      .from("subscriptions")
+      .update({ credits: newCredits })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error(`Failed to deduct credits: ${updateError.message}`);
+      throw new Error(`Failed to update credits: ${updateError.message}`);
+    }
+
+    console.log(`Deducted ${postsToGenerate} credits. New balance: ${newCredits}`);
+
     await reformatExistingPosts(supabase, userId);
 
-    console.log(`Successfully generated and saved ${totalPosts} blog posts for user ${userId}`);
+    console.log(`Successfully generated and saved ${postsToGenerate} blog posts for user ${userId}`);
     return blogPosts;
   } catch (error: any) {
     console.error(`Failed to generate blogs for ${url} and user ${userId}:`, error);

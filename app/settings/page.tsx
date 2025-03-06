@@ -28,6 +28,10 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [subscription, setSubscription] = useState<{
+    plan_id: string
+    credits: number
+  } | null>(null)
 
   // Fetch user and data on mount
   useEffect(() => {
@@ -45,6 +49,25 @@ export default function SettingsPage() {
         return
       }
       setUser(user)
+
+      // Fetch subscription data
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .select("plan_id, credits")
+        .eq("user_id", user.id)
+        .single()
+
+      if (subscriptionError) {
+        if (subscriptionError.code !== "PGRST116") {
+          console.error("Subscription fetch error:", subscriptionError)
+        }
+        setSubscription(null)
+      } else if (subscriptionData) {
+        setSubscription({
+          plan_id: subscriptionData.plan_id,
+          credits: subscriptionData.credits || 0,
+        })
+      }
 
       // Fetch audience settings
       const { data: audienceData, error: audienceError } = await supabase
@@ -202,10 +225,11 @@ export default function SettingsPage() {
         <span className="sr-only">{mobileMenuOpen ? "Close menu" : "Open menu"}</span>
       </button>
       <div
-        className={`fixed left-0 top-0 h-full transition-transform duration-300 ease-in-out transform ${
+        className={`fixed left-0 top-0 h-full w-64 transition-transform duration-300 ease-in-out transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 z-30 bg-white shadow-lg`}
       >
+        <Sidebar subscription={subscription} />
       </div>
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setMobileMenuOpen(false)} />

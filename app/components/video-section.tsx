@@ -1,96 +1,111 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
+import { motion } from "framer-motion"
 
 export function ProblemSolution() {
   return (
-    <div className="max-w-7xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4 py-16">
       {/* Headings Section */}
-      <div className="mb-16 relative max-w-2xl mx-auto text-center">
-        <div className="relative inline-block">
-          <img
-            src="arrow.png"
-            alt="Arrow"
-            className="absolute -top-12 -left-16 w-16 h-16"
-          />
-          <h2 className="text-4xl md:text-5xl font-bold mb-2">Your problem <br/></h2>
-        </div>
-        <div className="relative inline-block">
-          <h2 className="text-4xl md:text-5xl font-bold"> Our solution</h2>
-          <img
-            src="arrow.png"
-            alt="Arrow"
-            className="absolute -right-20 -bottom-8 w-16 h-16 transform rotate-180"
-          />
-        </div>
+      <div className="mb-16 relative max-w-3xl mx-auto text-center">
+        {/* Pill Label */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="inline-block mb-6"
+        >
+          <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+            Problems & Solutions
+          </span>
+        </motion.div>
+
+        {/* Heading with Highlight */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="text-4xl md:text-5xl font-bold"
+        >
+          <span className="bg-[#e3ff40] px-3 py-1">Your problem</span>
+          <span className="mx-2">Our solution</span>
+        </motion.h2>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between gap-16">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2 }}
+        className="flex flex-col md:flex-row justify-between gap-16"
+      >
         {/* Problems Column */}
         <div className="w-full md:w-[45%] space-y-6">
-          <div className="flex items-start gap-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="flex items-start gap-4"
+          >
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-              <Image
-                src="/123.jpg"
-                alt="User avatar"
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-              />
+              <Image src="/123.jpg" alt="User avatar" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex-grow">
               <p className="text-[17px] text-gray-800 leading-snug">
                 "I'm tired of spending hours writing blogs that don't rank."
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex items-start gap-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="flex items-start gap-4"
+          >
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-              <Image
-                src="/124.jpg"
-                alt="User avatar"
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-              />
+              <Image src="/124.jpg" alt="User avatar" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex-grow">
               <p className="text-[17px] text-gray-800 leading-snug">
                 "AI-generated content feels robotic and lacks personality."
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex items-start gap-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="flex items-start gap-4"
+          >
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-              <Image
-                src="/125.jpg"
-                alt="User avatar"
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-              />
+              <Image src="/125.jpg" alt="User avatar" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex-grow">
               <p className="text-[17px] text-gray-800 leading-snug">
                 "Most content agencies don't understand my industry."
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Solutions Column */}
-        <div className="w-full md:w-[55%]">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+          className="w-full md:w-[55%]"
+        >
           <div className="bg-[#FF7733] rounded-[32px] p-8">
             <div className="mb-8">
-              <Image
-                src="/logo.png"
-                alt="blogosocial logo"
-                width={150}
-                height={40}
-                className="h-8 w-auto"
-              />
+              <Image src="/logo.png" alt="blogosocial logo" width={150} height={40} className="h-8 w-auto" />
             </div>
             <div className="space-y-6">
               <div className="flex items-start gap-3">
@@ -138,12 +153,21 @@ export function ProblemSolution() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* CTAs */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-        <button className="px-6 py-3 bg-white text-gray-800 rounded-full border-2 border-[#FF7733] hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.6 }}
+        className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12"
+      >
+        <Link
+          href="/#pricing"
+          className="px-6 py-3 bg-white text-gray-800 rounded-full border-2 border-[#FF7733] hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
+        >
           See How it Works
           <svg
             width="20"
@@ -168,11 +192,11 @@ export function ProblemSolution() {
               strokeLinejoin="round"
             />
           </svg>
-        </button>
+        </Link>
         <button className="px-6 py-3 bg-[#FF7733] text-white rounded-full hover:bg-[#FF6620] transition-colors font-medium">
           Outrank Competitors
         </button>
-      </div>
+      </motion.div>
     </div>
   )
 }

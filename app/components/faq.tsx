@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Plus, Minus } from "lucide-react"
+import { Plus, X } from "lucide-react"
 
 const faqs = [
   {
@@ -38,51 +38,75 @@ export default function FAQSection() {
   return (
     <section className="max-w-4xl mx-auto px-4 py-16">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Have Questions?</h2>
-        <p className="text-gray-600">If you can't find what you're looking for, feel free to reach out!</p>
+        {/* Pill Label */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="inline-block mb-6"
+        >
+          <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">Common Questions</span>
+        </motion.div>
+
+        {/* Heading with Highlight */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="text-4xl md:text-5xl font-bold mb-4 tracking-tight"
+        >
+          <span className="bg-[#e3ff40] px-3 py-1">Frequently</span> asked questions!
+        </motion.h2>
       </div>
 
-      <div className="space-y-4">
-        {faqs.map((faq, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white"
-          >
-            <button
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
-              className="w-full px-6 py-4 flex items-center justify-between text-left"
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100"
+      >
+        <div className="space-y-6">
+          {faqs.map((faq, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 * index + 0.3 }}
+              className="border-b border-gray-100 last:border-0"
             >
-              <span className="font-medium text-gray-900">
-                <span className="text-[#FF8A00] mr-2">{index + 1}.</span>
-                {faq.question}
-              </span>
-              <span className="ml-4 flex-shrink-0">
-                {openIndex === index ? (
-                  <Minus className="h-5 w-5 text-[#FF8A00]" />
-                ) : (
-                  <Plus className="h-5 w-5 text-[#FF8A00]" />
-                )}
-              </span>
-            </button>
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="w-full py-4 flex items-center justify-between text-left group"
+              >
+                <span className="font-medium text-gray-900 text-lg">{faq.question}</span>
+                <span className="ml-4 flex-shrink-0">
+                  {openIndex === index ? (
+                    <X className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <Plus className="h-5 w-5 text-gray-500" />
+                  )}
+                </span>
+              </button>
 
-            <AnimatePresence>
-              {openIndex === index && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="px-6 pb-4 text-gray-600">{faq.answer}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        ))}
-      </div>
+              <AnimatePresence>
+                {openIndex === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="pb-4 text-gray-600 leading-relaxed">{faq.answer}</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </section>
   )
 }

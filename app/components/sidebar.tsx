@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { PenLine, LayoutGrid, Lightbulb, BarChart2, FileText, Database, Home, ChevronDown } from "lucide-react"
@@ -50,11 +51,8 @@ export function Sidebar({ subscription }: SidebarProps) {
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
-      <div className="flex items-center gap-3 p-5">
-        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-          <span className="text-white font-bold">T</span>
-        </div>
-        <span className="text-xl font-semibold text-black">Texta.ai</span>
+      <div className="flex items-center p-5">
+        <Image src="/logo.png" alt="Texta.ai Logo" width={120} height={32} className="object-contain" />
       </div>
 
       <div className="px-4 mt-2 mb-8">
@@ -78,7 +76,7 @@ export function Sidebar({ subscription }: SidebarProps) {
                 href={item.href}
                 className={cn(
                   "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
-                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
+                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
                 )}
               >
                 <Icon className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px]" />
@@ -93,7 +91,7 @@ export function Sidebar({ subscription }: SidebarProps) {
                 className={cn(
                   "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
                   item.href ? "cursor-pointer" : "cursor-default",
-                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
+                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
                 )}
                 onClick={() => item.subItems && setOpenSubmenu(openSubmenu === item.name ? "" : item.name)}
               >
@@ -103,7 +101,7 @@ export function Sidebar({ subscription }: SidebarProps) {
                   <ChevronDown
                     className={cn(
                       "ml-auto w-4 h-4 transition-transform",
-                      openSubmenu === item.name ? "transform rotate-180" : ""
+                      openSubmenu === item.name ? "transform rotate-180" : "",
                     )}
                   />
                 )}
@@ -119,7 +117,7 @@ export function Sidebar({ subscription }: SidebarProps) {
                         href={subItem.href}
                         className={cn(
                           "flex items-center px-4 py-2 text-[14px] font-medium rounded-lg transition-colors",
-                          isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50"
+                          isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
                         )}
                       >
                         <SubIcon className="w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px]" />
@@ -166,3 +164,4 @@ export function Sidebar({ subscription }: SidebarProps) {
     </div>
   )
 }
+

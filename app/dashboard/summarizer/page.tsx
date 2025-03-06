@@ -1,12 +1,67 @@
 "use client"
 
-import { ChevronDown, Menu } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Menu } from "lucide-react"
 import URLForm from "./url-form"
 import { Sidebar } from "@/app/components/layout/sidebar"
-import { useState } from "react"
+import { createClient } from "@/utitls/supabase/client"
 
 export default function SummarizerPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [subscription, setSubscription] = useState<{
+    plan_id: string
+    credits: number
+  } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        // Get the current user
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          setIsLoading(false)
+          return
+        }
+
+        // Fetch subscription data from the subscriptions table
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("plan_id, credits")
+          .eq("user_id", user.id)
+          .single()
+
+        if (error) {
+          if (error.code === "PGRST116") {
+            console.log("No subscription found for user")
+          } else {
+            console.error("Error fetching subscription:", error.message)
+          }
+          setSubscription(null)
+        } else if (data) {
+          setSubscription({
+            plan_id: data.plan_id,
+            credits: data.credits || 0,
+          })
+        }
+      } catch (err) {
+        console.error("Unexpected error while fetching subscription:", err)
+        setSubscription(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchSubscription()
+  }, [supabase])
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -25,16 +80,14 @@ export default function SummarizerPage() {
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
-        <Sidebar />
+        <Sidebar subscription={subscription} />
       </div>
 
       {/* Main content */}
       <div className="flex-1 md:ml-64 transition-all duration-300 ease-in-out">
         <div className="bg-[#F8F9FB] min-h-screen">
           <header className="bg-[#F9FAFB] sticky top-0 z-30">
-            <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 py-4 mt-14 md:mt-0">
-              
-            </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-8 py-4 mt-14 md:mt-0"></div>
           </header>
 
           <main className="p-4 md:p-8 pt-20 md:pt-8">

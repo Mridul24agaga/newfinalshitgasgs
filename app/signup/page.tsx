@@ -41,25 +41,40 @@ export default function SignUpPage() {
       return
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
-        data: {
-          username,
+    try {
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+          },
         },
-      },
-    })
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        throw error
+      }
+
+      // If sign-up is successful, directly sign in the user
+      if (data.user) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (signInError) {
+          throw signInError
+        }
+
+        // Redirect to dashboard or home page after successful sign-in
+        router.push("/dashboard")
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign up")
       setIsLoading(false)
-      return
     }
-
-    setIsLoading(false)
-    setError("Sign up successful! Please check your email to verify your account.")
   }
 
   async function handleGoogleSignUp() {
@@ -67,7 +82,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/dashboard`, // Direct to dashboard instead of auth callback
       },
     })
 

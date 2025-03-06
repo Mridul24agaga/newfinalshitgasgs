@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Sparkles } from "lucide-react"
+import { Check, Mail, Calendar, ArrowRight } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface PricingTier {
   name: string
@@ -100,36 +101,65 @@ const pricingTiers: PricingTier[] = [
 export default function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(false)
 
-  const getYearlyTotal = (monthlyPrice: number) => {
-    return monthlyPrice * 12
-  }
-
   return (
-    <section id="pricing" className="bg-white py-16">
+    <section id="pricing" className="bg-white py-20">
       <div className="container mx-auto max-w-6xl px-4">
         <div className="text-center">
-          <h2 className="mb-8 text-3xl font-bold text-gray-900">Strategic Blogging Solutions Tailored for You</h2>
+          {/* Pill Label */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-block mb-6"
+          >
+            <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">Pricing Plans</span>
+          </motion.div>
 
-          {/* Billing Toggle */}
-          <div className="mb-12 inline-flex items-center gap-4 rounded-full bg-gray-100 p-1">
+          {/* Heading with Highlight */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="mb-4 text-4xl font-bold"
+          >
+            <span className="bg-[#e3ff40] px-3 py-1">Strategic Blogging</span> Solutions
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mx-auto mb-10 max-w-2xl text-lg text-gray-600"
+          >
+            Choose the perfect plan to elevate your content marketing strategy and grow your online presence.
+          </motion.p>
+
+          {/* Billing Toggle - Updated with border instead of shadow */}
+          <div className="mb-12 inline-flex items-center gap-0 rounded-full border border-gray-200 p-1">
             <button
               onClick={() => setIsAnnual(false)}
-              className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
-                !isAnnual ? "bg-white shadow-sm" : "text-gray-600"
+              className={`rounded-full px-6 py-2.5 text-sm font-medium transition-all ${
+                !isAnnual
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "text-gray-600 hover:text-gray-900 border border-transparent"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsAnnual(true)}
-              className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
-                isAnnual ? "bg-white shadow-sm" : "text-gray-600"
+              className={`rounded-full px-6 py-2.5 text-sm font-medium transition-all ${
+                isAnnual
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "text-gray-600 hover:text-gray-900 border border-transparent"
               }`}
             >
               <span className="flex items-center gap-2">
                 Annually
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                  67% + 20% OFF
+                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                  SAVE 20%
                 </span>
               </span>
             </button>
@@ -140,42 +170,48 @@ export default function PricingSection() {
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative rounded-2xl border p-8 transition-all hover:border-gray-300 ${
-                  tier.isBestValue ? "border-gray-300 shadow-lg" : "border-gray-200"
+                className={`relative overflow-hidden rounded-2xl border bg-white p-8 transition-all hover:border-orange-300 hover:shadow-lg ${
+                  tier.isBestValue
+                    ? "border-orange-300 shadow-xl"
+                    : tier.name === "Starter"
+                      ? "border-orange-200 shadow-md"
+                      : "border-gray-200"
                 }`}
               >
                 {tier.isBestValue && (
-                  <div className="absolute -top-3 right-4 rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white">
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" /> Best Value
-                    </span>
+                  <div className="absolute -right-12 top-6 rotate-45 bg-orange-500 px-12 py-1 text-xs font-medium text-white">
+                    BEST VALUE
                   </div>
                 )}
 
-                <h3 className="text-xl font-bold text-gray-900">{tier.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{tier.name}</h3>
                 <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
 
                 <div className="mt-6">
                   {tier.name !== "Trial" && !isAnnual && (
-                    <div className="mb-2 text-xs font-medium text-rose-600">NET 67% OFF</div>
+                    <div className="mb-2 text-xs font-medium text-orange-600">NET 67% OFF</div>
                   )}
                   {tier.name !== "Trial" && isAnnual && (
-                    <div className="mb-2 text-xs font-medium text-rose-600">NET 67% + EXTRA 20% OFF</div>
+                    <div className="mb-2 text-xs font-medium text-orange-600">NET 67% + EXTRA 20% OFF</div>
                   )}
 
                   <div className="flex items-baseline justify-center">
-                    <span className="text-2xl font-semibold">$</span>
-                    <span className="text-4xl font-bold">{isAnnual ? tier.price.annually : tier.price.monthly}</span>
-                    <span className="ml-2 text-gray-600">/month</span>
+                    <span className="text-2xl font-semibold text-gray-900">$</span>
+                    <span className="text-5xl font-bold text-gray-900">
+                      {isAnnual ? tier.price.annually : tier.price.monthly}
+                    </span>
+                    {tier.name !== "Trial" && <span className="ml-2 text-gray-600">/month</span>}
                   </div>
 
                   {isAnnual && tier.name !== "Trial" && (
                     <div className="mt-1 text-sm text-gray-600">${tier.price.annually * 12} billed yearly</div>
                   )}
 
-                  <p className="mt-1 text-sm text-gray-600">
-                    {isAnnual ? tier.blogs.annually : tier.blogs.monthly} expert-written blogs per month
-                  </p>
+                  {tier.name === "Trial" && (
+                    <div className="mt-3 inline-flex items-center rounded-full bg-orange-100 px-3 py-1">
+                      <span className="text-sm font-medium text-orange-700">One-time payment (not a subscription)</span>
+                    </div>
+                  )}
                 </div>
 
                 <a
@@ -186,20 +222,22 @@ export default function PricingSection() {
                         ? tier.paymentLink.annually
                         : tier.paymentLink.monthly
                   }
-                  className={`mt-6 block w-full rounded-lg py-3 text-center text-sm font-medium transition-all ${
+                  className={`mt-8 block w-full rounded-lg py-3.5 text-center text-sm font-medium transition-all ${
                     tier.isBestValue
-                      ? "bg-gray-900 text-white hover:bg-gray-800"
-                      : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      ? "bg-orange-500 text-white hover:bg-orange-600"
+                      : tier.name === "Starter"
+                        ? "border-2 border-orange-500 text-orange-600 hover:bg-orange-50"
+                        : "border border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {tier.name === "Trial" ? "Start Trial" : `Choose ${tier.name}`}
+                  {tier.name === "Trial" ? "Get One-Time Trial" : `Choose ${tier.name}`}
                 </a>
 
                 <p className="mt-3 text-xs text-gray-500">
                   {tier.name === "Trial"
-                    ? "One-time payment, no subscription"
+                    ? "One-time payment of $7 - No subscription, no recurring charges"
                     : isAnnual
                       ? "Billed annually. Cancel anytime."
                       : "Billed monthly. Cancel anytime."}
@@ -210,7 +248,7 @@ export default function PricingSection() {
                   <ul className="space-y-3">
                     {tier.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-gray-900" />
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -218,6 +256,74 @@ export default function PricingSection() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Enhanced Custom Solution Section */}
+          <div className="mt-16 overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100 shadow-lg">
+            <div className="flex flex-col md:flex-row">
+              {/* Left Content */}
+              <div className="p-8 md:p-10 text-left md:w-2/3">
+                <div className="inline-flex items-center justify-center rounded-full bg-orange-100 px-4 py-1.5 mb-4">
+                  <span className="text-sm font-medium text-orange-600">Enterprise Solutions</span>
+                </div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-4">Need a custom solution?</h3>
+                <p className="text-lg text-gray-700 mb-6 max-w-xl">
+                  Our enterprise plans are tailored to your specific needs with dedicated support and custom content
+                  strategies.
+                </p>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Custom Publishing Schedule</h4>
+                      <p className="text-gray-600">Tailored content calendar based on your industry and goals</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
+                      <Check className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Dedicated Strategy Team</h4>
+                      <p className="text-gray-600">Work with experts who understand your business needs</p>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href="mailto:info@blogosocial.com"
+                  className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-3.5 text-base font-medium text-white transition-all hover:bg-orange-600 shadow-md hover:shadow-lg group"
+                >
+                  Contact Sales
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </a>
+              </div>
+
+              {/* Right Content - Contact Options */}
+              <div className="bg-white p-8 md:p-10 md:w-1/3 flex flex-col justify-center border-t md:border-t-0 md:border-l border-orange-200">
+                <h4 className="font-semibold text-gray-900 mb-6">Get in touch with us:</h4>
+
+                <div className="space-y-5">
+                  <a
+                    href="mailto:info@blogosocial.com"
+                    className="flex items-center gap-3 text-gray-700 hover:text-orange-600 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Mail className="h-5 w-5 text-orange-500" />
+                    </div>
+                    <span>info@blogosocial.com</span>
+                  </a>
+
+                  <div className="pt-5 mt-5 border-t border-gray-100">
+                    <p className="text-sm text-gray-500">Typically responds within 24 hours during business days</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
