@@ -95,7 +95,7 @@ export default function IntegrationsSection() {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6"
           >
-            <span className="bg-[#e3ff40] px-3 py-1">AI Automation</span> across 500+ apps
+            <span className="bg-[#e3ff40] px-3 py-1">Integration</span> Across Multiple Platform
           </motion.h2>
 
           <motion.p
@@ -105,7 +105,7 @@ export default function IntegrationsSection() {
             transition={{ delay: 0.2 }}
             className="text-xl text-gray-600 max-w-3xl mx-auto"
           >
-            See how we help your team solve today's biggest challenges.
+           Auto Sync with popular CMS
           </motion.p>
         </div>
 
@@ -131,7 +131,7 @@ export default function IntegrationsSection() {
                   <h3 className="text-xl font-semibold mb-2">{integration.name}</h3>
                   <p className="text-gray-600 mb-6 flex-grow">{integration.description}</p>
                   <a
-                    href="#"
+                    href="/#pricing"
                     className="inline-flex items-center text-gray-900 font-medium group-hover:text-gray-600 transition-colors"
                   >
                     Get started
