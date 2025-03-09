@@ -6,7 +6,6 @@ import CustomEditor from "@/app/components/CustomEditor";
 import { createClient } from "@/utitls/supabase/client";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { postBlogsToWordpress } from "@/app/dashboard/summarizer/wordpress";
 
 export default function GeneratedBlogPage() {
   const params = useParams();
