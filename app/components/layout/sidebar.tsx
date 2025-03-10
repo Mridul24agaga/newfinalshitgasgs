@@ -5,7 +5,19 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { PenLine, LayoutGrid, Lightbulb, BarChart2, FileText, Database, Home, ChevronDown } from "lucide-react"
+import {
+  PenLine,
+  LayoutGrid,
+  Lightbulb,
+  BarChart2,
+  FileText,
+  Database,
+  Home,
+  ChevronDown,
+  Link2,
+  Globe,
+  ExternalLink,
+} from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -18,6 +30,13 @@ const navigation = [
       { name: "Brand Profile", href: "/company-database/brand", icon: FileText },
       { name: "Blog Settings", href: "/company-database/blog", icon: LayoutGrid },
       { name: "Audience and Keywords", href: "/settings", icon: BarChart2 },
+    ],
+  },
+  {
+    name: "Integrations",
+    icon: Link2,
+    subItems: [
+      { name: "GetMoreBacklinks", href: "/integrations", icon: ExternalLink },
     ],
   },
 ]
@@ -111,6 +130,30 @@ export function Sidebar({ subscription }: SidebarProps) {
                   {item.subItems.map((subItem) => {
                     const SubIcon = subItem.icon
                     const isSubActive = pathname === subItem.href
+
+                    // Special case for GetMoreBacklinks to show it's auto-publishing blogs
+                    if (subItem.name === "GetMoreBacklinks") {
+                      return (
+                        <Link
+                          key={subItem.name}
+                          href={subItem.href}
+                          className={cn(
+                            "flex flex-col px-4 py-2 text-[14px] font-medium rounded-lg transition-colors",
+                            isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                          )}
+                        >
+                          <div className="flex items-center">
+                            <SubIcon className="w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                            {subItem.name}
+                            <span className="ml-auto text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                              Active
+                            </span>
+                          </div>
+                          <div className="ml-9 mt-1 text-xs text-gray-500">Auto-publishing blogs to external sites</div>
+                        </Link>
+                      )
+                    }
+
                     return (
                       <Link
                         key={subItem.name}

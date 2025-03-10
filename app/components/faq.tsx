@@ -3,6 +3,15 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Plus, X } from "lucide-react"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-saira",
+})
 
 const faqs = [
   {
@@ -36,7 +45,7 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section className="max-w-4xl mx-auto px-4 py-16">
+    <section className={`${saira.className} max-w-4xl mx-auto px-4 py-16`}>
       <div className="text-center mb-12">
         {/* Pill Label */}
         <motion.div
@@ -56,7 +65,7 @@ export default function FAQSection() {
           transition={{ delay: 0.1 }}
           className="text-4xl md:text-5xl font-bold mb-4 tracking-tight"
         >
-          <span className="bg-[#e3ff40] px-3 py-1">Frequently</span> asked questions!
+          <span className="bg-[#FF9626] px-3 py-1 text-white">Frequently</span> asked questions!
         </motion.h2>
       </div>
 

@@ -1,4 +1,13 @@
 import { Twitter, Linkedin, CheckCircle2 } from "lucide-react"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-saira", // Add variable for CSS custom property
+})
 
 interface ProfileCardProps {
   name: string
@@ -119,9 +128,9 @@ export default function FoundersAndProfiles() {
   ]
 
   return (
-    <div>
+    <div className={saira.className}>
       {/* Founders Section */}
-      <div className="bg-[#FFF1E6] py-16 text-center">
+      <div className="bg-[#fff] py-16 text-center">
         <div className="container mx-auto max-w-4xl px-4">
           <h1 className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
             <span className="text-[#FF8A3D]">By</span> <span className="text-black">Founders</span>{" "}

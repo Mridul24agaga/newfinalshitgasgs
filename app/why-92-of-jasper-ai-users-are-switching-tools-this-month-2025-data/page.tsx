@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/footer"
+import Footer from "@/app/components/foot"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -77,20 +77,15 @@ export default function BlogPost() {
         <div className="container mx-auto px-4">
           <div className="h-16 sm:h-20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/example-logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
+              <Image src="/logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+             
               <Link
-                href="/blogs"
-                className="text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                href="/#pricing"
+                className="text-xs sm:text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors px-4 py-2 rounded-full"
               >
-                Blogs
-              </Link>
-              <Link
-                href="/auth-form"
-                className="text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors px-4 py-2 rounded-full"
-              >
-                Login
+                Get Started
               </Link>
             </div>
           </div>
@@ -110,13 +105,14 @@ export default function BlogPost() {
               <time dateTime={publishDate}>Published on {new Date(publishDate).toLocaleDateString()}</time> • 15 min
               read
             </p>
-            <figure className="relative rounded-lg overflow-hidden mb-8">
+            <figure className="relative h-72 sm:h-96 md:h-[500px] rounded-lg overflow-hidden mb-8">
               <Image
                 src="/77.png"
                 alt="AI Content Exodus Infographic"
-                width={1200}
-                height={630}
-                className="w-full h-auto object-contain"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
+                className="object-cover object-center"
               />
             </figure>
           </header>
@@ -126,15 +122,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Executive Summary: The $14B AI Content Reckoning
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/78.png"
                   alt="AI Content Reckoning Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <p className="text-gray-700">
                 The AI writing boom of 2023-2024 saw a massive surge in businesses relying on tools like Jasper.ai for
                 fast content generation. However, by 2025, 92% of Jasper.ai users have started migrating to
@@ -159,15 +155,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 1: The Jasper.ai Mass Exodus – Data-Driven Insights
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/79.png"
                   alt="Jasper.ai Mass Exodus Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The 2025 AI Penalty Epidemic</h3>
               <p className="text-gray-700 mb-4">
                 Google's transparency report on AI content penalties reveals a stark trend:
@@ -216,15 +212,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Section 2: The 7 Fatal Flaws of Pure AI Tools</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/80.png"
                   alt="7 Fatal Flaws of Pure AI Tools Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
 
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">Flaw 1: Expertise Void (89% Penalty Risk)</h3>
               <p className="text-gray-700 mb-2">Jasper.ai's generic outputs lack:</p>
@@ -285,15 +281,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 3: Blogosocial's 5-Layer Rescue Framework
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/81.png"
                   alt="Blogosocial's 5-Layer Rescue Framework Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
 
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">Layer 1: Expert Validation</h3>
               <ul className="list-disc pl-6 text-gray-700 mb-4">
@@ -331,15 +327,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Conclusion: The Future of AI Content Is Hybrid</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/82.png"
                   alt="The Future of AI Content Is Hybrid Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <p className="text-gray-700 mb-4">
                 Google's 2025 HCU didn't kill AI – it killed lazy content strategies. The brands winning SEO today are
                 those that integrate human expertise with AI efficiency.
@@ -358,7 +354,7 @@ export default function BlogPost() {
                 <li>Watch Ex-Jasper User Webinar</li>
               </ul>
 
-              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-6">
+              <blockquote className="border-l-4 border-orange-500 pl-4 italic text-gray-700 my-6">
                 "We didn't ditch AI—we upgraded it. Blogosocial made us Google-proof."
                 <footer className="text-sm mt-2">– CMO, Series B SaaS Company</footer>
               </blockquote>
@@ -367,7 +363,7 @@ export default function BlogPost() {
         </article>
 
         <aside className="max-w-3xl mx-auto mt-12">
-          <div className="bg-blue-100 rounded-3xl p-8">
+          <div className="bg-orange-100 rounded-3xl p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-black">Ready to upgrade your AI content?</h2>
@@ -375,7 +371,7 @@ export default function BlogPost() {
                   Get our free Jasper Migration Audit and see how your content stacks up against Google's latest
                   standards.
                 </p>
-                <div className="inline-flex items-center gap-2 bg-blue-200 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="inline-flex items-center gap-2 bg-orange-200 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">
                   <svg
                     className="w-3 h-3"
                     viewBox="0 0 12 12"
@@ -397,7 +393,7 @@ export default function BlogPost() {
               <div className="relative self-end md:self-center">
                 <Link
                   href="/jasper-migration-audit"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Get Your Free Audit
                 </Link>

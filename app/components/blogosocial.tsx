@@ -1,4 +1,15 @@
+"use client"
+
 import ChartSection from "./Chartsection"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-saira", // Add variable for CSS custom property
+})
 
 const data = [
   { name: "Nov 2024", value: 8 },
@@ -9,7 +20,7 @@ const data = [
 
 export default function BlogsocialStats() {
   return (
-    <section className="w-full bg-[#FFF1E6] py-16 mt-16 font-['Inter',sans-serif]">
+    <section className={`${saira.className} w-full bg-[#fd921c] py-16 mt-16`}>
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
           <ChartSection data={data} />
@@ -17,7 +28,7 @@ export default function BlogsocialStats() {
           {/* Stats Cards */}
           <div className="space-y-8">
             <h3 className="text-2xl font-bold text-gray-800 leading-snug">
-              Users of Blogsocial have reported a boost in their productivity and success rates.
+              Users of Blogosocial have reported a boost in their productivity and success rates.
             </h3>
             <div className="space-y-6">
               {[

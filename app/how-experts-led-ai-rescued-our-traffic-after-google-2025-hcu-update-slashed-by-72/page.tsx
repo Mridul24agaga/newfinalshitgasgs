@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/footer"
+import Footer from "@/app/components/foot"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -74,7 +74,7 @@ export default function BlogPost() {
         <div className="container mx-auto px-4">
           <div className="h-16 sm:h-20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/example-logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
+              <Image src="/logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <Link
@@ -84,10 +84,10 @@ export default function BlogPost() {
                 Blogs
               </Link>
               <Link
-                href="/auth-form"
-                className="text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors px-4 py-2 rounded-full"
+                href="/#pricing"
+                className="text-xs sm:text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors px-4 py-2 rounded-full"
               >
-                Login
+                Get Started
               </Link>
             </div>
           </div>
@@ -107,12 +107,13 @@ export default function BlogPost() {
               <time dateTime={publishDate}>Published on {new Date(publishDate).toLocaleDateString()}</time> • 15 min
               read
             </p>
-            <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden mb-8">
+            <figure className="relative h-72 sm:h-96 md:h-[500px] rounded-lg overflow-hidden mb-8">
               <Image
                 src="/12.png"
                 alt="Expert-Led AI Recovery Case Study"
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
                 className="object-cover object-center"
               />
             </figure>
@@ -123,13 +124,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Summary: Surviving Google's Helpful Content Apocalypse
               </h2>
-              <Image
-                src="/13.png"
-                alt="Placeholder image for Summary: Surviving Google's Helpful Content Apocalypse"
-                width={600}
-                height={300}
-                className="mt-6 rounded-lg mx-auto"
-              />
+              <div className="w-full mt-6 mb-6">
+                <Image
+                  src="/13.png"
+                  alt="Placeholder image for Summary: Surviving Google's Helpful Content Apocalypse"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl"
+                />
+              </div>
               <p className="text-gray-700">
                 When Google's 2025 Helpful Content Update (HCU) wiped out 72% of our organic traffic overnight, it felt
                 like a gut punch. Years of hard work, engaging content, and traffic we had built up—gone. We weren't
@@ -159,15 +162,17 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 1: The HCU Massacre - Why AI-Only Content Died in 2025
               </h2>
-              <Image
-                src="/14.png"
-                alt="Placeholder image for Section 1: The HCU Massacre - Why AI-Only Content Died in 2025"
-                width={600}
-                height={300}
-                className="mt-6 rounded-lg mx-auto"
-              />
+              <div className="w-full mt-6 mb-6">
+                <Image
+                  src="/14.png"
+                  alt="Placeholder image for Section 1: The HCU Massacre - Why AI-Only Content Died in 2025"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl"
+                />
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">How the 2025 HCU Changed Everything</h3>
-              
+
               <p className="text-gray-700">
                 If you relied solely on AI-generated content before 2025, Google probably took a sledgehammer to your
                 rankings. Their Helpful Content Update (HCU) introduced stricter criteria for content evaluation,
@@ -175,16 +180,17 @@ export default function BlogPost() {
               </p>
               <ul className="list-none pl-6 space-y-2 text-gray-700 mt-4">
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Experience – Does the author have real-world expertise?
+                  <span className="text-orange-500 mr-2">🔹</span> Experience – Does the author have real-world
+                  expertise?
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Expertise – Is the content backed by credentials?
+                  <span className="text-orange-500 mr-2">🔹</span> Expertise – Is the content backed by credentials?
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Authoritativeness – Does it cite credible sources?
+                  <span className="text-orange-500 mr-2">🔹</span> Authoritativeness – Does it cite credible sources?
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Trustworthiness – Are the claims factual and
+                  <span className="text-orange-500 mr-2">🔹</span> Trustworthiness – Are the claims factual and
                   peer-reviewed?
                 </li>
               </ul>
@@ -213,7 +219,7 @@ export default function BlogPost() {
               </table>
 
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">The Day Our Traffic Crashed</h3>
-              
+
               <p className="text-gray-700">
                 March 2025. We woke up to chaos. Google had deindexed 14 of our top-ranking pages. Our most valuable
                 blog post on "Best CRM Software for Startups" had vanished from search results. The numbers were brutal:
@@ -238,24 +244,24 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Section 2: The 5-Layer Rescue Framework</h2>
-              
+
               <h3 className="text-xl font-semibold text-black mb-3">
                 Layer 1: Niche Expert Validation – The Human Touch AI Can't Replace
               </h3>
-             
+
               <p className="text-gray-700">
                 To survive in the post-HCU era, we needed real experts validating every piece of content. Blogosocial's
                 network of 1,200+ vetted professionals stepped in, including:
               </p>
               <ul className="list-none pl-6 space-y-2 text-gray-700 mt-4">
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Medical Doctors for healthcare blogs
+                  <span className="text-orange-500 mr-2">🔹</span> Medical Doctors for healthcare blogs
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> CFA Charterholders for finance content
+                  <span className="text-orange-500 mr-2">🔹</span> CFA Charterholders for finance content
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Patent Attorneys for legal articles
+                  <span className="text-orange-500 mr-2">🔹</span> Patent Attorneys for legal articles
                 </li>
               </ul>
               <div className="bg-green-50 border-l-4 border-green-500 p-4 mt-4">
@@ -270,20 +276,20 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">
                 Layer 2: Founder Insights – SEO that Converts, Not Just Ranks
               </h3>
-              
+
               <p className="text-gray-700">
                 We realized that AI content lacked real-world business experience. So we integrated active SaaS founders
                 into our workflow to refine content with:
               </p>
               <ul className="list-none pl-6 space-y-2 text-gray-700 mt-4">
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Investor messaging alignment
+                  <span className="text-orange-500 mr-2">🔹</span> Investor messaging alignment
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Churn reduction strategies
+                  <span className="text-orange-500 mr-2">🔹</span> Churn reduction strategies
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Product-led growth storytelling
+                  <span className="text-orange-500 mr-2">🔹</span> Product-led growth storytelling
                 </li>
               </ul>
               <div className="mt-4">
@@ -319,26 +325,26 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">
                 Layer 3: AI + Human ICP Research – Knowing What Your Audience Really Wants
               </h3>
-              
+
               <p className="text-gray-700">
                 Most AI-generated blogs miss audience intent. We used Blogosocial's ICP (Ideal Customer Profile)
                 Research Engine to:
               </p>
               <ul className="list-none pl-6 space-y-2 text-gray-700 mt-4">
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Scan 50M+ customer profiles for trending pain points
+                  <span className="text-orange-500 mr-2">🔹</span> Scan 50M+ customer profiles for trending pain points
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Identify untapped content gaps competitors missed
+                  <span className="text-orange-500 mr-2">🔹</span> Identify untapped content gaps competitors missed
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Prioritize semantic keyword opportunities over generic
-                  SEO terms
+                  <span className="text-orange-500 mr-2">🔹</span> Prioritize semantic keyword opportunities over
+                  generic SEO terms
                 </li>
               </ul>
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
-                <p className="font-semibold text-blue-700">Example:</p>
-                <p className="text-blue-600">
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mt-4">
+                <p className="font-semibold text-orange-700">Example:</p>
+                <p className="text-orange-600">
                   Instead of writing generic content like "Best SaaS Marketing Tips", we refined it to "How VC-Backed
                   SaaS Startups Use SEO to Reduce CAC", attracting 3X more targeted leads.
                 </p>
@@ -347,9 +353,9 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Section 3: The Technical SEO Recovery Plan</h2>
-            
+
               <h3 className="text-xl font-semibold text-black mb-3">Step 1: Content Audit & Triage</h3>
-            
+
               <p className="text-gray-700">
                 We used Blogosocial's Penalty Risk Analyzer to prioritize content updates:
               </p>
@@ -362,7 +368,7 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">
                 Step 2: Expert-Led Rewriting & Optimization
               </h3>
-             
+
               <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
                 <p className="font-semibold text-yellow-700">Example:</p>
                 <p className="text-yellow-600">A blog on "AI in Healthcare" was rewritten as follows:</p>
@@ -379,7 +385,7 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">
                 Step 3: Internal Linking & Content Clustering
               </h3>
-              
+
               <ul className="list-disc pl-6 space-y-2 text-gray-700 mt-4">
                 <li>Primary Content Pillar: "E-E-A-T Optimization Guide"</li>
                 <li>Supporting Content: AI vs. human validation, Google penalty recovery</li>
@@ -389,29 +395,29 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Section 4: Post-Recovery SEO Strategy</h2>
-              
+
               <h3 className="text-xl font-semibold text-black mb-3">
                 Entity Mapping – Google's Secret Weapon for Ranking in 2025
               </h3>
-              
+
               <ul className="list-none pl-6 space-y-2 text-gray-700 mt-4">
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Blogosocial's Knowledge Graph API auto-identifies
+                  <span className="text-orange-500 mr-2">🔹</span> Blogosocial's Knowledge Graph API auto-identifies
                   Google's priority entities
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Uses co-occurrence analysis & LSI keyword injection to
-                  build semantic relationships
+                  <span className="text-orange-500 mr-2">🔹</span> Uses co-occurrence analysis & LSI keyword injection
+                  to build semantic relationships
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-500 mr-2">🔹</span> Result? 23% higher entity richness than competitors
+                  <span className="text-orange-500 mr-2">🔹</span> Result? 23% higher entity richness than competitors
                 </li>
               </ul>
 
               <h3 className="text-xl font-semibold text-black mt-6 mb-3">
                 Advanced Link Building – Authority Signals That Matter
               </h3>
-              
+
               <table className="w-full border-collapse border border-gray-300 mt-4">
                 <thead>
                   <tr className="bg-gray-100">
@@ -440,13 +446,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Conclusion: The New Rules of AI Content Survival
               </h2>
-              <Image
-                src="/15.png"
-                alt="Placeholder image for Conclusion: The New Rules of AI Content Survival"
-                width={600}
-                height={300}
-                className="mt-6 rounded-lg mx-auto"
-              />
+              <div className="w-full mt-6 mb-6">
+                <Image
+                  src="/15.png"
+                  alt="Placeholder image for Conclusion: The New Rules of AI Content Survival"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl"
+                />
+              </div>
               <p className="text-gray-700">
                 Google's 2025 HCU didn't kill AI content – it killed lazy implementation. By using Blogosocial's
                 expert-led AI workflow, we transformed a 72% traffic loss into:
@@ -463,7 +471,7 @@ export default function BlogPost() {
                 </li>
               </ul>
 
-              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-6">
+              <blockquote className="border-l-4 border-orange-500 pl-4 italic text-gray-700 my-6">
                 "Blogosocial gave us AI's speed with Harvard-level rigor."
                 <footer className="text-sm mt-2">– CMO, Top 50 SaaS Company</footer>
               </blockquote>
@@ -472,7 +480,7 @@ export default function BlogPost() {
         </article>
 
         <aside className="max-w-3xl mx-auto mt-12">
-          <div className="bg-blue-100 rounded-3xl p-8">
+          <div className="bg-orange-100 rounded-3xl p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-black">Ready to Rescue Your SEO?</h2>
@@ -484,13 +492,13 @@ export default function BlogPost() {
               <div className="flex flex-col gap-4">
                 <Link
                   href="/eeat-compliance-checklist"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Download E-E-A-T Checklist
                 </Link>
                 <Link
                   href="/seo-recovery-webinar"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-orange-600 bg-white border border-orange-600 rounded-lg hover:bg-orange-50 transition-colors"
                 >
                   Watch SEO Recovery Webinar
                 </Link>

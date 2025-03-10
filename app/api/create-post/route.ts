@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     // Get data from the frontend (if you want dynamic content later)
     const body = await request.json();
-    const { title = "Automated Post", content = "Created via Next.js API!" } = body;
+    const { title = "ast,.asbtklsab Post", content = "12i5y21io5ghqt2io5h12" } = body;
 
     // WordPress site details (replace these with your own)
     const websiteUrl = "https://test1234.shop/"; // Your WP site URL

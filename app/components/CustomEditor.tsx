@@ -3,7 +3,12 @@
 import React from "react";
 import type { ReactNode } from "react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Share2, List, BookOpen, BarChart2, Plus, ImageIcon, X, Loader2, AlertCircle, Bold, Italic, Underline, Link, ListOrdered, ListChecks, Type, ExternalLink, ChevronDown, Sparkles, Code, Quote, AlignLeft, Undo, Redo, Search, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft, Share2, List, BookOpen, BarChart2, Plus, ImageIcon, X,
+  Loader2, AlertCircle, Bold, Italic, Underline, Link, ListOrdered,
+  ListChecks, Type, ExternalLink, ChevronDown, Sparkles, Code, Quote,
+  AlignLeft, Undo, Redo, Search, Trash2
+} from 'lucide-react';
 import { useRouter } from "next/navigation";
 
 // Formatting utility (optimized)
@@ -32,16 +37,13 @@ const formatUtils = {
     return html;
   },
 
-  // Optimized sanitizeHtml function
   sanitizeHtml: (html: string): string => {
     if (!html) return '';
     
-    // Use DOMParser only for complex sanitization to avoid performance hits
     if (html.includes('<script') || html.includes('javascript:') || html.includes('onerror=')) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
       
-      // Clean up classes and ensure consistent styling
       doc.querySelectorAll("p, li, a, blockquote").forEach((el) => {
         el.classList.remove("font-bold");
         el.classList.add("font-normal");
@@ -108,7 +110,6 @@ const ContextMenu: React.FC<{
 }> = ({ visible, position, onClose, onDelete }) => {
   if (!visible) return null;
 
-  // Close the context menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!e.target) return;
@@ -250,7 +251,7 @@ const ImageGenerationModal: React.FC<{
       .replace(/<[^>]+>/g, " ")
       .split(/\s+/)
       .filter(Boolean).length;
-    return words > 1000 ? 5 : words > 500 ? 4 : 3; // Adjusted for more reasonable image counts
+    return words > 1000 ? 5 : words > 500 ? 4 : 3;
   };
 
   const generatePromptsFromContent = (content: string, count: number): string[] => {
@@ -501,27 +502,26 @@ const CustomRichEditor: React.FC<{
   // Context menu state
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-  const contextMenuTarget = useRef<HTMLImageElement | null>(null); // Correctly use useRef
+  const contextMenuTarget = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const formattedHtml = value.startsWith("<")
       ? formatUtils.sanitizeHtml(value)
       : formatUtils.convertMarkdownToHtml(value);
-    if (editorRef.current) { // Add null check
+    if (editorRef.current) {
       editorRef.current.innerHTML = formattedHtml;
       setEditorContent(formattedHtml);
-      setupImageInteractions(); // Initialize image interactions on mount
+      setupImageInteractions();
     }
   }, [value]);
 
-  // Debounced input handler to improve performance and maintain scroll/cursor position
   const handleInput = useCallback(() => {
     if (inputTimeoutRef.current) {
       clearTimeout(inputTimeoutRef.current);
     }
 
     inputTimeoutRef.current = setTimeout(() => {
-      if (editorRef.current) { // Add null check
+      if (editorRef.current) {
         const selection = window.getSelection();
         const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
         const scrollTop = editorRef.current.scrollTop;
@@ -531,16 +531,14 @@ const CustomRichEditor: React.FC<{
         setEditorContent(newContent);
         onChange(newContent);
 
-        // Restore scroll position
         editorRef.current.scrollTop = scrollTop;
 
-        // Restore cursor position if selection exists
         if (range && editorRef.current) {
           selection?.removeAllRanges();
           selection?.addRange(range);
         }
       }
-    }, 150); // Maintain 150ms debounce for performance
+    }, 150);
   }, [onChange]);
 
   const execCommand = useCallback((command: string, value?: string) => {
@@ -554,7 +552,7 @@ const CustomRichEditor: React.FC<{
       return;
     }
 
-    if (editorRef.current) { // Add null check
+    if (editorRef.current) {
       document.execCommand(command, false, value || undefined);
       handleInput();
     }
@@ -571,7 +569,7 @@ const CustomRichEditor: React.FC<{
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
 
-      if (rect.width > 0 && editorRef.current) { // Add null check
+      if (rect.width > 0 && editorRef.current) {
         setToolbarPosition({
           x: rect.left + rect.width / 2,
           y: rect.top - 10 + window.scrollY,
@@ -585,7 +583,6 @@ const CustomRichEditor: React.FC<{
     }
   }, []);
 
-  // Handle context menu for images
   const handleContextMenu = useCallback((e: MouseEvent) => {
     if (!editorRef.current) return;
     
@@ -593,16 +590,15 @@ const CustomRichEditor: React.FC<{
     if (target.tagName === 'IMG' && editorRef.current.contains(target)) {
       e.preventDefault();
       setContextMenuPosition({ x: e.clientX, y: e.clientY });
-      contextMenuTarget.current = target as HTMLImageElement; // Update the ref
+      contextMenuTarget.current = target as HTMLImageElement;
       setShowContextMenu(true);
     } else if (showContextMenu) {
       setShowContextMenu(false);
     }
   }, [showContextMenu]);
 
-  // Image deletion functionality
   const handleDeleteImage = useCallback(() => {
-    if (contextMenuTarget.current && editorRef.current) { // Add null check
+    if (contextMenuTarget.current && editorRef.current) {
       const elementToRemove = contextMenuTarget.current.closest('.image-wrapper') || contextMenuTarget.current;
       if (elementToRemove) {
         elementToRemove.remove();
@@ -615,10 +611,8 @@ const CustomRichEditor: React.FC<{
         setEditorContent(newContent);
         onChange(newContent);
 
-        // Restore scroll position
         editorRef.current.scrollTop = scrollTop;
 
-        // Restore cursor position if selection exists
         if (range && editorRef.current) {
           selection?.removeAllRanges();
           selection?.addRange(range);
@@ -629,10 +623,9 @@ const CustomRichEditor: React.FC<{
     }
   }, [onChange]);
 
-  // Drag-and-Drop Handlers
   const handleDragStart = useCallback((e: React.DragEvent<HTMLImageElement>) => {
     const img = e.target as HTMLImageElement;
-    if (!img.closest('.image-wrapper')) return; // Ensure only wrapped images are draggable
+    if (!img.closest('.image-wrapper')) return;
     draggedImageRef.current = img;
     e.dataTransfer.setData("text/html", img.outerHTML);
     e.dataTransfer.effectAllowed = "move";
@@ -677,9 +670,9 @@ const CustomRichEditor: React.FC<{
       }
     }
 
-    if (insertBeforeElement && editorRef.current) { // Add null check
+    if (insertBeforeElement && editorRef.current) {
       editorRef.current.insertBefore(dropPlaceholderRef.current, insertBeforeElement);
-    } else if (editorRef.current) { // Add null check
+    } else if (editorRef.current) {
       editorRef.current.appendChild(dropPlaceholderRef.current);
     }
   }, []);
@@ -705,7 +698,7 @@ const CustomRichEditor: React.FC<{
     const selection = window.getSelection();
     const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
 
-    if (dropPlaceholderRef.current.parentNode && editorRef.current) { // Add null check
+    if (dropPlaceholderRef.current.parentNode && editorRef.current) {
       dropPlaceholderRef.current.parentNode.insertBefore(newImageWrapper, dropPlaceholderRef.current);
       dropPlaceholderRef.current.parentNode.removeChild(dropPlaceholderRef.current);
     }
@@ -714,8 +707,7 @@ const CustomRichEditor: React.FC<{
     draggedImageRef.current = null;
     setupImageInteractions();
 
-    // Restore scroll position and cursor
-    if (editorRef.current) { // Add null check
+    if (editorRef.current) {
       editorRef.current.scrollTop = scrollTop;
       if (range && editorRef.current) {
         selection?.removeAllRanges();
@@ -725,7 +717,7 @@ const CustomRichEditor: React.FC<{
   }, [handleInput]);
 
   const handleInsertImage = useCallback((imageUrl: string) => {
-    if (lastSelectionRef.current && editorRef.current) { // Add null check
+    if (lastSelectionRef.current && editorRef.current) {
       const selection = window.getSelection();
       if (selection) {
         selection.removeAllRanges();
@@ -750,8 +742,7 @@ const CustomRichEditor: React.FC<{
         setupImageInteractions();
         setShowImageModal(false);
 
-        // Restore scroll position and cursor
-        if (editorRef.current) { // Add null check
+        if (editorRef.current) {
           editorRef.current.scrollTop = scrollTop;
           selection.removeAllRanges();
           selection.addRange(range);
@@ -760,7 +751,6 @@ const CustomRichEditor: React.FC<{
     }
   }, [handleInput]);
 
-  // Setup image interactions (drag and context menu)
   const setupImageInteractions = useCallback(() => {
     if (!editorRef.current) return;
     
@@ -772,7 +762,6 @@ const CustomRichEditor: React.FC<{
     });
   }, [handleDragStart, handleDragEnd]);
 
-  // Setup event listeners
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -796,7 +785,7 @@ const CustomRichEditor: React.FC<{
       document.removeEventListener("selectionchange", handleSelectionChangeBound);
       if (selectionTimeout.current) clearTimeout(selectionTimeout.current);
       if (inputTimeoutRef.current) clearTimeout(inputTimeoutRef.current);
-      if (editorRef.current) { // Add null check
+      if (editorRef.current) {
         editorRef.current.removeEventListener('contextmenu', handleContextMenu);
       }
       observer.disconnect();
@@ -821,10 +810,10 @@ const CustomRichEditor: React.FC<{
       />
       
       <div className="border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center gap-2 p-2">
+        <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3">
           <select 
             onChange={(e) => execCommand("formatBlock", e.target.value)}
-            className="px-3 py-1.5 border border-gray-200 rounded-md bg-white text-sm min-w-[100px]"
+            className="px-3 py-1.5 border border-gray-200 rounded-md bg-white text-sm min-w-[100px] focus:ring-2 focus:ring-blue-500 focus:outline-none"
             aria-label="Select heading level"
           >
             <option value="p">Normal</option>
@@ -944,7 +933,7 @@ const CustomRichEditor: React.FC<{
           document.execCommand('insertText', false, text);
           handleInput();
         }}
-        className={`p-8 min-h-[800px] focus:outline-none prose prose-lg max-w-none ${className}`}
+        className={`p-4 sm:p-6 md:p-8 min-h-[500px] sm:min-h-[600px] md:min-h-[800px] focus:outline-none prose prose-lg max-w-none ${className}`}
         style={{ 
           backgroundColor: "white",
           boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)",
@@ -983,6 +972,21 @@ const CustomRichEditor: React.FC<{
         .drop-placeholder {
           transition: opacity 0.2s ease-in-out;
         }
+        @media (max-width: 768px) {
+          .prose {
+            font-size: 16px;
+            line-height: 1.6;
+          }
+          .prose h1 {
+            font-size: 2rem;
+          }
+          .prose h2 {
+            font-size: 1.75rem;
+          }
+          .prose h3 {
+            font-size: 1.5rem;
+          }
+        }
       `}</style>
     </div>
   );
@@ -991,6 +995,7 @@ const CustomRichEditor: React.FC<{
 export default function CustomEditor({ initialValue, onChange, images, onGenerateMore, citations }: CustomEditorProps) {
   const [content, setContent] = useState(initialValue);
   const [toc, setToc] = useState<{ id: string; text: string; level: number }[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -1028,10 +1033,10 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-200">
-        <div className="max-w-screen-2xl mx-auto px-4 py-2 flex items-center justify-between">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => router.back()} 
@@ -1043,14 +1048,15 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             <div className="flex items-center gap-2 text-gray-600">
               <span>Content Editor</span>
               <span>/</span>
-              <span className="text-gray-900">Intermittent fasting</span>
+              <span className="text-gray-900 font-medium">Intermittent fasting</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button 
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2"
               aria-label="Share"
             >
+              <Share2 className="w-4 h-4" />
               Share
             </button>
             <button 
@@ -1059,25 +1065,32 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             >
               Publish
             </button>
+            <button 
+              className="sm:hidden p-2 hover:bg-gray-100 rounded-full"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
+              <BarChart2 className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-screen-2xl mx-auto px-4 py-6 flex gap-6">
+      <main className="flex-1 max-w-screen-2xl mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
         {/* Editor Area */}
         <div className="flex-1">
           <CustomRichEditor 
             value={content} 
             onChange={handleContentChange} 
-            className="w-full" 
+            className="w-full h-full"
           />
         </div>
 
         {/* Metrics Sidebar */}
-        <div className="w-80 flex-shrink-0">
+        <div className={`w-full md:w-80 flex-shrink-0 ${isSidebarOpen ? 'block' : 'hidden md:block'}`}>
           <div className="sticky top-4 space-y-6">
             {/* Content Stats */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <button className="flex items-center justify-between w-full mb-4">
                 <span className="font-medium">Content Brief</span>
               </button>
@@ -1114,7 +1127,7 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             </div>
 
             {/* Readability Score */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <h3 className="font-medium mb-2">Readability</h3>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">College grade</span>
@@ -1123,7 +1136,7 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             </div>
 
             {/* Keywords */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <h3 className="font-medium mb-3">Keywords</h3>
               <div className="relative">
                 <input
@@ -1157,7 +1170,7 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             </div>
 
             {/* Table of Contents */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                 <List className="h-4 w-4 mr-2 text-blue-600" />
                 Table of Contents
@@ -1188,7 +1201,7 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
 
             {/* Citations */}
             {citations.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                   <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
                   References
@@ -1216,7 +1229,7 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
 
             {/* Images */}
             {images.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-gray-900 mb-3">Images</h2>
                 <div className="max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                   <div className="space-y-3">
@@ -1246,6 +1259,64 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
           </div>
         </div>
       </main>
+
+      <style jsx global>{`
+        .prose h1 {
+          font-size: 2.5rem;
+          margin-top: 3rem;
+          margin-bottom: 2rem;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 0.5rem;
+        }
+        .prose h2 {
+          font-size: 2rem;
+          margin-top: 2.5rem;
+          margin-bottom: 1.5rem;
+        }
+        .prose h3 {
+          font-size: 1.75rem;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
+        .prose p {
+          margin-top: 1.5rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.75;
+        }
+        .prose ul {
+          margin-top: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+        .prose li {
+          margin-bottom: 0.75rem;
+        }
+        .prose a {
+          color: #2563eb;
+          text-decoration: underline;
+          transition: color 0.2s;
+        }
+        .prose a:hover {
+          color: #1e40af;
+        }
+        .prose img {
+          border-radius: 0.5rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 768px) {
+          .prose h1 {
+            font-size: 2rem;
+          }
+          .prose h2 {
+            font-size: 1.75rem;
+          }
+          .prose h3 {
+            font-size: 1.5rem;
+          }
+          .prose p {
+            font-size: 1rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

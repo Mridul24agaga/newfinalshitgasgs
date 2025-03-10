@@ -2,6 +2,15 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-saira", // Add variable for CSS custom property
+})
 
 export default function BlogSection() {
   const blogs = [
@@ -57,7 +66,7 @@ export default function BlogSection() {
   ]
 
   return (
-    <section className="py-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+    <section className={`${saira.className} py-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto`}>
       <div className="text-center mb-12">
         {/* Pill Label */}
         <motion.div
@@ -69,7 +78,7 @@ export default function BlogSection() {
           <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">Latest Articles</span>
         </motion.div>
 
-        {/* Heading with Highlight */}
+        {/* Heading with Highlight - Removed neon highlight */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -77,7 +86,7 @@ export default function BlogSection() {
           transition={{ delay: 0.1 }}
           className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
         >
-          <span className="bg-[#e3ff40] px-3 py-1">Insights</span> from Our Experts
+          <span className="text-[#FD921C]">Insights</span> from Our Experts
         </motion.h2>
 
         <motion.p

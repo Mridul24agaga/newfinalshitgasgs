@@ -2,6 +2,15 @@
 
 import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-saira",
+})
 
 export default function AICTA() {
   const containerRef = useRef(null)
@@ -23,7 +32,7 @@ export default function AICTA() {
   return (
     <motion.div
       ref={containerRef}
-      className="w-full max-w-[1020px] mx-auto bg-[#ff7a2d] text-white p-6 sm:p-8 md:p-12 rounded-2xl shadow-lg relative overflow-hidden mb-8 sm:mb-12 md:mb-16"
+      className={`${saira.className} w-full max-w-[1020px] mx-auto bg-[#ff7a2d] text-white p-6 sm:p-8 md:p-12 rounded-2xl shadow-lg relative overflow-hidden mb-8 sm:mb-12 md:mb-16`}
       initial={{ opacity: 0, y: 100 }}
       animate={containerInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 100 }}
       transition={{ duration: 0.8 }}
@@ -31,7 +40,7 @@ export default function AICTA() {
       {/* Star decorations */}
       <motion.div
         ref={star1Ref}
-        className="absolute left-[10%] bottom-[20%] text-[#e3ff40] text-xl sm:text-2xl"
+        className="absolute left-[10%] bottom-[20%] text-white text-xl sm:text-2xl"
         initial={{ opacity: 0, scale: 0 }}
         animate={star1InView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}
@@ -41,7 +50,7 @@ export default function AICTA() {
       </motion.div>
       <motion.div
         ref={star2Ref}
-        className="absolute right-[10%] top-[30%] text-[#e3ff40] text-xl sm:text-2xl"
+        className="absolute right-[10%] top-[30%] text-white text-xl sm:text-2xl"
         initial={{ opacity: 0, scale: 0 }}
         animate={star2InView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
         transition={{ delay: 0.8, duration: 0.5 }}
@@ -62,7 +71,7 @@ export default function AICTA() {
           <h2 className="inline">Want to </h2>
           <motion.span
             ref={highlightRef}
-            className="bg-[#e3ff40] text-[#2a2a2a] px-3 py-1 rounded-lg inline-block my-2"
+            className="bg-white text-[#2a2a2a] px-3 py-1 rounded-lg inline-block my-2"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={highlightInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
             transition={{ delay: 0.2, duration: 0.5 }}
@@ -94,7 +103,7 @@ export default function AICTA() {
           transition={{ delay: 0.4, duration: 0.6 }}
         >
           <motion.button
-            className="bg-[#e3ff40] text-[#2a2a2a] font-medium px-8 py-3 rounded-full text-lg hover:bg-opacity-90 transition-all min-w-[200px] w-[90%] max-w-[320px] shadow-md whitespace-nowrap"
+            className="bg-white text-[#2a2a2a] font-medium px-8 py-3 rounded-full text-lg hover:bg-opacity-90 transition-all min-w-[200px] w-[90%] max-w-[320px] shadow-md whitespace-nowrap"
             whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.98 }}
           >

@@ -1,96 +1,166 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import CustomEditor from "@/app/components/CustomEditor"
 import { createClient } from "@/utitls/supabase/client"
-import { useRouter } from "next/navigation"
-import { Loader2, ArrowLeft, Save } from "lucide-react"
+import {
+  Loader2,
+  ArrowLeft,
+  Save,
+  Clock,
+  FileText,
+  ChevronLeft,
+  MoreHorizontal,
+  Share2,
+  Download,
+  Trash2,
+} from "lucide-react"
+
+// Types
+type MetricType = {
+  count: number
+  range: string
+}
+
+type ContentBriefType = {
+  words: MetricType
+  headings: MetricType
+  paragraphs: MetricType
+  images: MetricType
+  readability: { score: number; level: string }
+  keywords: string[]
+}
 
 export default function GeneratedBlogPage() {
   const params = useParams()
+  const router = useRouter()
+  const supabase = createClient()
+
+  // State
   const [blogPost, setBlogPost] = useState<string>("")
   const [citations, setCitations] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [saving, setSaving] = useState<boolean>(false)
   const [title, setTitle] = useState<string>("")
-  const router = useRouter()
-  const supabase = createClient()
+  const [lastSaved, setLastSaved] = useState<string>("")
+  const [showDropdown, setShowDropdown] = useState<boolean>(false)
+
+  // Mock data for content brief
+  const contentBrief: ContentBriefType = {
+    words: {
+      count: 1139,
+      range: "2,000-2,404",
+    },
+    headings: {
+      count: 0,
+      range: "5-36",
+    },
+    paragraphs: {
+      count: 1,
+      range: "65-117",
+    },
+    images: {
+      count: 0,
+      range: "3-29",
+    },
+    readability: {
+      score: 30.3,
+      level: "College grade",
+    },
+    keywords: [
+      "eating plan 3/1-3",
+      "intermittent fasting 43/16-19",
+      "fasting 7/7/5-7",
+      "masks 0/1-3",
+      "people 5/6-8",
+      "research 10/4-6",
+    ],
+  }
 
   useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser()
-        if (authError || !user) {
-          setError("Authentication required")
-          setBlogPost("<p>Please log in to continue.</p>")
-          setCitations([])
-          router.push("/auth")
-          return
-        }
+    fetchBlog()
 
-        const { data, error: fetchError } = await supabase
-          .from("blogs")
-          .select("blog_post, citations, title, reveal_date")
-          .eq("id", params.id)
-          .eq("user_id", user.id)
-          .single()
-
-        if (fetchError || !data) {
-          setError("Blog not found")
-          setBlogPost("<p>This blog post could not be found.</p>")
-          setCitations([])
-        } else {
-          console.log("Raw data fetched:", data)
-          console.log("Raw citations:", data.citations, "Type:", typeof data.citations)
-
-          setBlogPost(data.blog_post)
-          setTitle(data.title || "Untitled Blog Post")
-
-          let parsedCitations: string[] = []
-          if (typeof data.citations === "string") {
-            try {
-              parsedCitations = JSON.parse(data.citations)
-              if (!Array.isArray(parsedCitations)) {
-                parsedCitations = [data.citations]
-              }
-            } catch (parseError) {
-              console.warn("Citations parsing failed, treating as plain string:", parseError)
-              parsedCitations = data.citations.split(",").map((item: string) => item.trim())
-            }
-          } else if (Array.isArray(data.citations)) {
-            parsedCitations = data.citations
-          } else {
-            console.warn("Unexpected citations format:", data.citations)
-            parsedCitations = []
-          }
-
-          setCitations(parsedCitations)
-        }
-      } catch (err: unknown) {
-        console.error(`Error fetching blog: ${err instanceof Error ? err.message : String(err)}`)
-        setError("Failed to load blog")
-        setBlogPost("<p>An error occurred while loading the blog.</p>")
-        setCitations([])
-      } finally {
-        setLoading(false)
-      }
+    // Close dropdown when clicking outside
+    const handleClickOutside = () => {
+      setShowDropdown(false)
     }
 
-    fetchBlog()
-  }, [params.id, router, supabase])
+    document.addEventListener("click", handleClickOutside)
+    return () => {
+      document.removeEventListener("click", handleClickOutside)
+    }
+  }, [])
+
+  const fetchBlog = async () => {
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError || !user) {
+        setError("Authentication required")
+        setBlogPost("<p>Please log in to continue.</p>")
+        setCitations([])
+        router.push("/auth")
+        return
+      }
+
+      const { data, error: fetchError } = await supabase
+        .from("blogs")
+        .select("blog_post, citations, title, reveal_date")
+        .eq("id", params.id)
+        .eq("user_id", user.id)
+        .single()
+
+      if (fetchError || !data) {
+        setError("Blog not found")
+        setBlogPost("<p>This blog post could not be found.</p>")
+        setCitations([])
+      } else {
+        setBlogPost(data.blog_post)
+        setTitle(data.title || "Untitled Blog Post")
+
+        // Parse citations
+        let parsedCitations: string[] = []
+        if (typeof data.citations === "string") {
+          try {
+            parsedCitations = JSON.parse(data.citations)
+            if (!Array.isArray(parsedCitations)) {
+              parsedCitations = [data.citations]
+            }
+          } catch (parseError) {
+            parsedCitations = data.citations.split(",").map((item: string) => item.trim())
+          }
+        } else if (Array.isArray(data.citations)) {
+          parsedCitations = data.citations
+        }
+
+        setCitations(parsedCitations)
+        setLastSaved(new Date().toLocaleTimeString())
+      }
+    } catch (err) {
+      setError("Failed to load blog")
+      setBlogPost("<p>An error occurred while loading the blog.</p>")
+      setCitations([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleContentChange = async (newContent: string) => {
     setBlogPost(newContent)
     setSaving(true)
+
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       if (user) {
         const { error } = await supabase
           .from("blogs")
@@ -98,40 +168,78 @@ export default function GeneratedBlogPage() {
           .eq("id", params.id)
           .eq("user_id", user.id)
 
-        if (error) {
-          console.error(`Failed to update blog: ${error.message}`)
+        if (!error) {
+          setLastSaved(new Date().toLocaleTimeString())
         }
       }
-    } catch (err: unknown) {
-      console.error(`Error saving blog: ${err instanceof Error ? err.message : String(err)}`)
+    } catch (err) {
+      console.error("Error saving blog:", err)
     } finally {
       setTimeout(() => setSaving(false), 500)
     }
   }
 
-  const handleGenerateMore = async () => {
-    console.log("Generate More clicked")
+  // Consolidated action handler for all button clicks
+  const handleAction = (action: string) => {
+    switch (action) {
+      case "back":
+        router.push("/dashboard")
+        break
+      case "generateMore":
+        console.log("Generate More clicked")
+        break
+      case "share":
+        console.log("Share clicked")
+        break
+      case "export":
+        console.log("Export as PDF clicked")
+        break
+      case "duplicate":
+        console.log("Duplicate clicked")
+        break
+      case "delete":
+        console.log("Delete clicked")
+        break
+      case "publish":
+        console.log("Publish clicked")
+        break
+      default:
+        break
+    }
   }
 
+  const toggleDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setShowDropdown(!showDropdown)
+  }
+
+  // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Loading your blog post...</p>
+          <div className="relative w-16 h-16">
+            <Loader2 className="w-16 h-16 animate-spin text-blue-600 opacity-25" />
+            <Loader2
+              className="w-16 h-16 animate-spin text-blue-600 absolute top-0 left-0"
+              style={{ animationDelay: "-0.5s" }}
+            />
+          </div>
+          <p className="text-slate-600 font-medium text-lg">Loading your blog post...</p>
         </div>
       </div>
     )
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-100">
-          <div className="bg-red-50 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="text-center max-w-md p-8 bg-white">
+          <div className="bg-red-50 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-red-500"
+              className="h-10 w-10 text-red-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -144,13 +252,13 @@ export default function GeneratedBlogPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">{error}</h1>
-          <p className="text-gray-600 mb-6">We couldn't load your blog post. Please try again later.</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-3">{error}</h1>
+          <p className="text-slate-600 mb-8">We couldn't load your blog post. Please try again later.</p>
           <button
-            onClick={() => router.push("/dashboard")}
-            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            onClick={() => handleAction("back")}
+            className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-base font-medium"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
             Back to Dashboard
           </button>
         </div>
@@ -158,51 +266,115 @@ export default function GeneratedBlogPage() {
     )
   }
 
+  // Main content
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6">
-        <header className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {saving ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Saving changes...
-                </span>
-              ) : (
-                "All changes saved automatically"
-              )}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Top navigation bar */}
+      <header className="sticky top-0 z-10 bg-white w-full">
+        <div className="w-full px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/dashboard")}
-              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+              onClick={() => handleAction("back")}
+              className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+              title="Back to Dashboard"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back
+              <ChevronLeft className="h-5 w-5 text-slate-600" />
+              <span className="sr-only">Back to Dashboard</span>
             </button>
-            <button
-              onClick={handleGenerateMore}
-              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Generate More
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-sm font-medium text-slate-500">
+                {saving ? "Saving..." : `Saved at ${lastSaved}`}
+              </span>
+            </div>
           </div>
-        </header>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-          <CustomEditor
-            initialValue={blogPost}
-            onChange={handleContentChange}
-            images={[]}
-            onGenerateMore={handleGenerateMore}
-            citations={citations}
-          />
+          <div className="flex items-center gap-2">
+            {/* Desktop action buttons */}
+            
+
+            {/* Dropdown menu */}
+            <div className="relative">
+              <button
+                onClick={toggleDropdown}
+                className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                title="More options"
+              >
+                <MoreHorizontal className="h-5 w-5 text-slate-600" />
+                <span className="sr-only">More options</span>
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white py-1 z-20">
+                  {/* Mobile-only actions */}
+                  <button
+                    onClick={() => handleAction("share")}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center md:hidden"
+                  >
+                    <Share2 className="h-4 w-4 mr-2 text-slate-500" />
+                    Share
+                  </button>
+                  <button
+                    onClick={() => handleAction("generateMore")}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center md:hidden"
+                  >
+                    <Save className="h-4 w-4 mr-2 text-slate-500" />
+                    Generate More
+                  </button>
+                  <hr className="my-1 border-slate-200 md:hidden" />
+
+                  {/* Common actions */}
+                  <button
+                    onClick={() => handleAction("export")}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                  >
+                    <Download className="h-4 w-4 mr-2 text-slate-500" />
+                    Export as PDF
+                  </button>
+                  <button
+                    onClick={() => handleAction("duplicate")}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                  >
+                    <FileText className="h-4 w-4 mr-2 text-slate-500" />
+                    Duplicate
+                  </button>
+                  <hr className="my-1 border-slate-200" />
+                  <button
+                    onClick={() => handleAction("delete")}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100 flex items-center"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+      </header>
+
+     
+
+      {/* Main content area */}
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 overflow-auto bg-white">
+          <div className="w-full h-full">
+            {/* Editor section */}
+            <div className="w-full h-full bg-white">
+              <div className="p-4">
+                <CustomEditor
+                  initialValue={blogPost}
+                  onChange={handleContentChange}
+                  images={[]}
+                  onGenerateMore={() => handleAction("generateMore")}
+                  citations={citations}
+                />
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
+
     </div>
   )
 }

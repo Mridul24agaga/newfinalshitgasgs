@@ -1,333 +1,394 @@
 "use client"
 
+import { Check } from "lucide-react"
 import { useState } from "react"
-import { Check, Mail, Calendar, ArrowRight } from "lucide-react"
-import { motion } from "framer-motion"
+import { Saira } from "next/font/google"
 
-interface PricingTier {
-  name: string
-  description: string
-  price: {
-    monthly: number
-    annually: number
-  }
-  blogs: {
-    monthly: number
-    annually: number
-  }
-  features: string[]
-  isBestValue?: boolean
-  paymentLink: {
-    monthly: string
-    annually: string
-  }
+// Initialize the Saira font with the weights we need
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-saira",
+})
+
+interface PriceData {
+  monthly: Record<string, string>
+  annually: Record<string, string>
+  yearlyTotal: Record<string, string>
 }
 
-const pricingTiers: PricingTier[] = [
-  {
-    name: "Trial",
-    description: "Experience our strategic blogging service with a one-time trial",
-    price: {
-      monthly: 7,
-      annually: 7,
-    },
-    blogs: {
-      monthly: 2,
-      annually: 2,
-    },
-    features: [
-      "2 professionally written blog posts trial",
-      "Basic SEO optimization",
-      "Content strategy consultation",
-      "Standard support",
-    ],
-    paymentLink: {
-      monthly: "https://checkout.dodopayments.com/buy/pdt_bSXwqeQHE0s6c8h6xicza",
-      annually: "https://checkout.dodopayments.com/buy/pdt_bSXwqeQHE0s6c8h6xicza",
-    },
-  },
-  {
-    name: "Starter",
-    description: "Ideal for growing your online presence",
-    price: {
-      monthly: 74,
-      annually: 59,
-    },
-    blogs: {
-      monthly: 10,
-      annually: 10,
-    },
-    features: [
-      "10 professionally written blog posts per month",
-      "Comprehensive content strategy",
-      "Advanced SEO optimization",
-      "Social media integration",
-      "Monthly performance reports",
-      "Email support",
-    ],
-    paymentLink: {
-      monthly: "https://checkout.dodopayments.com/buy/pdt_9Buf4nLX6lHbdbPEchvoI",
-      annually: "https://checkout.dodopayments.com/buy/pdt_Z4Diw1kvIgpbFZs7ljfnu",
-    },
-  },
-  {
-    name: "Professional",
-    description: "For businesses serious about content marketing",
-    price: {
-      monthly: 147,
-      annually: 119,
-    },
-    blogs: {
-      monthly: 30,
-      annually: 30,
-    },
-    features: [
-      "30 professionally written blog posts per month",
-      "Advanced content strategy and planning",
-      "Premium SEO tools and optimization",
-      "Full suite of social media integrations",
-      "Content performance analytics",
-      "Dedicated account manager",
-      "Priority support",
-    ],
-    isBestValue: true,
-    paymentLink: {
-      monthly: "https://checkout.dodopayments.com/buy/pdt_I9yAEB0jgVzOYo8uDiSX3",
-      annually: "https://checkout.dodopayments.com/buy/pdt_zYXfbCA92y3XSQlIKcAZi",
-    },
-  },
-]
+interface Prices {
+  starter: PriceData
+  professional: PriceData
+}
 
 export default function PricingSection() {
-  const [isAnnual, setIsAnnual] = useState(false)
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly")
+  const [currency, setCurrency] = useState<"$" | "₹">("$")
+
+  const prices: Prices = {
+    starter: {
+      monthly: {
+        $: "147",
+        "₹": "10K",
+      },
+      annually: {
+        $: "119",
+        "₹": "8.5K",
+      },
+      yearlyTotal: {
+        $: "1427",
+        "₹": "102,000",
+      },
+    },
+    professional: {
+      monthly: {
+        $: "227",
+        "₹": "16K",
+      },
+      annually: {
+        $: "179",
+        "₹": "13K",
+      },
+      yearlyTotal: {
+        $: "2197",
+        "₹": "156,000",
+      },
+    },
+  }
+
+  const getPriceDisplay = (plan: keyof Prices) => {
+    const period = billingPeriod === "monthly" ? "monthly" : "annually"
+    return prices[plan][period][currency]
+  }
+
+  const getYearlyTotal = (plan: keyof Prices) => {
+    return prices[plan].yearlyTotal[currency]
+  }
 
   return (
-    <section id="pricing" className="bg-white py-20">
-      <div className="container mx-auto max-w-6xl px-4">
-        <div className="text-center">
-          {/* Pill Label */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-block mb-6"
-          >
-            <span className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">Pricing Plans</span>
-          </motion.div>
+    <div id="pricing" className={`${saira.className} max-w-6xl mx-auto px-4 py-16`}>
+      {/* Header */}
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center px-4 py-1 rounded-full border border-[#FF9626] text-[#FF9626] text-sm mb-4">
+          <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 8V16M8 12H16M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" />
+          </svg>
+          PRICINGS
+        </div>
+        <h2 className="text-4xl font-bold mb-4">Save Money, Boost SEO</h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          By opting for our service, you're not just saving money—you're ensuring consistent, high-quality content that
+          strengthens your SEO and delivers long-term growth.
+        </p>
+      </div>
 
-          {/* Heading with Highlight */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 text-4xl font-bold"
-          >
-            <span className="bg-[#e3ff40] px-3 py-1">Strategic Blogging</span> Solutions
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="mx-auto mb-10 max-w-2xl text-lg text-gray-600"
-          >
-            Choose the perfect plan to elevate your content marketing strategy and grow your online presence.
-          </motion.p>
-
-          {/* Billing Toggle - Updated with border instead of shadow */}
-          <div className="mb-12 inline-flex items-center gap-0 rounded-full border border-gray-200 p-1">
+      {/* Updated Billing Toggle */}
+      <div className="flex justify-center items-center gap-4 mb-12">
+        <div className="flex items-center">
+          {/* Monthly/Annually Toggle */}
+          <div className="bg-[#1A1A1A] rounded-full p-1 flex items-center">
             <button
-              onClick={() => setIsAnnual(false)}
-              className={`rounded-full px-6 py-2.5 text-sm font-medium transition-all ${
-                !isAnnual
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "text-gray-600 hover:text-gray-900 border border-transparent"
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                billingPeriod === "monthly" ? "text-[#FF9626]" : "text-white"
               }`}
+              onClick={() => setBillingPeriod("monthly")}
             >
               Monthly
             </button>
+            <div className="relative">
+              <button
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  billingPeriod === "annually" ? "bg-[#FF9626] text-white" : "text-white"
+                }`}
+                onClick={() => setBillingPeriod("annually")}
+              >
+                Anually
+                {billingPeriod === "annually" && (
+                  <span className="absolute -top-3 -right-2 bg-[#FF9626] text-[10px] text-white px-1.5 py-0.5 rounded-full border border-black">
+                    SAVE 20%
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-gray-700 mx-4"></div>
+
+          {/* Currency Toggle */}
+          <div className="bg-[#1A1A1A] rounded-full p-1 flex items-center">
             <button
-              onClick={() => setIsAnnual(true)}
-              className={`rounded-full px-6 py-2.5 text-sm font-medium transition-all ${
-                isAnnual
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "text-gray-600 hover:text-gray-900 border border-transparent"
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                currency === "$" ? "bg-[#FF9626] text-white" : "text-white"
               }`}
+              onClick={() => setCurrency("$")}
             >
-              <span className="flex items-center gap-2">
-                Annually
-                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-                  SAVE 20%
+              $
+            </button>
+            <button
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                currency === "₹" ? "bg-[#FF9626] text-white" : "text-white"
+              }`}
+              onClick={() => setCurrency("₹")}
+            >
+              ₹
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing Cards */}
+      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Starter Plan */}
+        <div className="border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-[#FF9626] p-6 text-center">
+            <h3 className="text-2xl font-bold text-white">Starter</h3>
+            <p className="text-white/90 text-sm mt-1">Ideal for growing your online presence</p>
+          </div>
+
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <div className="text-[#FF9626] font-medium mb-1">NET 67% OFF</div>
+              <div className="flex items-end justify-center">
+                <span className="text-4xl font-bold">
+                  {currency}
+                  {getPriceDisplay("starter")}
                 </span>
-              </span>
+                <span className="text-gray-600 ml-1">/Month</span>
+              </div>
+              <button className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors">
+                Choose Starter
+              </button>
+              <div className="text-sm text-gray-500 mt-2">
+                {billingPeriod === "monthly"
+                  ? "Billed monthly, cancel anytime"
+                  : `${currency}${getYearlyTotal("starter")} billed yearly`}
+              </div>
+            </div>
+
+            <div>
+              <div className="font-semibold mb-4">Includes:</div>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>30 professionally written blog posts per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Comprehensive content strategy</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Advanced SEO optimization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Social media integration</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Monthly performance reports</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Professional Plan */}
+        <div className="border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-[#FF9626] p-6 text-center">
+            <h3 className="text-2xl font-bold text-white">Professional</h3>
+            <p className="text-white/90 text-sm mt-1">For businesses serious about content marketing</p>
+          </div>
+
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <div className="text-[#FF9626] font-medium mb-1">NET 67% OFF</div>
+              <div className="flex items-end justify-center">
+                <span className="text-4xl font-bold">
+                  {currency}
+                  {getPriceDisplay("professional")}
+                </span>
+                <span className="text-gray-600 ml-1">/Month</span>
+              </div>
+              <button className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors">
+                Choose Professional
+              </button>
+              <div className="text-sm text-gray-500 mt-2">
+                {billingPeriod === "monthly"
+                  ? "Billed monthly, cancel anytime"
+                  : `${currency}${getYearlyTotal("professional")} billed yearly`}
+              </div>
+            </div>
+
+            <div>
+              <div className="font-semibold mb-4">Includes:</div>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>60 professionally written blog posts per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Advanced content strategy and planning</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Premium SEO tools and optimization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Full suite of social media integrations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Content performance analytics</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Dedicated account manager</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Priority support</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Solution Section */}
+      <div className="mt-16 max-w-4xl mx-auto">
+        <div className="bg-[#FFF6F0] border border-[#E5E7EB] rounded-[24px] flex flex-col md:flex-row">
+          <div className="flex-1 p-8 md:border-r border-[#E5E7EB]">
+            <div className="inline-block px-4 py-1.5 bg-[#FF9626] rounded-full text-white text-sm font-medium">
+              Enterprise Solutions
+            </div>
+
+            <h2 className="text-[32px] font-bold mt-4 mb-3" style={{ letterSpacing: "-0.02em" }}>
+              Need a custom solution?
+            </h2>
+            <p className="text-[#4B5563] text-lg mb-8">
+              My enterprise plans are tailored to your specific needs with dedicated support and custom content
+              strategies.
+            </p>
+
+            <div className="space-y-6 mb-8">
+              <div className="flex items-start gap-4">
+                <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path
+                      d="M8 2V5M16 2V5M3.5 9.09H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeMiterlimit="10"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-[#111827] font-semibold text-lg mb-1">Custom Publishing Schedule</h3>
+                  <p className="text-[#4B5563]">Tailored content calendar based on your industry and goals</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path
+                      d="M9.16 10.87C9.06 10.86 8.94 10.86 8.83 10.87C6.45 10.79 4.56 8.84 4.56 6.44C4.56 3.99 6.54 2 9 2C11.45 2 13.44 3.99 13.44 6.44C13.43 8.84 11.54 10.79 9.16 10.87Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M16.41 4C18.35 4 19.91 5.57 19.91 7.5C19.91 9.39 18.41 10.93 16.54 11C16.46 10.99 16.37 10.99 16.28 11"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M4.16 14.56C1.74 16.18 1.74 18.82 4.16 20.43C6.91 22.27 11.42 22.27 14.17 20.43C16.59 18.81 16.59 16.17 14.17 14.56C11.43 12.73 6.92 12.73 4.16 14.56Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M18.34 20C19.06 19.85 19.74 19.56 20.3 19.13C21.86 17.96 21.86 16.03 20.3 14.86C19.75 14.44 19.08 14.16 18.37 14"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-[#111827] font-semibold text-lg mb-1">Dedicated Strategy Team</h3>
+                  <p className="text-[#4B5563]">Work with experts who understand your business needs</p>
+                </div>
+              </div>
+            </div>
+
+            <button className="bg-[#FF9626] text-white px-6 py-3 rounded-full font-medium inline-flex items-center group hover:bg-[#e08520] transition-colors">
+              Contact Sales
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="ml-2 transform transition-transform group-hover:translate-x-1"
+              >
+                <path
+                  d="M4.16669 10H15.8334M15.8334 10L10 4.16669M15.8334 10L10 15.8334"
+                  stroke="currentColor"
+                  strokeWidth="1.67"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid gap-8 md:grid-cols-3">
-            {pricingTiers.map((tier) => (
-              <div
-                key={tier.name}
-                className={`relative overflow-hidden rounded-2xl border bg-white p-8 transition-all hover:border-orange-300 hover:shadow-lg ${
-                  tier.isBestValue
-                    ? "border-orange-300 shadow-xl"
-                    : tier.name === "Starter"
-                      ? "border-orange-200 shadow-md"
-                      : "border-gray-200"
-                }`}
-              >
-                {tier.isBestValue && (
-                  <div className="absolute -right-12 top-6 rotate-45 bg-orange-500 px-12 py-1 text-xs font-medium text-white">
-                    BEST VALUE
-                  </div>
-                )}
-
-                <h3 className="text-2xl font-bold text-gray-900">{tier.name}</h3>
-                <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
-
-                <div className="mt-6">
-                  {tier.name !== "Trial" && !isAnnual && (
-                    <div className="mb-2 text-xs font-medium text-orange-600">NET 67% OFF</div>
-                  )}
-                  {tier.name !== "Trial" && isAnnual && (
-                    <div className="mb-2 text-xs font-medium text-orange-600">NET 67% + EXTRA 20% OFF</div>
-                  )}
-
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-2xl font-semibold text-gray-900">$</span>
-                    <span className="text-5xl font-bold text-gray-900">
-                      {isAnnual ? tier.price.annually : tier.price.monthly}
-                    </span>
-                    {tier.name !== "Trial" && <span className="ml-2 text-gray-600">/month</span>}
-                  </div>
-
-                  {isAnnual && tier.name !== "Trial" && (
-                    <div className="mt-1 text-sm text-gray-600">${tier.price.annually * 12} billed yearly</div>
-                  )}
-
-                  {tier.name === "Trial" && (
-                    <div className="mt-3 inline-flex items-center rounded-full bg-orange-100 px-3 py-1">
-                      <span className="text-sm font-medium text-orange-700">One-time payment (not a subscription)</span>
-                    </div>
-                  )}
-                </div>
-
-                <a
-                  href={
-                    tier.name === "Trial"
-                      ? tier.paymentLink.monthly
-                      : isAnnual
-                        ? tier.paymentLink.annually
-                        : tier.paymentLink.monthly
-                  }
-                  className={`mt-8 block w-full rounded-lg py-3.5 text-center text-sm font-medium transition-all ${
-                    tier.isBestValue
-                      ? "bg-orange-500 text-white hover:bg-orange-600"
-                      : tier.name === "Starter"
-                        ? "border-2 border-orange-500 text-orange-600 hover:bg-orange-50"
-                        : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {tier.name === "Trial" ? "Get One-Time Trial" : `Choose ${tier.name}`}
-                </a>
-
-                <p className="mt-3 text-xs text-gray-500">
-                  {tier.name === "Trial"
-                    ? "One-time payment of $7 - No subscription, no recurring charges"
-                    : isAnnual
-                      ? "Billed annually. Cancel anytime."
-                      : "Billed monthly. Cancel anytime."}
-                </p>
-
-                <div className="mt-8">
-                  <p className="mb-4 text-sm font-medium text-gray-900">Includes:</p>
-                  <ul className="space-y-3">
-                    {tier.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          <div className="md:w-80 p-8">
+            <h3 className="text-[#111827] text-xl font-semibold mb-6">Get in Touch with Me:</h3>
+            <div className="flex items-start gap-4">
+              <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                  <path
+                    d="M17 21H7C4 21 2 19 2 16V8C2 5 4 3 7 3H17C20 3 22 5 22 8V16C22 19 20 21 17 21Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeMiterlimit="10"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M17 9L13.87 11.5C12.84 12.32 11.15 12.32 10.12 11.5L7 9"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeMiterlimit="10"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
-            ))}
-          </div>
-
-          {/* Enhanced Custom Solution Section */}
-          <div className="mt-16 overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 to-orange-100 shadow-lg">
-            <div className="flex flex-col md:flex-row">
-              {/* Left Content */}
-              <div className="p-8 md:p-10 text-left md:w-2/3">
-                <div className="inline-flex items-center justify-center rounded-full bg-orange-100 px-4 py-1.5 mb-4">
-                  <span className="text-sm font-medium text-orange-600">Enterprise Solutions</span>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-4">Need a custom solution?</h3>
-                <p className="text-lg text-gray-700 mb-6 max-w-xl">
-                  Our enterprise plans are tailored to your specific needs with dedicated support and custom content
-                  strategies.
-                </p>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Custom Publishing Schedule</h4>
-                      <p className="text-gray-600">Tailored content calendar based on your industry and goals</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
-                      <Check className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Dedicated Strategy Team</h4>
-                      <p className="text-gray-600">Work with experts who understand your business needs</p>
-                    </div>
-                  </div>
-                </div>
-
-                <a
-                  href="mailto:info@blogosocial.com"
-                  className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-3.5 text-base font-medium text-white transition-all hover:bg-orange-600 shadow-md hover:shadow-lg group"
-                >
-                  Contact Sales
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              <div>
+                <a href="mailto:info@blogosocial.com" className="text-[#FF9626] font-medium hover:underline">
+                  info@blogosocial.com
                 </a>
-              </div>
-
-              {/* Right Content - Contact Options */}
-              <div className="bg-white p-8 md:p-10 md:w-1/3 flex flex-col justify-center border-t md:border-t-0 md:border-l border-orange-200">
-                <h4 className="font-semibold text-gray-900 mb-6">Get in touch with us:</h4>
-
-                <div className="space-y-5">
-                  <a
-                    href="mailto:info@blogosocial.com"
-                    className="flex items-center gap-3 text-gray-700 hover:text-orange-600 transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                      <Mail className="h-5 w-5 text-orange-500" />
-                    </div>
-                    <span>info@blogosocial.com</span>
-                  </a>
-
-                  <div className="pt-5 mt-5 border-t border-gray-100">
-                    <p className="text-sm text-gray-500">Typically responds within 24 hours during business days</p>
-                  </div>
-                </div>
+                <p className="text-sm text-[#6B7280] mt-2">Typically responds within 24 hours during business days</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 

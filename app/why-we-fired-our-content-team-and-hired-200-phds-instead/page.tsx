@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/footer"
+import Footer from "@/app/components/foot"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -77,20 +77,15 @@ export default function BlogPost() {
         <div className="container mx-auto px-4">
           <div className="h-16 sm:h-20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/example-logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
+              <Image src="/logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+              
               <Link
-                href="/blogs"
-                className="text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                href="/#pricing"
+                className="text-xs sm:text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors px-4 py-2 rounded-full"
               >
-                Blogs
-              </Link>
-              <Link
-                href="/auth-form"
-                className="text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors px-4 py-2 rounded-full"
-              >
-                Login
+                Get Started
               </Link>
             </div>
           </div>
@@ -108,12 +103,13 @@ export default function BlogPost() {
               <time dateTime={publishDate}>Published on {new Date(publishDate).toLocaleDateString()}</time> • 15 min
               read
             </p>
-            <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden mb-8">
+            <figure className="relative h-72 sm:h-96 md:h-[500px] rounded-lg overflow-hidden mb-8">
               <Image
                 src="/90.png"
                 alt="PhD Content Revolution Infographic"
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
                 className="object-cover object-center"
               />
             </figure>
@@ -124,15 +120,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Introduction: The End of Traditional Content Teams 🎯📉💡
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/91.png"
                   alt="Traditional Content Teams vs PhD-led Teams"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover object-center"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <p className="text-gray-700">
                 For years, we followed the conventional SaaS content model—hiring in-house writers and scaling content
                 through AI tools. But by 2025, Google's E-E-A-T (Experience, Expertise, Authoritativeness,
@@ -164,15 +160,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 1: Why Traditional Content Teams Fail SaaS Companies ⚠️📉💡
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/92.png"
                   alt="Failures of Traditional Content Teams"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover object-center"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The 3 Fatal Gaps in AI-Only Content</h3>
               <p className="text-gray-700 mb-4">Our audit of 12M penalized pages showed:</p>
               <table className="w-full border-collapse border border-gray-300 mb-6">
@@ -214,7 +210,7 @@ export default function BlogPost() {
                 <li>Overlooked 6 critical Article 32 requirements ❌</li>
                 <li>Triggered legal review 3 days before publication 🕒</li>
               </ul>
-              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-4">
+              <blockquote className="border-l-4 border-orange-500 pl-4 italic text-gray-700 my-4">
                 "We narrowly avoided fines because a contract writer spotted the errors," admitted our CMO[3][10].
               </blockquote>
             </section>
@@ -223,15 +219,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 2: The PhD Advantage in SaaS Content 🎓📖🔬
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/93.png"
                   alt="PhD Advantage in SaaS Content"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover object-center"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">Why Academia's Loss Became Our Gain</h3>
               <p className="text-gray-700 mb-4">
                 With only 2% of PhDs securing tenure-track roles[1][26], we capitalized on:
@@ -280,15 +276,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 3: Building the PhD-AI Content Factory 🏭🤖📑
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/94.png"
                   alt="PhD-AI Content Factory"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover object-center"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The 5-Layer Validation Workflow</h3>
               <ol className="list-decimal pl-6 text-gray-700 mb-6">
                 <li>AI Drafting: GPT-5 + 50M ICP profiles generate initial copy ⚙️</li>
@@ -310,15 +306,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 4: Results That Redefined SaaS Content 🚀📈🏆
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/95.png"
                   alt="SaaS Content Redefined Results"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover object-center"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">120-Day Transformation Timeline</h3>
               <table className="w-full border-collapse border border-gray-300 mb-6">
                 <thead>
@@ -357,7 +353,7 @@ export default function BlogPost() {
                 </tbody>
               </table>
 
-              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-6">
+              <blockquote className="border-l-4 border-orange-500 pl-4 italic text-gray-700 my-6">
                 "Your API docs read like MIT lecture notes. We didn't need a sales call."
                 <footer className="text-sm mt-2">– CTO, Fortune 500 Retailer 🎤</footer>
               </blockquote>
@@ -367,9 +363,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 5: Implementing PhD-Driven Content Ops 🔧📚📊
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
-                
-              </figure>
+              <div className="w-full mt-6 mb-6">
+                <Image
+                  src="/96.png"
+                  alt="Implementing PhD-Driven Content Operations"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
+                />
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">5-Step Migration Blueprint</h3>
               <ol className="list-decimal pl-6 text-gray-700 mb-6">
                 <li>Audit Existing Content: Use tools like Blogosocial's Penalty Risk Analyzer[9]</li>
@@ -378,7 +380,7 @@ export default function BlogPost() {
                 <li>Build Citation Libraries: Centralize 120M+ academic papers</li>
                 <li>Enable Real-Time Updates: Auto-rewrite posts when regulations change 🔄</li>
               </ol>
-              <p className="font-medium text-blue-600">
+              <p className="font-medium text-orange-600">
                 <Link href="/phd-hiring-checklist">Free Tool: Download Our PhD Hiring Checklist</Link>
               </p>
             </section>
@@ -387,9 +389,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Conclusion: The New Frontier of Expert-Led AI 🚀📖🌍
               </h2>
-              <figure className="relative h-64 sm:h-80 rounded-lg overflow-hidden my-6">
-                
-              </figure>
+              <div className="w-full mt-6 mb-6">
+                <Image
+                  src="/97.png"
+                  alt="The New Frontier of Expert-Led AI"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
+                />
+              </div>
               <p className="text-gray-700 mb-4">
                 While pure AI tools risk $47K+ compliance penalties[3][9] and generic content teams lack technical
                 depth, our PhD hybrid model achieved:
@@ -403,19 +411,19 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mb-3">Next Steps:</h3>
               <ul className="list-disc pl-6 text-gray-700 mb-6">
                 <li>
-                  <Link href="/eeat-audit" className="text-blue-600 hover:underline">
+                  <Link href="/eeat-audit" className="text-orange-600 hover:underline">
                     Run a Free E-E-A-T Audit 📊
                   </Link>
                 </li>
                 <li>
-                  <Link href="/phd-content-revolution" className="text-blue-600 hover:underline">
+                  <Link href="/phd-content-revolution" className="text-orange-600 hover:underline">
                     Join 1,200+ Brands in the PhD Content Revolution 🚀
                   </Link>
                 </li>
               </ul>
               <p className="text-gray-700 mt-6">
                 Want the full 7,500-word version with all case studies?{" "}
-                <a href="mailto:team@blogosocial.com" className="text-blue-600 hover:underline">
+                <a href="mailto:team@blogosocial.com" className="text-orange-600 hover:underline">
                   Email "PhD Blueprint" to team@blogosocial.com
                 </a>{" "}
                 📩
@@ -425,14 +433,14 @@ export default function BlogPost() {
         </article>
 
         <aside className="max-w-3xl mx-auto mt-12">
-          <div className="bg-blue-100 rounded-3xl p-8">
+          <div className="bg-orange-100 rounded-3xl p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-black">Ready to upgrade your content strategy?</h2>
                 <p className="text-gray-700 text-sm md:text-base">
                   Get our free E-E-A-T Audit and see how your content stacks up against Google's latest standards.
                 </p>
-                <div className="inline-flex items-center gap-2 bg-blue-200 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="inline-flex items-center gap-2 bg-orange-200 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">
                   <svg
                     className="w-3 h-3"
                     viewBox="0 0 12 12"
@@ -454,7 +462,7 @@ export default function BlogPost() {
               <div className="relative self-end md:self-center">
                 <Link
                   href="/free-eeat-audit"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Get Your Free E-E-A-T Audit
                 </Link>

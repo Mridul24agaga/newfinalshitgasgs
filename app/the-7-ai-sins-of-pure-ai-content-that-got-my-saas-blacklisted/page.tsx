@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/footer"
+import Footer from "@/app/components/foot"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -77,20 +77,15 @@ export default function BlogPost() {
         <div className="container mx-auto px-4">
           <div className="h-16 sm:h-20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/example-logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
+              <Image src="/logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+              
               <Link
-                href="/blogs"
-                className="text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                href="/#pricing"
+                className="text-xs sm:text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors px-4 py-2 rounded-full"
               >
-                Blogs
-              </Link>
-              <Link
-                href="/auth-form"
-                className="text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors px-4 py-2 rounded-full"
-              >
-                Login
+                Get Started
               </Link>
             </div>
           </div>
@@ -110,13 +105,14 @@ export default function BlogPost() {
               <time dateTime={publishDate}>Published on {new Date(publishDate).toLocaleDateString()}</time> • 15 min
               read
             </p>
-            <figure className="relative rounded-lg overflow-hidden mb-8">
+            <figure className="relative h-72 sm:h-96 md:h-[500px] rounded-lg overflow-hidden mb-8">
               <Image
                 src="/55.png"
                 alt="AI Content Crisis Infographic"
-                width={1200}
-                height={600}
-                className="w-full h-auto object-contain"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
+                className="object-cover object-center"
               />
             </figure>
           </header>
@@ -147,15 +143,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Sin 1: The Expertise Void (89% Penalty Risk)</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/56.png"
                   alt="AI Expertise Void Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Can't Fake Real Experience</h3>
               <p className="text-gray-700 mb-4">
                 Google's 2025 algorithm updates now prioritize first-hand expertise. Our analysis revealed:
@@ -208,15 +204,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Sin 2: Citation Starvation (93% Failure Rate)</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/57.png"
                   alt="Citation Starvation Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Makes Up Sources</h3>
               <p className="text-gray-700 mb-4">
                 Google penalizes content lacking credible citations. Our study found:
@@ -248,15 +244,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Sin 3: Entity Amnesia (The SEO Silent Killer)</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/58.png"
                   alt="Entity Amnesia SEO Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Fails at Semantic SEO</h3>
               <p className="text-gray-700 mb-4">
                 Google's Knowledge Graph prioritizes entity coherence—how well content connects relevant topics.
@@ -288,15 +284,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Sin 4: Keyword Stuffing & Over-Optimization (75% Penalty Rate)
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/59.png"
                   alt="Keyword Stuffing Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Lacks Context in SEO</h3>
               <p className="text-gray-700 mb-4">
                 AI-generated content often relies on outdated SEO techniques, stuffing keywords without considering
@@ -336,15 +332,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Sin 5: Generic, Low-Value Content (81% Penalty Rate)
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/60.png"
                   alt="Generic Content Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Writes for Volume, Not Depth</h3>
               <p className="text-gray-700 mb-4">
                 Google prioritizes high-value content with original insights. AI-generated content often lacks
@@ -384,15 +380,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Sin 6: Poor Engagement & Robotic Tone (66% Penalty Rate)
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/61.png"
                   alt="Robotic Tone Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">The Problem: AI Lacks Emotional Intelligence</h3>
               <p className="text-gray-700 mb-4">
                 AI-generated content often fails to connect with human readers, leading to low engagement and high
@@ -429,15 +425,15 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Sin 7: Ignoring Content Updates & Refreshes (90% Penalty Rate)
               </h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/62.png"
                   alt="Outdated Content Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <h3 className="text-xl font-semibold text-black mb-3">
                 The Problem: AI Content Becomes Outdated Quickly
               </h3>
@@ -476,15 +472,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Final Takeaway: The Hybrid Model Wins</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/63.png"
                   alt="Hybrid Content Model Success Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <p className="text-gray-700 mb-4">By combining AI's efficiency with human expertise, we achieved:</p>
               <ul className="list-disc pl-6 text-gray-700 mb-4">
                 <li>✅ 317% traffic rebound</li>
@@ -498,15 +494,15 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">FAQs: Avoiding AI Content Penalties</h2>
-              <figure className="relative rounded-lg overflow-hidden mb-6">
+              <div className="w-full mt-6 mb-6">
                 <Image
                   src="/64.png"
                   alt="AI Content FAQs Illustration"
-                  width={800}
-                  height={400}
-                  className="w-full h-auto object-contain"
+                  width={1200}
+                  height={600}
+                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
-              </figure>
+              </div>
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2">1. How do I know if my AI content is penalized?</h3>
@@ -545,14 +541,14 @@ export default function BlogPost() {
         </article>
 
         <aside className="max-w-3xl mx-auto mt-12">
-          <div className="bg-blue-100 rounded-3xl p-8">
+          <div className="bg-orange-100 rounded-3xl p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-black">Ready to Avoid AI Content Penalties?</h2>
                 <p className="text-gray-700 text-sm md:text-base">
                   Get our free AI Content Audit and see how your content stacks up against Google's latest standards.
                 </p>
-                <div className="inline-flex items-center gap-2 bg-blue-200 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="inline-flex items-center gap-2 bg-orange-200 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">
                   <svg
                     className="w-3 h-3"
                     viewBox="0 0 12 12"
@@ -574,13 +570,13 @@ export default function BlogPost() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/free-ai-content-audit"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Get Your Free AI Content Audit
                 </Link>
                 <Link
                   href="/hybrid-content-strategy"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-orange-600 bg-white border border-orange-600 rounded-lg hover:bg-orange-50 transition-colors"
                 >
                   Learn Hybrid Content Strategy
                 </Link>

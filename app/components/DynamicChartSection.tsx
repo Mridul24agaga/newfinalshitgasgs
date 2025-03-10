@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 const DynamicChartSection: React.FC<{ data: ChartData[] }> = ({ data }) => {
   return (
     <div className="rounded-2xl bg-white p-8 border border-gray-200">
-      <h2 className="mb-6 text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">WITH Blogsocial.</h2>
+      <h2 className="mb-6 text-4xl font-extrabold text-gray-900 leading-tight tracking-tight">WITH Blogosocial.</h2>
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>

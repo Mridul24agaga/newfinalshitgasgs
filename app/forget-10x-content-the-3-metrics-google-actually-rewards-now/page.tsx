@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/footer"
+import Footer from "@/app/components/foot"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -77,7 +77,7 @@ export default function BlogPost() {
         <div className="container mx-auto px-4">
           <div className="h-16 sm:h-20 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/example-logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
+              <Image src="/logo.png" alt="Example Blog" width={100} height={32} className="h-6 sm:h-8 w-auto" />
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <Link
@@ -87,10 +87,10 @@ export default function BlogPost() {
                 Blogs
               </Link>
               <Link
-                href="/auth-form"
-                className="text-xs sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors px-4 py-2 rounded-full"
+                href="/#pricing"
+                className="text-xs sm:text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors px-4 py-2 rounded-full"
               >
-                Login
+                Get started
               </Link>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function BlogPost() {
 
             <section>
               <h2 className="text-2xl font-semibold text-black mb-4">Metric #2: Content Depth Over Length</h2>
-              <h3 className="text-xl font-semibold text-black mb-3">Entity Richness  Word Count</h3>
+              <h3 className="text-xl font-semibold text-black mb-3">Entity Richness Word Count</h3>
               <p className="text-gray-700 mb-4">
                 Google now measures semantic network density – how thoroughly you cover subtopics. Tools like Clearscope
                 score:
@@ -341,7 +341,7 @@ export default function BlogPost() {
                 <li>Heatmap Analytics + Scroll Depth Trackers</li>
               </ul>
 
-              <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-6">
+              <blockquote className="border-l-4 border-orange-500 pl-4 italic text-gray-700 my-6">
                 "Forget writing 10x more – create 10x deeper."
                 <footer className="text-sm mt-2">– CTO, Top 100 SaaS Company</footer>
               </blockquote>
@@ -357,7 +357,7 @@ export default function BlogPost() {
         </article>
 
         <aside className="max-w-3xl mx-auto mt-12">
-          <div className="bg-blue-100 rounded-3xl p-8">
+          <div className="bg-orange-100 rounded-3xl p-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-black">Ready to Future-Proof Your Content?</h2>
@@ -368,13 +368,13 @@ export default function BlogPost() {
               <div className="flex flex-col gap-4">
                 <Link
                   href="/2025-seo-starter-kit"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Download 2025 SEO Starter Kit
                 </Link>
                 <Link
                   href="/penalty-recovery-webinar"
-                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-orange-600 bg-white border border-orange-600 rounded-lg hover:bg-orange-50 transition-colors"
                 >
                   Watch Penalty Recovery Webinar
                 </Link>
