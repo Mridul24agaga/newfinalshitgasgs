@@ -58,6 +58,44 @@ export default function PricingSection() {
     },
   }
 
+  // Add this mapping object after the prices object and before the getPriceDisplay function
+  const checkoutLinks = {
+    starter: {
+      monthly: {
+        $: "https://checkout.dodopayments.com/buy/pdt_I9yAEB0jgVzOYo8uDiSX3?quantity=1",
+        "₹": "https://checkout.dodopayments.com/buy/pdt_I9yAEB0jgVzOYo8uDiSX3?quantity=1",
+      },
+      annually: {
+        $: "https://checkout.dodopayments.com/buy/pdt_zYXfbCA92y3XSQlIKcAZi?quantity=1",
+        "₹": "https://checkout.dodopayments.com/buy/pdt_zYXfbCA92y3XSQlIKcAZi?quantity=1",
+      },
+    },
+    professional: {
+      monthly: {
+        $: "https://checkout.dodopayments.com/buy/pdt_9Buf4nLX6lHbdbPEchvoI?quantity=1",
+        "₹": "https://checkout.dodopayments.com/buy/pdt_9Buf4nLX6lHbdbPEchvoI?quantity=1",
+      },
+      annually: {
+        $: "https://checkout.dodopayments.com/buy/pdt_Z4Diw1kvIgpbFZs7ljfnu?quantity=1",
+        "₹": "https://checkout.dodopayments.com/buy/pdt_Z4Diw1kvIgpbFZs7ljfnu?quantity=1",
+      },
+    },
+    enterprise: {
+      $: "https://checkout.dodopayments.com/buy/pdt_mNOfbCA92y3XSQlIKcAZz?quantity=1",
+      "₹": "https://checkout.dodopayments.com/buy/pdt_pQRfbCA92y3XSQlIKcAAa?quantity=1",
+    },
+  }
+
+  // Add this function to get the checkout link
+  const getCheckoutLink = (plan: "starter" | "professional") => {
+    return checkoutLinks[plan][billingPeriod][currency]
+  }
+
+  // Add this function to get the enterprise checkout link
+  const getEnterpriseCheckoutLink = () => {
+    return checkoutLinks.enterprise[currency]
+  }
+
   const getPriceDisplay = (plan: keyof Prices) => {
     const period = billingPeriod === "monthly" ? "monthly" : "annually"
     return prices[plan][period][currency]
@@ -157,9 +195,13 @@ export default function PricingSection() {
                 </span>
                 <span className="text-gray-600 ml-1">/Month</span>
               </div>
-              <button className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors">
+              {/* Replace the "Choose Starter" button with this */}
+              <a
+                href={getCheckoutLink("starter")}
+                className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors inline-block"
+              >
                 Choose Starter
-              </button>
+              </a>
               <div className="text-sm text-gray-500 mt-2">
                 {billingPeriod === "monthly"
                   ? "Billed monthly, cancel anytime"
@@ -212,9 +254,13 @@ export default function PricingSection() {
                 </span>
                 <span className="text-gray-600 ml-1">/Month</span>
               </div>
-              <button className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors">
+              {/* Replace the "Choose Professional" button with this */}
+              <a
+                href={getCheckoutLink("professional")}
+                className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors inline-block"
+              >
                 Choose Professional
-              </button>
+              </a>
               <div className="text-sm text-gray-500 mt-2">
                 {billingPeriod === "monthly"
                   ? "Billed monthly, cancel anytime"
@@ -335,7 +381,11 @@ export default function PricingSection() {
               </div>
             </div>
 
-            <button className="bg-[#FF9626] text-white px-6 py-3 rounded-full font-medium inline-flex items-center group hover:bg-[#e08520] transition-colors">
+            {/* Replace the "Contact Sales" button with this */}
+            <a
+              href="mailto:info@blogosocial.com"
+              className="bg-[#FF9626] text-white px-6 py-3 rounded-full font-medium inline-flex items-center group hover:bg-[#e08520] transition-colors"
+            >
               Contact Sales
               <svg
                 width="20"
@@ -352,7 +402,7 @@ export default function PricingSection() {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
+            </a>
           </div>
 
           <div className="md:w-80 p-8">
