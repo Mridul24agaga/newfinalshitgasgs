@@ -14,6 +14,7 @@ export default function SummarizerPage() {
     credits: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const supabase = createClient()
 
   useEffect(() => {
@@ -60,6 +61,12 @@ export default function SummarizerPage() {
     fetchSubscription()
   }, [supabase])
 
+  const handleContentGenerated = () => {
+    console.log("Content generated, refreshing content planner")
+    // Increment the refresh trigger to force the ContentPlanner to re-render
+    setRefreshTrigger((prev) => prev + 1)
+  }
+
   if (isLoading) {
     return <div>Loading...</div>
   }
@@ -93,7 +100,12 @@ export default function SummarizerPage() {
 
           <main className="p-4 md:p-8 pt-20 md:pt-8">
             <div className="max-w-[1200px] mx-auto">
-              <URLForm />
+              <URLForm onContentGenerated={handleContentGenerated} />
+
+              {/* Content Planner with refresh key */}
+              <div className="mt-8">
+                <ContentPlanner key={refreshTrigger} />
+              </div>
             </div>
           </main>
         </div>
