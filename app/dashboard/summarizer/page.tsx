@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu } from 'lucide-react'
+import { Menu } from "lucide-react"
 import URLForm from "./url-form"
 import { Sidebar } from "@/app/components/layout/sidebar"
 import { createClient } from "@/utitls/supabase/client"
@@ -14,7 +14,6 @@ export default function SummarizerPage() {
     credits: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [refreshPlanner, setRefreshPlanner] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -61,11 +60,6 @@ export default function SummarizerPage() {
     fetchSubscription()
   }, [supabase])
 
-  const handleContentGenerated = () => {
-    // Toggle the refreshPlanner state to force ContentPlanner to refresh
-    setRefreshPlanner(prev => !prev)
-  }
-
   if (isLoading) {
     return <div>Loading...</div>
   }
@@ -99,13 +93,7 @@ export default function SummarizerPage() {
 
           <main className="p-4 md:p-8 pt-20 md:pt-8">
             <div className="max-w-[1200px] mx-auto">
-              {/* URL Form at the top */}
-              <URLForm onGenerated={handleContentGenerated} />
-              
-              {/* Content Planner below the URL Form */}
-              <div className="mt-8">
-                <ContentPlanner key={refreshPlanner ? "refresh" : "initial"} />
-              </div>
+              <URLForm />
             </div>
           </main>
         </div>
@@ -113,3 +101,4 @@ export default function SummarizerPage() {
     </div>
   )
 }
+

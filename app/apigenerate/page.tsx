@@ -6,15 +6,14 @@ import { cn } from "@/lib/utils"
 import { Sidebar } from "@/app/components/sidebar"
 import { Copy, Check, Key, Menu, X, Code, Terminal, FileText, ExternalLink, AlertCircle } from "lucide-react"
 
-interface DashboardProps {
-  subscription?: {
-    plan_id: string
-    credits: number
-  } | null
+interface SubscriptionData {
+  plan_id: string
+  credits: number
 }
 
-export default function Dashboard({ subscription = null }: DashboardProps) {
+export default function Dashboard() {
   const pathname = usePathname()
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [apiKey, setApiKey] = useState("")
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -38,8 +37,9 @@ export default function Dashboard({ subscription = null }: DashboardProps) {
     return () => window.removeEventListener("resize", checkScreenSize)
   }, [])
 
-  // Fetch API key
+  // Fetch API key and subscription data
   useEffect(() => {
+    // Fetch API key
     fetch("/api/get-api-key")
       .then((res) => res.json())
       .then((data) => {
@@ -49,6 +49,16 @@ export default function Dashboard({ subscription = null }: DashboardProps) {
       .catch((error) => {
         console.error("Failed to fetch API key:", error)
         setLoading(false)
+      })
+
+    // Fetch subscription data
+    fetch("/api/get-subscription")
+      .then((res) => res.json())
+      .then((data) => {
+        setSubscription(data.subscription)
+      })
+      .catch((error) => {
+        console.error("Failed to fetch subscription data:", error)
       })
   }, [])
 
@@ -121,7 +131,7 @@ export default function Dashboard({ subscription = null }: DashboardProps) {
                 API Key
               </div>
             </button>
-            
+           
           </div>
 
           {/* API Key Tab */}
