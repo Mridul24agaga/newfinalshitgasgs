@@ -22,6 +22,8 @@ import FeatureSection from "./components/features"
 import WhyHireSection from "./components/hire"
 import ComparisonTable from "./components/comparison"
 import TestimonialsSection from "./components/testimonials"
+import OurProcessSection from "./components/newtext"
+import ScrollingResults from "./components/moving"
 
 export const metadata: Metadata = {
   title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
@@ -78,9 +80,10 @@ export default function Page() {
         <Hero />
       <AIWritingSection/>
 
+
       <div className="my-24">
-        <FlowSection />
       </div>
+      <OurProcessSection/>
       <div>
         <BlogsocialStats />
       </div>

@@ -12,57 +12,72 @@ interface Plan {
   id: string
   name: string
   description: string
-  price: number
+  priceUSD: {
+    monthly: number
+    annually: number
+    yearlyTotal: number
+  }
+  priceINR: {
+    monthly: number
+    annually: number
+    yearlyTotal: number
+  }
   credits: number
   dodoProductId: string
   features: string[]
   discount?: string
-  oneTime?: boolean
+  isBestValue?: boolean
+  annualDiscountPercentage?: number
 }
 
 const plans: Plan[] = [
   {
-    id: "trial",
-    name: "Trial",
-    description: "Experience our strategic blogging service with a one-time trial",
-    price: 7,
-    credits: 2,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    oneTime: true,
-    features: [
-      "2 professionally written blog posts trial",
-      "Basic SEO optimization",
-      "Content strategy consultation",
-      "Standard support",
-    ],
-  },
-  {
     id: "starter",
     name: "Starter",
     description: "Ideal for growing your online presence",
-    price: 74,
-    credits: 10,
+    priceUSD: {
+      monthly: 147,
+      annually: 119,
+      yearlyTotal: 1427,
+    },
+    priceINR: {
+      monthly: 10000,
+      annually: 8500,
+      yearlyTotal: 102000,
+    },
+    credits: 30,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
     discount: "NET 67% OFF",
+    annualDiscountPercentage: 20,
     features: [
-      "10 professionally written blog posts per month",
+      "30 professionally written blog posts per month",
       "Comprehensive content strategy",
       "Advanced SEO optimization",
       "Social media integration",
       "Monthly performance reports",
-      "Email support",
     ],
   },
   {
     id: "professional",
     name: "Professional",
     description: "For businesses serious about content marketing",
-    price: 147,
-    credits: 30,
+    priceUSD: {
+      monthly: 227,
+      annually: 179,
+      yearlyTotal: 2197,
+    },
+    priceINR: {
+      monthly: 16000,
+      annually: 13000,
+      yearlyTotal: 156000,
+    },
+    credits: 60,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
     discount: "NET 67% OFF",
+    annualDiscountPercentage: 20,
+    isBestValue: true,
     features: [
-      "30 professionally written blog posts per month",
+      "60 professionally written blog posts per month",
       "Advanced content strategy and planning",
       "Premium SEO tools and optimization",
       "Full suite of social media integrations",
@@ -78,6 +93,7 @@ export function PaymentPage() {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly")
+  const [currency, setCurrency] = useState<"USD" | "INR">("USD")
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -150,9 +166,18 @@ export function PaymentPage() {
 
       setDebugInfo(`User authenticated. User ID: ${user.id}`)
 
-      // Construct the checkout URL with redirect
+      // Get price information based on currency and billing cycle
+      const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
+      const monthlyPrice = prices.monthly
+      const annualPrice = prices.annually
+      const annualDiscountPercentage = plan.annualDiscountPercentage || 20
+
+      // Make sure billing cycle is correctly formatted
+      const billingCycleValue = billingCycle === "annually" ? "annually" : "monthly"
+
+      // Construct the checkout URL with redirect and include billing cycle and price information
       const successUrl = encodeURIComponent(
-        `${window.location.origin}/payment-success?user_id=${user.id}&plan=${plan.id}&credits=${plan.credits}`,
+        `${window.location.origin}/payment-success?user_id=${user.id}&plan=${plan.id}&credits=${plan.credits}&billing_cycle=${billingCycleValue}&monthly_price=${monthlyPrice}&annual_price=${annualPrice}&annual_discount=${annualDiscountPercentage}&currency=${currency}`,
       )
       const checkoutUrl = `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${successUrl}`
 
@@ -175,9 +200,27 @@ export function PaymentPage() {
     }
   }
 
-  const getAnnualPrice = (monthlyPrice: number) => {
-    const annualPrice = monthlyPrice * 12 * 0.8 // 20% discount
-    return annualPrice.toFixed(2)
+  const formatCurrency = (amount: number) => {
+    if (currency === "USD") {
+      return `$${amount}`
+    } else {
+      return `₹${amount >= 1000 ? `${amount / 1000}K` : amount}`
+    }
+  }
+
+  const getPriceDisplay = (plan: Plan) => {
+    const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
+
+    if (billingCycle === "monthly") {
+      return formatCurrency(prices.monthly)
+    } else {
+      return formatCurrency(prices.annually)
+    }
+  }
+
+  const getYearlyTotal = (plan: Plan) => {
+    const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
+    return formatCurrency(prices.yearlyTotal)
   }
 
   return (
@@ -186,8 +229,27 @@ export function PaymentPage() {
         <h1 className="text-4xl font-bold mb-3 text-gray-900">We've got a plan that's perfect for you.</h1>
       </div>
 
-      {/* Billing Toggle */}
-      <div className="flex justify-center mb-10">
+      {/* Currency and Billing Toggle */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10">
+        <div className="inline-flex rounded-full bg-gray-100 p-1 shadow-sm">
+          <button
+            onClick={() => setCurrency("USD")}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              currency === "USD" ? "bg-orange-500 text-white" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            USD
+          </button>
+          <button
+            onClick={() => setCurrency("INR")}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              currency === "INR" ? "bg-orange-500 text-white" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            INR
+          </button>
+        </div>
+
         <div className="inline-flex rounded-full bg-gray-100 p-1 shadow-sm">
           <button
             onClick={() => setBillingCycle("monthly")}
@@ -200,7 +262,7 @@ export function PaymentPage() {
           <button
             onClick={() => setBillingCycle("annually")}
             className={`px-6 py-2 rounded-full font-medium transition-all ${
-              billingCycle === "annually" ? "bg-white text-gray-900" : "text-gray-600 hover:text-gray-900"
+              billingCycle === "annually" ? "bg-orange-500 text-white" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Annually
@@ -212,15 +274,15 @@ export function PaymentPage() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan, index) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {plans.map((plan) => (
           <div
             key={plan.id}
             className={`border rounded-lg overflow-hidden ${
-              index === 2 ? "border-orange-200 relative" : "border-gray-200"
+              plan.isBestValue ? "border-orange-200 relative" : "border-gray-200"
             }`}
           >
-            {index === 2 && (
+            {plan.isBestValue && (
               <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-3 py-1 rotate-45 translate-x-8 -translate-y-1 w-36 text-center">
                 BEST VALUE
               </div>
@@ -237,47 +299,33 @@ export function PaymentPage() {
               )}
 
               <div className="text-center mb-2">
-                <span className="text-4xl font-bold">
-                  ${billingCycle === "monthly" || plan.oneTime ? plan.price : getAnnualPrice(plan.price)}
-                </span>
-                {!plan.oneTime && (
-                  <span className="text-gray-500 text-sm">/{billingCycle === "monthly" ? "month" : "year"}</span>
-                )}
+                <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
+                <span className="text-gray-500 text-sm">/{billingCycle === "monthly" ? "Month" : "Month"}</span>
               </div>
 
-              {plan.oneTime && (
+              {billingCycle === "annually" && (
                 <div className="text-center mb-4">
-                  <span className="text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
-                    One-time payment (not a subscription)
-                  </span>
+                  <span className="text-sm text-gray-600">{getYearlyTotal(plan)} billed yearly</span>
+                </div>
+              )}
+
+              {billingCycle === "monthly" && (
+                <div className="text-center mb-4">
+                  <span className="text-sm text-gray-600">Billed monthly, cancel anytime</span>
                 </div>
               )}
 
               <button
-                className={`w-full py-3 rounded-lg font-medium mb-2 ${
-                  index === 2
+                className={`w-full py-3 rounded-lg font-medium mb-6 ${
+                  plan.isBestValue
                     ? "bg-orange-500 text-white hover:bg-orange-600"
-                    : index === 1
-                      ? "border border-orange-500 text-orange-500 hover:bg-orange-50"
-                      : "border border-gray-300 hover:bg-gray-50"
+                    : "border border-orange-500 text-orange-500 hover:bg-orange-50"
                 }`}
                 onClick={() => handleSubscribe(plan)}
                 disabled={loading && selectedPlan === plan.id}
               >
-                {loading && selectedPlan === plan.id
-                  ? "Processing..."
-                  : `${plan.oneTime ? "Get One-Time Trial" : `Choose ${plan.name}`}`}
+                {loading && selectedPlan === plan.id ? "Processing..." : `Choose ${plan.name}`}
               </button>
-
-              {!plan.oneTime && (
-                <p className="text-xs text-center text-gray-500 mb-6">Billed monthly. Cancel anytime.</p>
-              )}
-
-              {plan.oneTime && (
-                <p className="text-xs text-center text-gray-500 mb-6">
-                  One-time payment of ${plan.price} - No subscription, no recurring charges
-                </p>
-              )}
 
               <div>
                 <p className="font-medium mb-3">Includes:</p>
@@ -311,11 +359,20 @@ export function PaymentPage() {
               billing period.
             </p>
           </div>
+          <div>
+            <h4 className="font-medium text-gray-900 mb-1">
+              What's the difference between monthly and annual billing?
+            </h4>
+            <p className="text-gray-600 text-sm">
+              Annual billing offers a 20% discount compared to monthly billing. You'll be charged once per year instead
+              of monthly.
+            </p>
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mt-8 p-4 bg-red-50 border-l-4 border-red-200 rounded-lg">
           <p className="text-red-600">{error}</p>
         </div>
       )}

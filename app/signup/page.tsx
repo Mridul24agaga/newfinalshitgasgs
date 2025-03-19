@@ -102,8 +102,8 @@ export default function SignUpPage() {
         </button>
 
         <div className="w-full max-w-md mx-auto flex flex-col justify-center flex-grow">
-          <div className="flex items-center justify-center mb-12 bg-orange-500 w-12 h-12 rounded-lg">
-            <Image src="/placeholder.svg" alt="Blogosocial Logo" width={48} height={48} className="rounded-lg" />
+          <div className="flex items-center justify-center mb-12">
+            <Image src="/logo.png" alt="Blogosocial Logo" width={120} height={48} className="h-auto" />
           </div>
 
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
@@ -273,9 +273,51 @@ export default function SignUpPage() {
           </div>
           <div className="mt-12 flex items-center gap-3">
             <div className="flex -space-x-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-10 h-10 rounded-full border-2 border-white/50 bg-white/20" />
-              ))}
+              <div className="relative w-10 h-10 rounded-full border-2 border-white/50 overflow-hidden">
+                <Image
+                  src="/abc3.jpg"
+                  alt="User 1"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative w-10 h-10 rounded-full border-2 border-white/50 overflow-hidden">
+                <Image
+                  src="/abc5.jpg"
+                  alt="User 2"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative w-10 h-10 rounded-full border-2 border-white/50 overflow-hidden">
+                <Image
+                  src="/abc6.jpg"
+                  alt="User 3"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative w-10 h-10 rounded-full border-2 border-white/50 overflow-hidden">
+                <Image
+                  src="/abc2.jpg"
+                  alt="User 4"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative w-10 h-10 rounded-full border-2 border-white/50 overflow-hidden">
+                <Image
+                  src="/abc1.jpg"
+                  alt="User 5"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
             </div>
             <span className="text-lg font-semibold">Join 40,000+ satisfied bloggers</span>
           </div>

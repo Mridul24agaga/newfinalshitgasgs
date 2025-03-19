@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { createClient } from "@/utitls/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   PenLine,
@@ -15,7 +16,6 @@ import {
   Home,
   ChevronDown,
   Link2,
-  Globe,
   ExternalLink,
 } from "lucide-react"
 
@@ -35,9 +35,7 @@ const navigation = [
   {
     name: "Integrations",
     icon: Link2,
-    subItems: [
-      { name: "GetMoreBacklinks", href: "/integrations", icon: ExternalLink },
-    ],
+    subItems: [{ name: "GetMoreBacklinks", href: "/integrations", icon: ExternalLink }],
   },
 ]
 
@@ -48,25 +46,173 @@ interface SidebarProps {
   } | null
 }
 
-export function Sidebar({ subscription }: SidebarProps) {
+export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
   const pathname = usePathname()
   const [openSubmenu, setOpenSubmenu] = useState("Company Database")
+  const [subscription, setSubscription] = useState(initialSubscription)
+  const [totalCredits, setTotalCredits] = useState(0)
+  const [creditsUsed, setCreditsUsed] = useState(0)
+  const supabase = createClient()
 
-  const getCreditsForPlan = (plan: string | undefined) => {
-    switch (plan) {
-      case "basic":
-        return 10
-      case "pro":
-        return 30
-      case "trial":
-        return 2
-      default:
-        return 0 // No plan or unrecognized plan
+  // Plan credits mapping - consistent with URLForm
+  const planCreditsMap: { [key: string]: number } = {
+    trial: 2,
+    starter: 30,
+    professional: 60,
+    basic: 30, // Map basic to starter
+    pro: 60, // Map pro to professional
+  }
+
+  useEffect(() => {
+    if (initialSubscription) {
+      setSubscription(initialSubscription)
+      updateCreditInfo(initialSubscription)
+    } else {
+      fetchSubscriptionData()
+    }
+
+    setupRealtimeSubscription()
+  }, [initialSubscription])
+
+  const setupRealtimeSubscription = async () => {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser()
+      if (error || !user) {
+        console.error("Failed to get user for real-time subscription:", error)
+        return
+      }
+
+      const userId = user.id
+
+      const subscription = supabase
+        .channel("sidebar-subscription")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "subscriptions",
+            filter: `user_id=eq.${userId}`,
+          },
+          async (payload) => {
+            console.log("Sidebar detected subscription change:", payload)
+            if (payload.new) {
+              await fetchSubscriptionData()
+            }
+          },
+        )
+        .subscribe()
+
+      // Also listen for blog changes to update used credits
+      const blogsChannel = supabase
+        .channel("sidebar-blogs")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "blogs",
+            filter: `user_id=eq.${userId}`,
+          },
+          async () => {
+            console.log("Sidebar detected blog change, updating credit info")
+            await fetchSubscriptionData()
+          },
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(subscription)
+        supabase.removeChannel(blogsChannel)
+      }
+    } catch (error) {
+      console.error("Error setting up sidebar realtime subscription:", error)
     }
   }
 
-  const totalCredits = subscription ? getCreditsForPlan(subscription.plan_id) : 0
-  const remainingCredits = subscription ? subscription.credits : 0
+  const fetchSubscriptionData = async () => {
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError || !user) {
+        console.error("No authenticated user found for sidebar:", authError)
+        return
+      }
+
+      const userId = user.id
+
+      // Get subscription data
+      const { data: subscriptionData, error: subError } = await supabase
+        .from("subscriptions")
+        .select("plan_id, credits")
+        .eq("user_id", userId)
+        .single()
+
+      if (subError) {
+        console.error("Sidebar subscription fetch error:", subError)
+        return
+      }
+
+      if (subscriptionData) {
+        setSubscription(subscriptionData)
+        updateCreditInfo(subscriptionData)
+      }
+    } catch (error) {
+      console.error("Error fetching sidebar subscription data:", error)
+    }
+  }
+
+  const updateCreditInfo = async (subscriptionData: { plan_id: string; credits: number }) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      const planId = subscriptionData.plan_id.toLowerCase()
+      const maxCredits = planCreditsMap[planId] || 0
+
+      // Get blog count to calculate used credits
+      const { data: blogs, error: blogsError } = await supabase
+        .from("blogs")
+        .select("id", { count: "exact" })
+        .eq("user_id", user.id)
+
+      if (blogsError) {
+        console.error("Error fetching blogs count for sidebar:", blogsError)
+      }
+
+      const blogsCount = blogs?.length || 0
+      const used = Math.min(blogsCount, maxCredits)
+
+      setTotalCredits(maxCredits)
+      setCreditsUsed(used)
+
+      console.log(
+        `Sidebar credit info updated: Total=${maxCredits}, Used=${used}, Remaining=${subscriptionData.credits}`,
+      )
+    } catch (error) {
+      console.error("Error updating sidebar credit info:", error)
+    }
+  }
+
+  // Format plan name for display
+  const formatPlanName = (planId: string | undefined) => {
+    if (!planId) return "No Plan"
+    const plan = planId.toLowerCase()
+    if (plan === "basic") return "Starter"
+    if (plan === "pro") return "Professional"
+    return planId.charAt(0).toUpperCase() + planId.slice(1)
+  }
+
+  const remainingCredits = subscription?.credits || 0
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
@@ -180,21 +326,26 @@ export function Sidebar({ subscription }: SidebarProps) {
           <div className="grid grid-cols-2 gap-1">
             <div>
               <p className="text-sm font-medium text-black">Credits</p>
-              <p className="text-sm text-gray-500">Total Credits</p>
+              <p className="text-sm text-gray-500">Used / Total</p>
             </div>
             <div className="text-right">
               <p className="text-sm font-medium text-black">{remainingCredits}</p>
-              <p className="text-sm text-gray-500">{totalCredits}</p>
+              <p className="text-sm text-gray-500">
+                {creditsUsed} / {totalCredits}
+              </p>
             </div>
           </div>
+
+          {/* Credit progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${totalCredits > 0 ? (creditsUsed / totalCredits) * 100 : 0}%` }}
+            ></div>
+          </div>
+
           <div className="flex items-center justify-between pt-1">
-            {subscription?.plan_id ? (
-              <span className="text-sm font-medium text-black">
-                {subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1)} Plan
-              </span>
-            ) : (
-              <span className="text-sm font-medium text-gray-500">No Plan</span>
-            )}
+            <span className="text-sm font-medium text-black">{formatPlanName(subscription?.plan_id)}</span>
             <Link
               href="/upgrade"
               className="bg-black text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1"

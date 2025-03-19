@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { Calendar, Clock, FileText, Loader2, ChevronLeft, ChevronRight, ExternalLink, Eye } from "lucide-react"
+import { Calendar, Clock, FileText, Loader2, ChevronLeft, ChevronRight, ExternalLink, Eye } from 'lucide-react'
 import { format, addDays, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns"
 
 interface BlogPost {
@@ -118,18 +118,12 @@ export default function ContentPlanner() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
           <Calendar className="mr-3 h-7 w-7 text-orange-600" />
           Content Planner
         </h1>
-        <button
-          onClick={() => router.push("/")}
-          className="px-4 py-2 text-sm bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 transition-colors"
-        >
-          Generate More Content
-        </button>
       </div>
 
       {blogPosts.length === 0 ? (
@@ -139,14 +133,8 @@ export default function ContentPlanner() {
           </div>
           <h3 className="text-xl font-semibold text-black mb-2">No Blog Posts Yet</h3>
           <p className="text-gray-700 max-w-md mx-auto mb-6">
-            You haven't generated any blog posts yet. Enter a URL to start generating awesome content!
+            You haven't generated any blog posts yet. Enter a URL above to start generating awesome content!
           </p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
-          >
-            Generate Your First Blog Posts
-          </button>
         </div>
       ) : (
         <>
@@ -249,4 +237,3 @@ export default function ContentPlanner() {
     </div>
   )
 }
-

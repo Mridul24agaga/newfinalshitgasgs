@@ -1,65 +1,138 @@
 "use client"
 
-import { cn } from "@/lib/utils"
-
-interface LogoProps {
-  src: string
-  alt: string
-  className?: string
-}
-
-const Logo = ({ src, alt, className }: LogoProps) => (
-  <div
-    className={cn(
-      "flex items-center justify-center p-4 transition-all duration-200 grayscale hover:grayscale-0",
-      className,
-    )}
-  >
-    <img src={src || "/placeholder.svg"} alt={alt} className="h-8 md:h-10 object-contain" />
-  </div>
-)
+import { useEffect, useRef } from "react"
+import Image from "next/image"
+import { PenLine } from "lucide-react"
 
 export default function TrustedBySection() {
-  // Combined set of 6 logos
-  const logos = [
-    { src: "/d2c1.avif", alt: "Company 1" },
-    { src: "/d2c2.png", alt: "Company 2" },
-    { src: "/saas1.webp", alt: "Company 3" },
-    { src: "/skillop-logo.png", alt: "Company 4" },
-    { src: "/kraya.png", alt: "Company 5" },
-    { src: "/markupx.png", alt: "Company 6" },
-  ]
+  const logoContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const scrollLogos = () => {
+      if (logoContainerRef.current) {
+        const container = logoContainerRef.current
+
+        // If we've scrolled to the end, reset to start
+        if (container.scrollLeft >= container.scrollWidth - container.clientWidth) {
+          container.scrollTo({ left: 0, behavior: "auto" })
+        } else {
+          // Otherwise, scroll a bit more
+          container.scrollBy({ left: 1, behavior: "auto" })
+        }
+      }
+    }
+
+    // Set up the animation interval
+    const interval = setInterval(scrollLogos, 30)
+
+    // Clean up on unmount
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <section className="py-16 px-4 bg-background">
-      <div className="container mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted By Industry Leaders</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Join hundreds of companies that rely on our platform to scale their business
-          </p>
-        </div>
+    <section className="w-full py-12 md:py-16">
+      <div className="container px-4 md:px-6 mx-auto max-w-6xl">
+        <h2 className="text-center text-2xl font-bold tracking-tight mb-8">
+          Trusted by industry-leading companies worldwide
+        </h2>
 
-        <div className="max-w-4xl mx-auto">
-          {/* First row with 4 logos */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center mb-8">
-            {logos.slice(0, 4).map((logo, index) => (
-              <Logo key={`logo-row1-${index}`} src={logo.src} alt={logo.alt} />
-            ))}
+        <div className="rounded-3xl overflow-hidden bg-black text-white shadow-[0_0_20px_rgba(0,0,0,0.3)]">
+          {/* Logos Section */}
+          <div className="border-b border-gray-800 py-6 overflow-hidden">
+            <div
+              ref={logoContainerRef}
+              className="flex items-center justify-center gap-16 px-6 overflow-x-auto scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {/* Duplicate logos to create infinite scroll effect */}
+              {[...Array(2)].map((_, dupeIndex) => (
+                <div key={dupeIndex} className="flex items-center gap-16 min-w-max">
+                  <div className="h-10 w-36 relative flex items-center justify-center">
+                    <div className="w-full h-full relative">
+                      <Image
+                        src="/d2c1.avif"
+                        alt="Company 1"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 144px"
+                        className="object-contain brightness-0 invert"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-10 w-36 relative flex items-center justify-center">
+                    <div className="w-full h-full relative">
+                      <Image
+                        src="/d2c2.png"
+                        alt="Company 2"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 144px"
+                        className="object-contain brightness-0 invert"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-10 w-36 relative flex items-center justify-center">
+                    <div className="w-full h-full relative">
+                      <Image
+                        src="/saas1.webp"
+                        alt="Company 3"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 144px"
+                        className="object-contain brightness-0 invert"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-10 w-36 relative flex items-center justify-center">
+                    <div className="w-full h-full relative">
+                      <Image
+                        src="/skillop-logo.png"
+                        alt="Company 4"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 144px"
+                        className="object-contain brightness-0 invert"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="h-10 w-36 relative flex items-center justify-center">
+                    <div className="w-full h-full relative">
+                      <Image
+                        src="/markupx.png"
+                        alt="Company 6"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 144px"
+                        className="object-contain brightness-0 invert"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Second row with 2 logos */}
-          <div className="grid grid-cols-2 gap-4 items-center max-w-md mx-auto">
-            {logos.slice(4, 6).map((logo, index) => (
-              <Logo key={`logo-row2-${index}`} src={logo.src} alt={logo.alt} />
-            ))}
-          </div>
-        </div>
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3">
+            <div className="p-8 text-center border-b md:border-b-0 md:border-r border-gray-800">
+              <p className="text-sm text-gray-400 mb-2">Total Articles Written</p>
+              <div className="flex items-center justify-center gap-2">
+                <PenLine className="h-6 w-6 rotate-45 text-white" />
+                <p className="text-4xl md:text-5xl font-bold">26,850</p>
+              </div>
+            </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground">
-            <span className="font-medium">100+</span> companies trust us with their business
-          </p>
+            <div className="p-8 text-center border-b md:border-b-0 md:border-r border-gray-800">
+              <p className="text-sm text-gray-400 mb-2">Total Organic Impressions</p>
+              <p className="text-4xl md:text-5xl font-bold">151.4M</p>
+            </div>
+
+            <div className="p-8 text-center">
+              <p className="text-sm text-gray-400 mb-2">Total Revenue Driven by Articles</p>
+              <p className="text-4xl md:text-5xl font-bold">$13.03M</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
