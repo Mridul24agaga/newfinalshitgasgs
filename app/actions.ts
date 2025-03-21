@@ -7,83 +7,142 @@ import { createClient } from "@/utitls/supabase/server"
 import fs from "fs/promises"
 import path from "path"
 
-// Updated formatUtils with better typography and spacing
-const formatUtils = {
-  convertMarkdownToHtml: (markdown: string) => {
-    // First, normalize all line breaks to ensure consistent processing
-    const normalizedMarkdown = markdown.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n")
+// Add this new function at the top of the file, right after the formatUtils declaration
+// This will be our aggressive link fixer that runs before any other processing
 
-    let html = normalizedMarkdown
-      // Headings with improved typography and proper spacing
-      .replace(/^###### (.*$)/gim, '<h6 class="text-lg font-bold mt-3 mb-2">$1</h6>')
-      .replace(/^##### (.*$)/gim, '<h5 class="text-xl font-bold mt-3 mb-2">$1</h5>')
-      .replace(/^#### (.*$)/gim, '<h4 class="text-2xl font-bold mt-4 mb-2">$1</h4>')
-      .replace(/^### (.*$)/gim, '<h3 class="text-3xl font-bold mt-5 mb-3 text-gray-800">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-4xl font-bold mt-6 mb-3 text-gray-900"></h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-5xl font-bold mt-6 mb-4 text-gray-900 border-b pb-1">$1</h1>')
+function aggressivelyFixMarkdownLinks(content: string): string {
+  // First, find all potential markdown links with any amount of whitespace between ] and (
+  const linkRegex = /\[([^\]]+)\][ \t\n\r]*$$([^)]+)$$/g
+
+  // Replace them with properly formatted markdown links
+  const fixedContent = content.replace(linkRegex, (match, text, url) => {
+    // Clean up any extra whitespace in the URL and text
+    const cleanText = text.trim()
+    const cleanUrl = url.trim()
+    return `[${cleanText}](${cleanUrl})`
+  })
+
+  return fixedContent
+}
+
+// Enhanced formatUtils with improved typography, spacing, and link styling
+const formatUtils = {
+  // Now modify the convertMarkdownToHtml function to use our aggressive link fixer
+  // Replace the beginning of the convertMarkdownToHtml function with this:
+
+  convertMarkdownToHtml: (markdown: string) => {
+    // First, aggressively fix all markdown links
+    let processedMarkdown = aggressivelyFixMarkdownLinks(markdown)
+
+    // Then normalize all line breaks to ensure consistent processing
+    processedMarkdown = processedMarkdown.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n")
+
+    // Convert markdown links to HTML with proper styling
+    let html = processedMarkdown.replace(/\[([^\]]+)\]$$([^)]+)$$/g, (match, text, url) => {
+      if (url.startsWith("http") || url.startsWith("https")) {
+        return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+      } else if (url.startsWith("/")) {
+        return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+      } else {
+        return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+      }
+    })
+
+    html = html
+      // Headings with improved typography, font family, and proper spacing
+      .replace(/^###### (.*$)/gim, '<h6 class="font-saira text-lg font-bold mt-6 mb-3 text-gray-800">$1</h6>')
+      .replace(/^##### (.*$)/gim, '<h5 class="font-saira text-xl font-bold mt-6 mb-3 text-gray-800">$1</h5>')
+      .replace(/^#### (.*$)/gim, '<h4 class="font-saira text-2xl font-bold mt-7 mb-4 text-gray-800">$1</h4>')
+      .replace(/^### (.*$)/gim, '<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900 border-b pb-2">$1</h1>')
 
       // Text formatting with better font weights
       .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
 
-      // Lists with compact spacing
-      .replace(/^- (.*)$/gim, '<li class="ml-2 list-disc text-gray-700">$1</li>')
-      .replace(/^[*] (.*)$/gim, '<li class="ml-2 list-disc text-gray-700">$1</li>')
-      .replace(/(<li.*?>.*<\/li>)/gim, '<ul class="my-2">$1</ul>')
+      // Lists with improved spacing and styling
+      .replace(/^- (.*)$/gim, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">$1</li>')
+      .replace(/^[*] (.*)$/gim, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">$1</li>')
+      .replace(/(<li.*?>.*<\/li>)/gim, '<ul class="my-4 space-y-2">$1</ul>')
 
-      // Paragraphs with better typography
-      .replace(/\n{2,}/g, '</p><p class="text-gray-700 leading-relaxed font-normal my-2">')
-
-      // Links with better styling
-      .replace(/\[([^\]]+)\]$$([^)]+)$$/gim, '<a href="$2" class="text-blue-600 hover:underline font-normal">$1</a>')
-
-      // Blockquotes with better styling
-      .replace(
-        /^>\s+(.*)$/gim,
-        '<blockquote class="border-l-4 border-gray-300 pl-3 italic text-gray-600 my-2">$1</blockquote>',
-      )
+      // Paragraphs with better typography and font family
+      .replace(/\n{2,}/g, '</p><p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
 
     // Wrap in paragraph with better typography
-    html = `<p class="text-gray-700 leading-relaxed font-normal my-2">${html}</p>`
+    html = `<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">${html}</p>`
 
     // Ensure no double paragraph tags
-    html = html.replace(/<\/p>\s*<p class="text-gray-700 leading-relaxed font-normal my-2">\s*<\/p>/g, "</p>")
+    html = html.replace(
+      /<\/p>\s*<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">\s*<\/p>/g,
+      "</p>",
+    )
 
     // Ensure no empty paragraphs
-    html = html.replace(/<p class="text-gray-700 leading-relaxed font-normal my-2">\s*<\/p>/g, "")
+    html = html.replace(/<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">\s*<\/p>/g, "")
 
     return html
   },
+
+  // Also modify the sanitizeHtml function to use our aggressive link fixer
+  // Replace the beginning of the sanitizeHtml function with this:
 
   sanitizeHtml: (html: string) => {
     // For server-side rendering, we need to use a different approach
     // This is a simplified version that uses string manipulation instead of DOM
 
-    // Ensure all paragraphs have better typography
+    // First, find any remaining markdown-style links and fix them
     let sanitized = html
-      .replace(/<p[^>]*>/g, '<p class="text-gray-700 leading-relaxed font-normal my-2">')
 
-      // Ensure all lists have compact spacing
-      .replace(/<ul[^>]*>/g, '<ul class="my-2">')
-      .replace(/<li[^>]*>/g, '<li class="ml-2 list-disc text-gray-700">')
+    // Look for markdown-style links that might have been missed
+    const markdownLinkRegex = /\[([^\]]+)\][ \t\n\r]*$$([^)]+)$$/g
+    sanitized = sanitized.replace(markdownLinkRegex, (match, text, url) => {
+      if (url.startsWith("http") || url.startsWith("https")) {
+        return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+      } else if (url.startsWith("/")) {
+        return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+      } else {
+        return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+      }
+    })
 
-      // Ensure all headings have better typography
-      .replace(/<h1[^>]*>/g, '<h1 class="text-5xl font-bold mt-6 mb-4 text-gray-900 border-b pb-1">')
-      .replace(/<h2[^>]*>/g, '<h2 class="text-4xl font-bold mt-6 mb-3 text-gray-900">')
-      .replace(/<h3[^>]*>/g, '<h3 class="text-3xl font-bold mt-5 mb-3 text-gray-800">')
-      .replace(/<h4[^>]*>/g, '<h4 class="text-2xl font-bold mt-4 mb-2">')
-      .replace(/<h5[^>]*>/g, '<h5 class="text-xl font-bold mt-3 mb-2">')
-      .replace(/<h6[^>]*>/g, '<h6 class="text-lg font-bold mt-3 mb-2">')
+    // Ensure all paragraphs have better typography and font family
+    sanitized = sanitized
+      .replace(/<p[^>]*>/g, '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
+
+      // Ensure all lists have improved spacing and styling
+      .replace(/<ul[^>]*>/g, '<ul class="my-4 space-y-2">')
+      .replace(/<li[^>]*>/g, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">')
+
+      // Ensure all headings have better typography, font family, and proper spacing
+      .replace(/<h1[^>]*>/g, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900 border-b pb-2">')
+      .replace(/<h2[^>]*>/g, '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">')
+      .replace(/<h3[^>]*>/g, '<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800">')
+      .replace(/<h4[^>]*>/g, '<h4 class="font-saira text-2xl font-bold mt-7 mb-4 text-gray-800">')
+      .replace(/<h5[^>]*>/g, '<h5 class="font-saira text-xl font-bold mt-6 mb-3 text-gray-800">')
+      .replace(/<h6[^>]*>/g, '<h6 class="font-saira text-lg font-bold mt-6 mb-3 text-gray-800">')
 
       // Ensure all blockquotes have better styling
-      .replace(/<blockquote[^>]*>/g, '<blockquote class="border-l-4 border-gray-300 pl-3 italic text-gray-600 my-2">')
+      .replace(
+        /<blockquote[^>]*>/g,
+        '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4 font-saira">',
+      )
 
-      // Ensure all links have consistent styling
-      .replace(/<a[^>]*>/g, '<a class="text-blue-600 hover:underline font-normal">')
+      // Ensure all external links have orange styling with underline and hover effect
+      .replace(
+        /<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>/g,
+        '<a href="$1" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">',
+      )
 
-      // Ensure all figures have consistent styling
-      .replace(/<figure[^>]*>/g, '<figure class="my-4">')
-      .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-1">')
+      // Ensure all internal links have blue styling with hover effect
+      .replace(
+        /<a[^>]*href=["'](\/[^"']+)["'][^>]*>/g,
+        '<a href="$1" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">',
+      )
+
+      // Ensure all figures have consistent styling with better spacing
+      .replace(/<figure[^>]*>/g, '<figure class="my-6">')
+      .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">')
 
     // Remove any empty paragraphs
     sanitized = sanitized.replace(/<p[^>]*>\s*<\/p>/g, "")
@@ -195,6 +254,14 @@ interface Subscription {
   plan_id: string
   credits: number
   user_id: string
+}
+
+// Define the DataPoint interface
+interface DataPoint {
+  type: "percentage" | "statistic" | "year" | "comparison" | "count"
+  value: string
+  context: string
+  source: string
 }
 
 // Tavily and OpenAI setup
@@ -532,6 +599,9 @@ async function factCheckContent(content: string, sources: string[]): Promise<str
     Fact-check this blog content against these sources. Fix any shaky bits to match the truth or call 'em out if they're off. Keep it natural, like a friend double-checking your work. Preserve every single word—do not shorten or remove content, only add clarifications or corrections as extra text if needed. Ensure the content remains in Markdown format with no HTML or bolding, following these rules exactly as in formatUtils.convertMarkdownToHtml:
     - H1 (#): text-5xl font-bold
     - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font- 
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
     - H3 (###): text-3xl font-bold
     - Paragraphs: text-gray-700 leading-relaxed, no bolding, with blank lines between (use \n\n)
     - Lists: Use - or * for bullets, ml-2 list-disc, with blank lines between items (use \n\n)
@@ -546,6 +616,93 @@ async function factCheckContent(content: string, sources: string[]): Promise<str
     .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
     .replace(/\n{1,}/g, "\n\n")
     .trim()
+}
+
+// NEW: Function to extract authoritative external links for a topic
+async function findAuthorityExternalLinks(topic: string, count = 5): Promise<string[]> {
+  console.log(`Finding ${count} authoritative external links for topic: ${topic}`)
+
+  const prompt = `
+    Find ${count} high-authority websites related to "${topic}" that would be excellent for external linking.
+    
+    REQUIREMENTS:
+    - Include only well-established, authoritative sites in this niche
+    - Prefer .edu, .gov, or well-known industry publications when relevant
+    - Include a mix of different types of sites (news, research, tools, etc.)
+    - Avoid social media sites, Pinterest, or low-quality content farms
+    - Each site should be directly relevant to the topic
+    - Include the full URL with https:// prefix
+    
+    Return a JSON array of URLs only, e.g., ["https://example.com", "https://example.org"]
+  `
+
+  const response = await callAzureOpenAI(prompt, 500)
+  const cleanedResponse = response.replace(/```json\n?|\n?```/g, "").trim()
+
+  try {
+    const links = (JSON.parse(cleanedResponse) as string[]) || []
+    console.log(`Found ${links.length} authority external links: ${JSON.stringify(links)}`)
+    return links
+  } catch (error) {
+    console.error("Error parsing authority links:", error)
+    // Fallback to some generic but still relevant sites
+    return [
+      `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`,
+      `https://www.sciencedirect.com/search?qs=${encodeURIComponent(topic)}`,
+      `https://scholar.google.com/scholar?q=${encodeURIComponent(topic)}`,
+      `https://www.researchgate.net/search/publication?q=${encodeURIComponent(topic)}`,
+      `https://www.nature.com/search?q=${encodeURIComponent(topic)}`,
+    ]
+  }
+}
+
+// NEW: Function to ensure content has sufficient external links
+async function ensureExternalLinks(content: string, topic: string, minLinks = 5): Promise<string> {
+  console.log(`Ensuring content has at least ${minLinks} external links for topic: ${topic}`)
+
+  // Count existing external links in the content
+  const linkRegex = /\[([^\]]+)\][ \t]*$$https?:\/\/[^)]+$$/g
+  const existingLinks = content.match(linkRegex) || []
+  console.log(`Found ${existingLinks.length} existing external links in content`)
+
+  // If we already have enough links, return the content as is
+  if (existingLinks.length >= minLinks) {
+    console.log("Content already has sufficient external links")
+    return content
+  }
+
+  // Find additional authoritative links to add
+  const additionalLinksNeeded = minLinks - existingLinks.length
+  const authorityLinks = await findAuthorityExternalLinks(topic, additionalLinksNeeded + 2) // Get a few extra just in case
+
+  if (authorityLinks.length === 0) {
+    console.log("Could not find additional authority links, returning original content")
+    return content
+  }
+
+  // Add the external links to the content
+  const prompt = `
+    This content needs ${additionalLinksNeeded} more high-quality external links. 
+    
+    REQUIREMENTS:
+    - Add exactly ${additionalLinksNeeded} external links from this list: ${JSON.stringify(authorityLinks)}
+    - Insert links naturally within the existing text where they're most relevant
+    - Use descriptive anchor text that relates to the linked content
+    - Distribute links evenly throughout the content (not all in one section)
+    - Do NOT change any existing links or content structure
+    - Do NOT add any new paragraphs or sections just for links
+    - Format links as [anchor text](URL) in markdown
+    
+    Original content:
+    ${content}
+    
+    Return the enhanced content with added external links.
+  `
+
+  const enhancedContent = await callAzureOpenAI(prompt, 16384)
+  console.log(`Added external links to content (first 200 chars): ${enhancedContent.slice(0, 200)}...`)
+
+  return enhancedContent
 }
 
 // Enhance the humanizeContent function for more natural, conversational tone
@@ -574,6 +731,12 @@ async function humanizeContent(content: string, coreTopic: string): Promise<stri
     - Sometimes briefly mention other related topics in the industry to show broader knowledge
     - These tangents should always connect back to the main topic naturally
     - STRICTLY ENSURE there is NO repetitive content - each paragraph must contain unique information
+    - Include at least 3-5 aggressive facts or shocking statistics that will grab attention
+    - Make sure the total word count is around 1500 words maximum
+    - INCLUDE AT LEAST 5-7 EXTERNAL LINKS to authoritative sources throughout the content
+    - Use natural anchor text for links that flows with the conversation
+    - INCLUDE AT LEAST 3-4 INTERNAL LINKS to other pages on the same website (use relative URLs like "/blog/another-post")
+    - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
     
     HUMANIZATION REQUIREMENTS:
     1. Add personal anecdotes and stories that feel genuine (like "reminds me of that time I...")
@@ -601,7 +764,8 @@ async function humanizeContent(content: string, coreTopic: string): Promise<stri
     - H3 (###): text-3xl font-bold
     - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines between (use \n\n)
     - Lists: Use bullet points with minimal indentation, compact spacing
-    - Links: [text](url), text-blue-600 hover:underline
+    - External Links: [text](https://example.com), class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200"
+    - Internal Links: [text](/internal-path), text-blue-600 hover:text-blue-800
     - ALWAYS end with a strong, personal call-to-action paragraph
     
     Content: "${content}"
@@ -610,6 +774,9 @@ async function humanizeContent(content: string, coreTopic: string): Promise<stri
     AVOID AI-FLAGGED WORDS like "unleash" or similar marketing jargon.
     STRICTLY ENSURE there is NO repetition of content within the blog post.
   `
+
+  // Pre-process content to fix any markdown links with spaces
+  content = fixMarkdownLinks(content)
 
   // Process in chunks if content is very large
   let humanizedContent = ""
@@ -644,363 +811,34 @@ async function humanizeContent(content: string, coreTopic: string): Promise<stri
     .trim()
 }
 
-// Enhance the hardcoreHumanizeContent function for even more personality
-async function hardcoreHumanizeContent(content: string, coreTopic: string): Promise<string> {
-  console.log(`🔥🔥 HARDCORE HUMANIZING content for topic: ${coreTopic}`)
+// Update the styleExternalLinks function to handle both external and internal links
+// Enhanced styleExternalLinks function to ensure proper styling for both link types
+async function styleExternalLinks(htmlContent: string): Promise<string> {
+  // First pass: Style external links (http/https) with orange color, underline, and hover effect
+  let updatedContent = htmlContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      // Check if it's an external link
+      if (url.startsWith("http") || url.startsWith("https")) {
+        return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+      }
+      return match // Keep other links as is for now
+    },
+  )
 
-  // Generate a dynamic hardcore intro
-  const introPrompt = `
-    Create a single, unique, EDGY intro hook about "${coreTopic}" that sounds like someone who's had a few drinks.
-    Make it raw, uncensored, and authentic - with some mild swearing and attitude.
-    Include slang, strong opinions, and natural speech patterns with interruptions.
-    Keep it under 150 characters and don't use any AI-sounding phrases or words like "unleash".
-    Return just the intro text with no quotes or formatting.
-  `
-  const randomIntro = await callAzureOpenAI(introPrompt, 200)
+  // Second pass: Style internal links (relative paths) with blue color and hover effect
+  updatedContent = updatedContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["'](\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      // This is definitely an internal link (starts with /)
+      return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+    },
+  )
 
-  const prompt = `
-    Start with this hook: "${randomIntro}". 
-    
-    I need you to completely transform this blog content about "${coreTopic}" into something that sounds like I'm RANTING to my closest friend at 3 AM after WAY too many drinks. I want EXTREMELY AUTHENTIC human vibes - messy, raw, occasionally profane, with natural speech patterns.
-    
-    SPECIAL REQUIREMENT:
-    - The blog should primarily focus on the main topic (${coreTopic}) from the scraped website
-    - Occasionally go on tangents about related topics that would naturally come up in a drunk conversation
-    - Sometimes compare the main topic to other things in the industry with strong opinions
-    - These tangents should feel natural and eventually connect back to the main topic
-    - ABSOLUTELY NO REPETITIVE CONTENT - each paragraph must contain unique information
-    
-    HARDCORE HUMANIZATION REQUIREMENTS:
-    1. Add personal anecdotes that feel genuine and slightly chaotic
-    2. Include casual phrases like "listen up", "I'm not even kidding", "you know what bugs me about this?"
-    3. Add tangents that sometimes take a while to circle back to the main point
-    4. Use contractions, slang, and conversational grammar with occasional mistakes
-    5. Include rhetorical questions and then answer them yourself
-    6. Add humor, personality, and mild profanity throughout
-    7. Vary sentence length dramatically - mix short punchy sentences with longer rambling ones
-    8. Include self-corrections like "wait, that's wrong" or "actually, scratch that"
-    9. Add emphasis words like "literally", "absolutely", "seriously", "honestly"
-    10. Include 3-5 strong personal opinions that sound authentic and passionate
-    11. Add phrases like "this person at the gas station told me..." or "I forgot this part earlier"
-    
-    KEEP ALL THESE INTACT:
-    - The H1 title (# Title)
-    - All H2 headings (## Heading)
-    - All H3 subheadings (### Subheading)
-    - All bullet points and lists (but make them compact with minimal indentation)
-    - All links and references
-    - The overall structure and information
-    
-    FORMAT REQUIREMENTS:
-    - H1 (#): text-5xl font-bold
-    - H2 (##): text-4xl font-bold
-    - H3 (###): text-3xl font-bold
-    - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines between (use \n\n)
-    - Lists: Use bullet points with minimal indentation, compact spacing
-    - Links: [text](url), text-blue-600 hover:underline
-    - ALWAYS end with a hardcore call-to-action that pushes the reader to take action NOW
-    
-    Content: "${content}"
-    
-    Return pure content only—no HTML, no AI flags, total chaos, and NEVER use the word "markdown" anywhere.
-    AVOID AI-FLAGGED WORDS like "unleash" or similar marketing jargon.
-    STRICTLY ENSURE there is NO repetition of content within the blog post.
-  `
-
-  // Process in chunks if content is very large
-  let hardcoreContent = ""
-  if (content.length > 10000) {
-    console.log("Content too large, processing in chunks...")
-    const chunks = splitContentIntoChunks(content, 8000)
-    const humanizedChunks = await Promise.all(
-      chunks.map(async (chunk, index) => {
-        console.log(`Processing hardcore chunk ${index + 1} of ${chunks.length}`)
-        const chunkPrompt = prompt.replace('Content: "${content}"', `Content: "${chunk}"`)
-        const result = await callAzureOpenAI(chunkPrompt, 16384)
-        return result
-          .replace(/<[^>]+>/g, "")
-          .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
-          .replace(/markdown/gi, "content")
-          .trim()
-      }),
-    )
-    hardcoreContent = humanizedChunks.join("\n\n")
-  } else {
-    hardcoreContent = await callAzureOpenAI(prompt, 16384)
-  }
-
-  console.log(`Hardcore humanized (first 200): ${hardcoreContent.slice(0, 200)}...`)
-
-  // Clean up and enhance the hardcore content
-  return hardcoreContent
-    .replace(/<[^>]+>/g, "")
-    .replace(/\*\*(.*?)\*\*/g, "- $1\n\n")
-    .replace(/\n{1,}/g, "\n\n")
-    .replace(/yes/gi, "hell yeah")
-    .replace(/in summary/gi, "anyway")
-    .replace(/indeed/gi, "for real")
-    .replace(/markdown/gi, "content")
-    .trim()
+  return updatedContent
 }
 
-// Update the formatContentWithOpenAI function to better handle content mixing
-async function formatContentWithOpenAI(content: string, topic: string, title: string): Promise<string> {
-  const prompt = `
-    Reformat this blog content about "${topic}" with the title "${title}" to be well-structured and readable.
-    
-    SPECIAL REQUIREMENT:
-    - The blog should primarily focus on the main topic from the scraped website
-    - Preserve any natural tangents or related topics that were included
-    - Ensure all content flows naturally and transitions smoothly
-    - STRICTLY ENSURE there is NO repetitive content - each paragraph must contain unique information
-    
-    IMPORTANT REQUIREMENTS:
-    - Target word count: 2000-2500 words total
-    - Use varied sentence structures and transitions
-    - Include specific examples and data points
-    - Make each section distinct with its own focus
-    
-    Ensure it includes:
-    - Clear headings and subheadings (make them bold and slightly larger)
-    - Paragraphs with proper spacing (not too much space between paragraphs)
-    - Bullet points and lists with minimal indentation and compact spacing
-    - A strong introduction and conclusion
-    - Proper citations and references
-    - No HTML or bolding
-    - Use markdown format
-    
-    Content: ${content}
-  `
-  const formattedContent = await callAzureOpenAI(prompt, 16384)
-  return formattedContent.trim()
-}
-
-function splitContentIntoChunks(content: string, chunkSize: number): string[] {
-  const chunks: string[] = []
-  for (let i = 0; i < content.length; i += chunkSize) {
-    chunks.push(content.slice(i, i + chunkSize))
-  }
-  return chunks
-}
-
-// Helper function to count words in a string
-function countWords(str: string): number {
-  const words = str.trim().split(/\s+/)
-  return words.length
-}
-
-// UPDATED: Modified generateEnhancedTitle function to create simple titles without how, when, why patterns
-async function generateEnhancedTitle(
-  coreTopic: string,
-  userId: string,
-  scrapedData: ScrapedData,
-  supabase: any,
-): Promise<string> {
-  console.log(`Generating eye-catching titles for topic: ${coreTopic}`)
-
-  // Generate multiple title options
-  const prompt = `
-    Create 5 different eye-catching titles for a blog post about "${coreTopic}".
-    
-    TITLE REQUIREMENTS:
-    - Each title must be ONLY 5-7 words maximum
-    - DO NOT start with "How", "Why", "When", "Where", "What"
-    - DO NOT use numbers like "5 Ways..." or similar patterns
-    - DO NOT use colons (:) in the title
-    - Make them EXTREMELY eye-catching and attention-grabbing
-    - Use powerful, emotional, and engaging language
-    - Each title should be completely different from the others
-    - Each word should be simple and easy to understand
-    - AVOID AI-flagged words like "unleash", "revolutionize", "transform", etc.
-    - Make them sound completely human and natural
-    - Ensure they would make someone want to click and read
-    
-    Based on this scraped data:
-    - Initial Research: ${scrapedData.initialResearchSummary.slice(0, 200)}...
-    - Keywords: ${scrapedData.extractedKeywords
-      .slice(0, 3)
-      .map((k) => k.keyword)
-      .join(", ")}
-    
-    Return a JSON array of 5 different title options, e.g., ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]
-  `
-
-  const titlesResponse = await callAzureOpenAI(prompt, 300)
-  let titleOptions: string[] = []
-
-  try {
-    // Parse the JSON response
-    const cleanedResponse = titlesResponse.replace(/```json\n?|\n?```/g, "").trim()
-    titleOptions = JSON.parse(cleanedResponse)
-
-    // Ensure we have at least one title
-    if (!titleOptions || !titleOptions.length) {
-      throw new Error("No title options generated")
-    }
-
-    console.log(`Generated ${titleOptions.length} title options:`)
-    titleOptions.forEach((title, i) => console.log(`${i + 1}. ${title}`))
-
-    // Now select the best title based on engagement potential
-    const selectionPrompt = `
-      From these ${titleOptions.length} blog post titles about "${coreTopic}", select the ONE that is most eye-catching, 
-      engaging, and likely to get clicks. Consider uniqueness, emotional appeal, and clarity.
-      
-      Titles:
-      ${titleOptions.map((t, i) => `${i + 1}. ${t}`).join("\n")}
-      
-      Return ONLY the number of the best title (1-${titleOptions.length}).
-    `
-
-    const selection = await callAzureOpenAI(selectionPrompt, 50)
-    const selectedIndex = Number.parseInt(selection.trim()) - 1
-
-    // Validate the selection
-    if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= titleOptions.length) {
-      // Default to the first title if selection is invalid
-      console.log(`Invalid selection, defaulting to first title option`)
-      return titleOptions[0]
-    }
-
-    const selectedTitle = titleOptions[selectedIndex]
-    console.log(`Selected title #${selectedIndex + 1}: "${selectedTitle}"`)
-
-    // Ensure the title is within the word count limit
-    const words = selectedTitle.trim().split(/\s+/)
-    if (words.length > 7) {
-      // Truncate to 7 words if too long
-      return words.slice(0, 7).join(" ")
-    }
-
-    return selectedTitle.trim()
-  } catch (error) {
-    console.error("Error generating or selecting titles:", error)
-
-    // Fallback to a simpler title generation if the complex approach fails
-    const fallbackPrompt = `
-      Create a short, eye-catching title for a blog post about "${coreTopic}".
-      Keep it under 7 words, make it engaging, and avoid starting with How/Why/What.
-      Return just the title as plain text.
-    `
-    const fallbackTitle = await callAzureOpenAI(fallbackPrompt, 100)
-    console.log(`Using fallback title: ${fallbackTitle}`)
-
-    // Ensure the fallback title is within the word count limit
-    const words = fallbackTitle.trim().split(/\s+/)
-    if (words.length > 7) {
-      return words.slice(0, 7).join(" ")
-    }
-
-    return fallbackTitle.trim()
-  }
-}
-
-// Update the removeRepetitiveContent function to be much more aggressive
-async function removeRepetitiveContent(content: string, topic: string): Promise<string> {
-  console.log("Aggressively checking and removing any repetitive content...")
-
-  const prompt = `
-  Analyze this blog post about "${topic}" and identify ANY repetitive content or redundant sections.
-  
-  CRITICAL REQUIREMENTS:
-  - Identify ANY paragraphs that repeat similar information, even if worded differently
-  - Identify ANY sections with overlapping content or ideas
-  - Pay special attention to repeated concepts, examples, or explanations
-  - Keep ONLY the most comprehensive version of any duplicated information
-  - Ensure the content flows naturally after removing repetition
-  - Do NOT remove unique information
-  - Maintain all headings, subheadings, and structure
-  - STRICTLY ENSURE there is ABSOLUTELY NO repetitive content in the final output
-  - Be EXTREMELY thorough - this is the most important requirement
-  - Remove ANY unnecessary repetition, even if subtle
-  
-  Return the improved content with ALL repetitive parts removed and consolidated.
-  
-  Content: ${content}
-`
-
-  try {
-    const deduplicatedContent = await callAzureOpenAI(prompt, 16384)
-    console.log(
-      `Aggressively checked for repetitive content (first 200 chars): ${deduplicatedContent.slice(0, 200)}...`,
-    )
-    return deduplicatedContent
-  } catch (error: any) {
-    console.error("Error removing repetitive content:", error)
-    return content
-  }
-}
-
-// Add a new function to ensure FAQs are properly included
-async function ensureFAQsExist(content: string, topic: string): Promise<string> {
-  console.log("Ensuring FAQs are properly included...")
-
-  // Check if FAQs already exist in the content
-  if (content.includes("## Frequently Asked Questions") || content.includes("## FAQ") || content.includes("## FAQs")) {
-    console.log("FAQs already exist in content, ensuring they're properly formatted...")
-
-    // Ensure the existing FAQs are properly formatted
-    const faqCheckPrompt = `
-      Review the FAQ section in this content about "${topic}".
-      Ensure there are at least 3-5 high-quality, relevant FAQs with clear answers.
-      If the FAQ section exists but is inadequate, improve it.
-      If no FAQ section exists, create one with 3-5 relevant questions and answers.
-      
-      Content: ${content}
-      
-      Return the full content with proper FAQs included.
-    `
-
-    try {
-      const checkedContent = await callAzureOpenAI(faqCheckPrompt, 16384)
-      return checkedContent
-    } catch (error) {
-      console.error("Error checking existing FAQs:", error)
-      // If error, generate new FAQs and append
-      const newFAQs = await generateFAQs(content, topic)
-      return `${content}\n\n${newFAQs}`
-    }
-  } else {
-    console.log("No FAQs found, generating and adding them...")
-    const faqs = await generateFAQs(content, topic)
-    return `${content}\n\n${faqs}`
-  }
-}
-
-// Enhance the generateFAQs function to create better, more relevant FAQs
-async function generateFAQs(content: string, topic: string): Promise<string> {
-  console.log(`Generating comprehensive FAQs for topic: ${topic}`)
-
-  const prompt = `
-    Generate 4-6 frequently asked questions (FAQs) related to the content about "${topic}".
-    
-    REQUIREMENTS:
-    - Questions must be highly relevant to the main topic
-    - Questions should address common concerns, misconceptions, or interests
-    - Answers must be detailed, informative, and valuable (at least 2-3 sentences each)
-    - Include a mix of basic and advanced questions
-    - Format each question as a markdown heading (## Question) followed by a comprehensive answer
-    - Do NOT use colons at the beginning of paragraphs in the answers
-    
-    Content: ${content.slice(0, 5000)}
-    
-    Return a complete FAQ section with 4-6 questions and detailed answers.
-  `
-  const faqs = await callAzureOpenAI(prompt, 16384)
-  return `\n\n## Frequently Asked Questions\n\n${faqs.trim()}`
-}
-
-// Add a new function to remove colons at the beginning of paragraphs
-function removeLeadingColons(content: string): string {
-  // Replace patterns like ": Text" at the beginning of paragraphs with just "Text"
-  return content
-    .replace(/(\n|^)\s*:\s+/g, "$1") // Remove colons at the start of paragraphs
-    .replace(/<p[^>]*>\s*:\s*/g, "<p>") // Remove colons at the start of HTML paragraphs
-    .replace(/(<li[^>]*>)\s*:\s*/g, "$1") // Remove colons at the start of list items
-    .replace(/(<blockquote[^>]*>)\s*:\s*/g, "$1") // Remove colons at the start of blockquotes
-}
-
-// UPDATED: Modified generateArticleFromScrapedData function to use our new title generation and better handle research data
+// Update the generateArticleFromScrapedData function to ensure FAQs and links are included
 async function generateArticleFromScrapedData(
   scrapedData: ScrapedData,
   userId: string,
@@ -1031,6 +869,11 @@ async function generateArticleFromScrapedData(
       .map((item, index) => `Source ${index + 1}: ${item.url}\nContent: ${item.content.slice(0, 300)}...`)
       .join("\n\n")
 
+    // Get authoritative external links for the topic
+    console.log("Finding authoritative external links for the topic...")
+    const externalLinks = await findAuthorityExternalLinks(scrapedData.coreTopic, 10)
+    const formattedExternalLinks = externalLinks.join(", ")
+
     // IMPROVED: Generate first part of the article with better research utilization
     console.log("Generating first part of the article")
     const firstPartPrompt = `
@@ -1048,9 +891,10 @@ async function generateArticleFromScrapedData(
       - YouTube Video to Reference: ${scrapedData.youtubeVideo || "None"}
       - Research Details:
       ${formattedResearch}
+      - External Links to Include: ${formattedExternalLinks}
       
       CRITICAL REQUIREMENTS:
-      - Target word count: 1000-1200 words for this FIRST HALF
+      - Target word count: 700-750 words for this FIRST HALF
       - Focus primarily on the main topic from the scraped website
       - Occasionally mix in related topics or industry insights to make content feel more natural
       - ABSOLUTELY NO REPETITION - each paragraph must contain unique information
@@ -1061,6 +905,14 @@ async function generateArticleFromScrapedData(
       - Use natural language that flows conversationally
       - NEVER start paragraphs with colons (:)
       - NEVER use phrases like "In this section we will discuss" or similar meta-commentary
+      - Include at least 2-3 aggressive facts or shocking statistics that will grab attention
+      - INCLUDE AT LEAST 3-4 EXTERNAL LINKS to authoritative sources from the provided list
+      - Format external links as [anchor text](https://example.com) in markdown
+      - Make sure external links have descriptive anchor text and are relevant to the content
+      - INCLUDE AT LEAST 2-3 INTERNAL LINKS to other pages on the same website (use relative URLs like "/blog/another-post")
+      - Format internal links as [anchor text](/internal-path) in markdown
+      - Use natural, contextual anchor text for links that flows with the content
+      - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
       
       Structure for this FIRST HALF:
       - H1 title at top (# ${simpleTitle})
@@ -1074,7 +926,7 @@ async function generateArticleFromScrapedData(
       - Do NOT include a conclusion or call-to-action yet
       - NEVER use the word "markdown" anywhere in the content
       - Use natural, conversational language
-      - AVOID AI-flagged words like "unleash", "revolutionize", "transform", etc.
+      - AVOID AI-FLAGGED WORDS like "unleash", "revolutionize", "transform", etc.
       
       Return complete formatted content for the FIRST HALF only.
     `
@@ -1094,7 +946,7 @@ async function generateArticleFromScrapedData(
     // IMPROVED: Generate second part with better research utilization and less repetition
     console.log("Generating second part of the article")
     const secondPartPrompt = `
-      Write the SECOND HALF (remaining sections and conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
+      Write the SECOND HALF (remaining sections, FAQs, and conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
       
       THE FIRST HALF OF THE ARTICLE:
       ${firstPartDeduped.slice(0, 500)}...
@@ -1110,11 +962,13 @@ async function generateArticleFromScrapedData(
         .slice(0, 3)
         .join(", ")}
       - Brand Info: ${scrapedData.brandInfo}
+      - YouTube Video to Reference: ${scrapedData.youtubeVideo || "None"}
       - Research Details:
       ${formattedResearch}
+      - External Links to Include: ${formattedExternalLinks}
       
       CRITICAL REQUIREMENTS:
-      - Target word count: 1000-1200 words for this SECOND HALF (total article 2000-2400 words)
+      - Target word count: 700-750 words for this SECOND HALF (total article 1400-1500 words)
       - Focus primarily on the main topic from the scraped website
       - Occasionally mix in related topics or industry insights to make content feel more natural
       - ABSOLUTELY NO REPETITION - do not repeat information from the first half
@@ -1126,11 +980,23 @@ async function generateArticleFromScrapedData(
       - Use natural language that flows conversationally
       - NEVER start paragraphs with colons (:)
       - NEVER use phrases like "In this section we will discuss" or similar meta-commentary
+      - Include at least 2-3 more aggressive facts or shocking statistics that will grab attention
+      - INCLUDE AT LEAST 3-4 MORE EXTERNAL LINKS to authoritative sources from the provided list
+      - Format external links as [anchor text](https://example.com) - these will have orange styling and underline with hover effect
+      - Make sure external links have descriptive anchor text and are relevant to the content
+      - INCLUDE AT LEAST 2-3 MORE INTERNAL LINKS to other pages on the same website (use relative URLs like "/blog/another-post")
+      - Format internal links as [anchor text](/internal-path) in markdown
+      - Use natural, contextual anchor text for links that flows with the content
+      - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
       
       Structure for this SECOND HALF:
       - 3-4 more H2 sections with detailed content (different from first half)
       - H3 subsections where appropriate
       - Include bullet lists and blockquotes where appropriate
+      - INCLUDE A COMPREHENSIVE FAQ SECTION with at least 5 questions and detailed answers
+      - Format the FAQ section as "## Frequently Asked Questions" followed by each question as "### Question?"
+      - Each FAQ answer MUST include at least one external link to an authoritative source
+      - Use these authoritative external links in your answers: ${formattedExternalLinks}
       - A strong conclusion section
       - A compelling call-to-action section at the very end
       
@@ -1140,8 +1006,7 @@ async function generateArticleFromScrapedData(
       - Use natural, conversational language
       - DO NOT repeat the title or introduction
       - ALWAYS end with a compelling call-to-action section
-      - AVOID AI-flagged words like "unleash", "revolutionize", "transform", etc.
-      - DO NOT include an FAQ section - that will be added separately
+      - AVOID AI-FLAGGED WORDS like "unleash", "revolutionize", "transform", etc.
       
       Return complete formatted content for the SECOND HALF only.
     `
@@ -1175,31 +1040,88 @@ async function generateArticleFromScrapedData(
     const deduplicatedContent = await removeRepetitiveContent(formattedContent, scrapedData.coreTopic)
     console.log(`Deduplicated content: ${countWords(deduplicatedContent)} words.`)
 
-    // ENHANCED: Ensure FAQs are properly included
-    console.log("Ensuring FAQs are properly included...")
-    const contentWithFAQs = await ensureFAQsExist(deduplicatedContent, scrapedData.coreTopic)
-    console.log(`Content with FAQs: ${countWords(contentWithFAQs)} words.`)
+    // ENHANCED: Check if FAQs exist, if not, ensure they are added
+    console.log("Checking if FAQs exist in the content...")
+    let contentWithFAQs = deduplicatedContent
+    if (
+      !contentWithFAQs.includes("## Frequently Asked Questions") &&
+      !contentWithFAQs.includes("## FAQ") &&
+      !contentWithFAQs.includes("## FAQs")
+    ) {
+      console.log("No FAQs found, adding them directly with OpenAI...")
+      const faqPrompt = `
+        The following blog post about "${scrapedData.coreTopic}" is missing a FAQ section.
+        
+        Please add a comprehensive FAQ section with 5-7 questions and detailed answers.
+        
+        REQUIREMENTS:
+        - Start with "## Frequently Asked Questions"
+        - Each question should be formatted as "### Question?"
+        - Questions must be highly relevant to the main topic
+        - Answers must be detailed and informative (2-3 paragraphs each)
+        - EACH ANSWER MUST INCLUDE at least one external link to an authoritative source
+        - Use these authoritative external links in your answers: ${formattedExternalLinks}
+        - Format external links as [anchor text](https://example.com)
+        - Make sure external links have descriptive anchor text
+        - Also include at least 2 internal links formatted as [anchor text](/internal-path)
+        
+        Blog post content:
+        ${contentWithFAQs.slice(0, 5000)}...
+        
+        Return the COMPLETE blog post with the FAQ section added at the end (before the conclusion if one exists).
+      `
+      contentWithFAQs = await callAzureOpenAI(faqPrompt, 16384)
+      console.log("FAQs added successfully.")
+    }
 
-    // Add a delay to simulate natural humanization time
-    console.log("Waiting 15 seconds before humanizing...")
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+    // ENHANCED: Check if there are enough external and internal links
+    console.log("Checking if content has sufficient links...")
+    const externalLinkRegex = /\[([^\]]+)\][ \t]*$$https?:\/\/[^)]+$$/g
+    const internalLinkRegex = /\[([^\]]+)\][ \t]*$$\/[^)]+$$/g
+    const existingExternalLinks = contentWithFAQs.match(externalLinkRegex) || []
+    const internalLinks = contentWithFAQs.match(internalLinkRegex) || []
 
-    // Humanize the content before converting to HTML
-    console.log(`Deep humanizing content (level: ${humanizeLevel}) to make it sound more natural...`)
-    const humanizedContent =
-      humanizeLevel === "hardcore"
-        ? await hardcoreHumanizeContent(contentWithFAQs, scrapedData.coreTopic)
-        : await humanizeContent(contentWithFAQs, scrapedData.coreTopic)
+    let contentWithLinks = contentWithFAQs
 
-    console.log(`Humanized content: ${countWords(humanizedContent)} words.`)
-
-    // ENHANCED: Final check for repetition after humanization
-    console.log("Final check for any remaining repetition...")
-    const finalDeduplicatedContent = await removeRepetitiveContent(humanizedContent, scrapedData.coreTopic)
+    if (existingExternalLinks.length < 7 || internalLinks.length < 5) {
+      console.log(
+        `Found ${existingExternalLinks.length} external links and ${internalLinks.length} internal links. Adding more...`,
+      )
+      const linksPrompt = `
+    This blog post about "${scrapedData.coreTopic}" needs more links.
+    
+    Current stats:
+    - External links: ${existingExternalLinks.length} (need at least 7)
+    - Internal links: ${internalLinks.length} (need at least 5)
+    
+    REQUIREMENTS:
+    - Add more external links from this list: ${formattedExternalLinks}
+    - Format external links as [anchor text](https://example.com)
+    - External links should have orange styling with underline and hover effect in the final HTML
+    - Add more internal links to other pages on the same website
+    - Format internal links as [anchor text](/internal-path)
+    - Internal links should have blue styling with hover effect in the final HTML
+    - Insert links naturally within the existing text where they're most relevant
+    - Use descriptive anchor text that relates to the linked content
+    - Do NOT change any existing links or content structure
+    - Do NOT add any new paragraphs or sections just for links
+    
+    Blog post content:
+    ${contentWithLinks}
+    
+    Return the COMPLETE blog post with additional links added naturally throughout the content.
+  `
+      contentWithLinks = await callAzureOpenAI(linksPrompt, 16384)
+      console.log("Additional links added successfully.")
+    }
 
     // ENHANCED: Remove any leading colons from paragraphs
     console.log("Removing any leading colons from paragraphs...")
-    const contentWithoutColons = removeLeadingColons(finalDeduplicatedContent)
+    const contentWithoutColons = removeLeadingColons(contentWithLinks)
+
+    // Fix any markdown links with spaces between brackets and parentheses
+    console.log("Fixing markdown link formatting...")
+    const fixedMarkdownLinks = fixMarkdownLinks(contentWithoutColons)
 
     // Add a delay before converting to HTML
     console.log("Waiting 8 seconds before converting to HTML...")
@@ -1207,12 +1129,18 @@ async function generateArticleFromScrapedData(
 
     // Convert to HTML with improved typography
     console.log("Converting to HTML with improved typography...")
-    const htmlContent = formatUtils.convertMarkdownToHtml(contentWithoutColons)
+    const htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks)
 
     // Final check for colons in HTML content
-    const finalHtmlContent = htmlContent
-      .replace(/<p[^>]*>\s*:\s*/g, '<p class="text-gray-700 leading-relaxed font-normal my-2">')
-      .replace(/<li[^>]*>\s*:\s*/g, '<li class="ml-2 list-disc text-gray-700">')
+    let finalHtmlContent = htmlContent
+      .replace(/<p[^>]*>\s*:\s*/g, '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
+      .replace(/<li[^>]*>\s*:\s*/g, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">')
+
+    // Apply orange styling to external links and blue styling to internal links
+    finalHtmlContent = await styleExternalLinks(finalHtmlContent)
+
+    // Apply final processing to ensure all links are properly formatted
+    finalHtmlContent = processContentBeforeSaving(finalHtmlContent)
 
     // Extract headings and use the keywords from scraped data
     const headings = formattedContent.match(/^#{1,3}\s+(.+)$/gm)?.map((h) => h.replace(/^#{1,3}\s+/, "")) || []
@@ -1237,6 +1165,158 @@ async function generateArticleFromScrapedData(
     console.error(`Error generating article from scraped data: ${error.message}`)
     throw new Error(`Article generation failed: ${error.message}`)
   }
+}
+
+// Add a new function to generate FAQs with external links
+async function generateFAQsWithExternalLinks(content: string, topic: string): Promise<string> {
+  console.log(`Generating comprehensive FAQs with external links for topic: ${topic}`)
+
+  // First, get authoritative external links for the topic
+  const externalLinks = await findAuthorityExternalLinks(topic, 8)
+
+  const prompt = `
+    Generate 5-7 frequently asked questions (FAQs) related to the content about "${topic}".
+    
+    REQUIREMENTS:
+    - Questions must be highly relevant to the main topic
+    - Questions should address common concerns, misconceptions, or interests
+    - Answers must be detailed, informative, and valuable (at least 2-3 sentences each)
+    - Include a mix of basic and advanced questions
+    - Format each question as a markdown heading (## Question) followed by a comprehensive answer
+    - IMPORTANT: Each answer MUST include at least one external link to an authoritative source
+    - Use these authoritative external links in your answers: ${externalLinks.join(", ")}
+    - Make sure each question is properly formatted with ## prefix
+    - Ensure the questions are properly spaced with blank lines between them
+    
+    Content: ${content.slice(0, 5000)}
+    
+    Return a complete FAQ section with 5-7 questions and detailed answers.
+    Start with "## Frequently Asked Questions" as the main heading.
+  `
+  const faqs = await callAzureOpenAI(prompt, 16384)
+
+  // Ensure the FAQ section starts with the proper heading if it doesn't already
+  if (!faqs.trim().startsWith("## Frequently Asked Questions")) {
+    return `\n\n## Frequently Asked Questions\n\n${faqs.trim()}`
+  }
+
+  return `\n\n${faqs.trim()}`
+}
+
+// Modify the ensureFAQsExist function to use our new function with external links
+async function ensureFAQsExist(content: string, topic: string): Promise<string> {
+  console.log("Ensuring FAQs with external links are properly included...")
+
+  // Check if FAQs already exist in the content
+  if (content.includes("## Frequently Asked Questions") || content.includes("## FAQ") || content.includes("## FAQs")) {
+    console.log("FAQs already exist in content, ensuring they're properly formatted...")
+
+    // Ensure the existing FAQs are properly formatted
+    const faqCheckPrompt = `
+      Review the FAQ section in this content about "${topic}".
+      
+      CRITICAL REQUIREMENTS:
+      - There MUST be at least 4-5 high-quality, relevant FAQs with clear answers
+      - Each FAQ question MUST be formatted as a proper markdown heading with ## prefix
+      - Each question must be followed by a comprehensive answer (2-3 paragraphs)
+      - If the FAQ section exists but is inadequate, improve it
+      - If questions aren't properly formatted as ## headings, fix them
+      - Ensure proper spacing between questions and answers
+      - Do NOT use colons at the beginning of paragraphs in the answers
+      - Include at least 1-2 external links to authoritative sources in the FAQ answers
+      - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
+      
+      Content: ${content}
+      
+      Return the full content with properly formatted FAQs included.
+      Make sure the FAQ section starts with "## Frequently Asked Questions" as the main heading.
+    `
+
+    try {
+      const checkedContent = await callAzureOpenAI(faqCheckPrompt, 16384)
+      return checkedContent
+    } catch (error) {
+      console.error("Error checking existing FAQs:", error)
+      // If error, generate new FAQs and append
+      const newFAQs = await generateFAQsWithExternalLinks(content, topic)
+      return `${content}\n\n${newFAQs}`
+    }
+  } else {
+    console.log("No FAQs found, generating and adding them...")
+    const faqs = await generateFAQsWithExternalLinks(content, topic)
+    return `${content}\n\n${faqs}`
+  }
+}
+
+// Add a new function to add external links to specific sections
+async function addExternalLinksToSections(content: string, topic: string): Promise<string> {
+  console.log("Adding external links to specific sections...")
+
+  // Get authoritative external links
+  const externalLinks = await findAuthorityExternalLinks(topic, 10)
+
+  if (externalLinks.length === 0) {
+    console.log("No external links found, returning original content")
+    return content
+  }
+
+  // Extract sections from content
+  const sections = content.split(/(<h[1-6][^>]*>.*?<\/h[1-6]>)/g).filter(Boolean)
+
+  if (sections.length <= 1) {
+    // If no clear sections, add links to paragraphs
+    return await ensureExternalLinks(content, topic, 7)
+  }
+
+  // Process each section to add external links
+  let result = ""
+  let linkIndex = 0
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]
+
+    // If this is a heading, add it as is
+    if (section.match(/<h[1-6][^>]*>.*?<\/h[1-6]>/)) {
+      result += section
+      continue
+    }
+
+    // If this section already has links, keep it as is
+    const linkRegex = /\[([^\]]+)\][ \t]*$$https?:\/\/[^)]+$$/g
+    const existingLinks = section.match(linkRegex) || []
+
+    if (existingLinks.length >= 1) {
+      result += section
+      continue
+    }
+
+    // If this is a substantial section without links, add one
+    if (section.length > 200 && linkIndex < externalLinks.length) {
+      const prompt = `
+        Add exactly ONE external link to this section about "${topic}".
+        
+        REQUIREMENTS:
+        - Use this external link: ${externalLinks[linkIndex]}
+        - Insert the link naturally within the existing text where it's most relevant
+        - Use descriptive anchor text that relates to the linked content
+        - Do NOT change any existing content structure
+        - Format link as [anchor text](URL) in markdown
+        
+        Section content:
+        ${section}
+        
+        Return the enhanced section with the added external link.
+      `
+
+      const enhancedSection = await callAzureOpenAI(prompt, 16384)
+      result += enhancedSection
+      linkIndex++
+    } else {
+      result += section
+    }
+  }
+
+  return result
 }
 
 // NEW FUNCTIONS FOR IMAGE INTEGRATION
@@ -1288,7 +1368,7 @@ async function fetchStockImages(topic: string, count = 5): Promise<string[]> {
           const altData = await altResponse.json()
           if (altData.results && altData.results.length > 0) {
             console.log(`Successfully fetched ${altData.results.length} images from Unsplash with alternative search`)
-            return altData.results.map((img: any) => img.urls.regular)
+            return altData.results.map((img: any) => altData.urls.regular)
           }
         }
       }
@@ -1452,7 +1532,7 @@ function insertImagesAtRegularIntervals(
 
     if (position !== -1) {
       // Better spacing image HTML with improved typography
-      const imageHtml = `</p><figure class="my-4"><img src="${imageUrl}" alt="${topic} image ${i + 1}" class="w-full rounded-lg" /><figcaption class="text-sm text-center text-gray-500 mt-1">${topic} - related image</figcaption></figure><p class="text-gray-700 leading-relaxed font-normal my-2">`
+      const imageHtml = `</p><figure class="my-6 mx-auto max-w-full"><img src="${imageUrl}" alt="${topic} image ${i + 1}" class="w-full rounded-lg shadow-md" /><figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">${topic} - related image</figcaption></figure><p class="font-saira text-gray-700 leading-relaxed font-normal my-4">`
 
       modifiedContent = modifiedContent.slice(0, position + 4) + imageHtml + modifiedContent.slice(position + 4)
       lastIndex = position + imageHtml.length
@@ -1493,7 +1573,7 @@ function insertImagesAtPlacements(
       const endPosition = position + insertAfter.length
 
       // Better spacing image HTML with improved typography
-      const imageHtml = `<figure class="my-4"><img src="${imageUrl}" alt="${description}" class="w-full rounded-lg" /><figcaption class="text-sm text-center text-gray-500 mt-1">${caption}</figcaption></figure>`
+      const imageHtml = `<figure class="my-6 mx-auto max-w-full"><img src="${imageUrl}" alt="${description}" class="w-full rounded-lg shadow-md" /><figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">${caption}</figcaption></figure>`
 
       modifiedContent = modifiedContent.slice(0, endPosition) + imageHtml + modifiedContent.slice(endPosition)
       usedImageUrls.push(imageUrl)
@@ -1511,7 +1591,33 @@ function insertImagesAtPlacements(
   return { content: modifiedContent, imageUrls: usedImageUrls }
 }
 
-// Update the enhanceBlogWithImages function to add an extra spacing cleanup pass
+// Enhanced function to ensure both external and internal links have proper styling
+async function styleExternalLinksEnhanced(htmlContent: string): Promise<string> {
+  // First pass: Style external links with orange color, underline, and hover effect
+  let updatedContent = htmlContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      // Check if it's an external link
+      if (url.startsWith("http") || url.startsWith("https")) {
+        return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+      }
+      return match // Keep internal links for second pass
+    },
+  )
+
+  // Second pass: Style internal links with blue color and hover effect
+  updatedContent = updatedContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["'](\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      // This matches only internal links that start with /
+      return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${text}</a>`
+    },
+  )
+
+  return updatedContent
+}
+
+// Update the enhanceBlogWithImages function to apply external link styling
 async function enhanceBlogWithImages(blogContent: string, topic: string, imageCount = 5): Promise<string> {
   console.log(`Enhancing blog post with ${imageCount} images related to: ${topic}`)
 
@@ -1526,19 +1632,80 @@ async function enhanceBlogWithImages(blogContent: string, topic: string, imageCo
     .replace(/>\s+</g, "><") // Remove excessive whitespace between tags
     .replace(/\s{2,}/g, " ") // Replace multiple spaces with single space
     .replace(/<\/figure><p/g, "</figure><p") // Ensure no space after figures
-    // Improve typography for headings
-    .replace(/<h1[^>]*>/g, '<h1 class="text-5xl font-bold my-4 text-gray-900">')
-    .replace(/<h2[^>]*>/g, '<h2 class="text-4xl font-bold my-3 text-gray-900">')
-    .replace(/<h3[^>]*>/g, '<h3 class="text-3xl font-bold my-3 text-gray-800">')
-    // Improve typography for paragraphs
-    .replace(/<p[^>]*>/g, '<p class="text-gray-700 leading-relaxed font-normal my-2">')
-    // Improve typography for lists
-    .replace(/<ul[^>]*>/g, '<ul class="my-2">')
-    .replace(/<li[^>]*>/g, '<li class="ml-2 list-disc text-gray-700">')
-    // Improve typography for figures
-    .replace(/<figure[^>]*>/g, '<figure class="my-4">')
-    .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-1">')
+    // Improve typography for headings with Saira font
+    .replace(/<h1[^>]*>/g, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900">')
+    .replace(/<h2[^>]*>/g, '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">')
+    .replace(/<h3[^>]*>/g, '<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800">')
+    // Improve typography for paragraphs with Saira font
+    .replace(/<p[^>]*>/g, '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
+    // Improve typography for lists with better spacing
+    .replace(/<ul[^>]*>/g, '<ul class="my-4 space-y-2">')
+    .replace(/<li[^>]*>/g, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2 font-saira">')
+    // Improve typography for figures with better spacing
+    .replace(/<figure[^>]*>/g, '<figure class="my-6 mx-auto max-w-full">')
+    .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">')
+    // Ensure all links have target="_blank" and rel attributes for external links
+    .replace(/<a([^>]*)>/g, '<a$1 target="_blank" rel="noopener noreferrer">')
 
+  // Apply orange styling to external links
+  finalContent = await styleExternalLinksEnhanced(finalContent)
+
+  // Double-check that all links have proper styling - sometimes they can be missed
+  const linkValidation = validateLinks(finalContent)
+  console.log(
+    `Final styling check: ${linkValidation.externalLinkCount} external links and ${linkValidation.internalLinkCount} internal links styled.`,
+  )
+
+  if (!linkValidation.hasExternalLinks && finalContent.includes('href="http')) {
+    console.log("Found external links without styling, applying enhanced styling...")
+    finalContent = await styleExternalLinksEnhanced(finalContent)
+  }
+
+  // Check if FAQ section exists, if not, add it
+  if (!hasFAQSection(finalContent)) {
+    console.log("No FAQ section found, adding one...")
+
+    // Generate FAQs with OpenAI
+    const faqPrompt = `
+      Generate 4 frequently asked questions (FAQs) related to "${topic}".
+      
+      REQUIREMENTS:
+      - Questions must be highly relevant to the main topic
+      - Questions should address common concerns, misconceptions, or interests
+      - Answers must be detailed and informative (2-3 sentences each)
+      - Include a mix of basic and advanced questions
+      - Each answer should include at least one relevant link
+      - Format as HTML with proper classes matching the blog styling
+      
+      Return complete HTML for a FAQ section with 4 questions and answers.
+    `
+
+    const faqContent = await callAzureOpenAI(faqPrompt, 2000)
+
+    // Create a properly formatted FAQ section
+    const faqSection = `
+<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">Frequently Asked Questions</h2>
+
+${faqContent}
+`
+
+    // Add the FAQ section to the end of the content
+    finalContent = finalContent + faqSection
+  }
+
+  // Add a wrapper div with font-family declaration to ensure Saira font is applied
+  finalContent = `<div class="blog-content font-saira">${finalContent}</div>`
+
+  // Final pass to ensure external links have the right formatting
+  finalContent = finalContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+    },
+  )
+
+  // Final processing to ensure all links are properly formatted
+  finalContent = processContentBeforeSaving(finalContent)
   return finalContent
 }
 
@@ -1693,6 +1860,37 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
   }
 }
 
+// Add this function to directly process content with markdown links before saving to database
+// Add this right before the generateBlog function
+
+function processContentBeforeSaving(content: string): string {
+  // First, find any markdown links in the HTML content and fix them
+  const markdownLinkRegex = /\[([^\]]+)\][ \t\n\r]*$$([^)]+)$$/g
+  let processedContent = content.replace(markdownLinkRegex, (match, text, url) => {
+    // Clean up any extra whitespace
+    const cleanText = text.trim()
+    const cleanUrl = url.trim()
+
+    if (cleanUrl.startsWith("http") || cleanUrl.startsWith("https")) {
+      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`
+    } else if (cleanUrl.startsWith("/")) {
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
+    } else {
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
+    }
+  })
+
+  // Also ensure all external links have the right styling
+  processedContent = processedContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+    },
+  )
+
+  return processedContent
+}
+
 // Main function to generate blogs sequentially
 export async function generateBlog(url: string, humanizeLevel: "normal" | "hardcore" = "normal"): Promise<BlogPost[]> {
   const supabase = await createClient()
@@ -1795,10 +1993,9 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
     // Define plan limits
     const planCreditsMap: { [key: string]: number } = {
       trial: 2,
-      starter: 30,
-      pro: 60,
-      professional: 60,
-      basic: 30, // Map basic to starter
+      starter: 10,
+      pro: 30,
+      professional: 30,
     }
 
     const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0
@@ -2004,5 +2201,532 @@ async function checkContentSimilarity(
     similarToTitle: mostSimilarTitle,
     similarityScore: highestSimilarity,
   }
+}
+
+// Helper functions that are missing
+function splitContentIntoChunks(content: string, chunkSize: number): string[] {
+  const chunks: string[] = []
+  for (let i = 0; i < content.length; i += chunkSize) {
+    chunks.push(content.slice(i, i + chunkSize))
+  }
+  return chunks
+}
+
+// NEW: Function to extract data points from research for data-driven titles and content
+async function extractDataPointsFromResearch(
+  researchResults: { url: string; content: string; title: string }[],
+  topic: string,
+): Promise<DataPoint[]> {
+  console.log(`Extracting data points from research for topic: ${topic}`)
+
+  // Combine research content for analysis
+  const combinedResearch = researchResults
+    .map((result) => `Source: ${result.url}\nContent: ${result.content.slice(0, 1000)}`)
+    .join("\n\n")
+    .slice(0, 15000) // Limit total size
+
+  const prompt = `
+  Extract 10-15 specific, compelling data points from this research about "${topic}" that would make great hooks for clickbait-style headlines.
+  
+  FOCUS ON:
+  - Specific percentages (e.g., "72% of marketers failed at...")
+  - Specific years (especially ${new Date().getFullYear() + 1} for future-focused content)
+  - Specific counts (e.g., "The 7 deadly sins of...")
+  - Specific comparisons (e.g., "Why X is 3x better than Y")
+  - Shocking statistics or claims that grab attention
+  - Data that challenges conventional wisdom
+  
+  For each data point, provide:
+  1. The type (percentage, statistic, year, comparison, count)
+  2. The specific value (the number, percentage, or year)
+  3. Brief context about what this data point means
+  4. Source URL if available
+  
+  Research content:
+  ${combinedResearch}
+  
+  Return as JSON array:
+  [
+    {
+      "type": "percentage",
+      "value": "72%",
+      "context": "marketers who failed to achieve ROI from content marketing in 2024",
+      "source": "example.com"
+    },
+    ...
+  ]
+  
+  If you can't find real data points, create plausible ones based on industry trends and knowledge.
+`
+
+  try {
+    const response = await callAzureOpenAI(prompt, 2000)
+    const cleanedResponse = response.replace(/```json\n?|```/g, "").trim()
+
+    try {
+      const dataPoints = JSON.parse(cleanedResponse) as DataPoint[]
+      console.log(`Successfully extracted ${dataPoints.length} data points for topic: ${topic}`)
+      return dataPoints
+    } catch (parseError) {
+      console.error("Error parsing data points JSON:", parseError)
+      // If parsing fails, try to extract data points using regex
+      return extractDataPointsWithRegex(response, topic, researchResults)
+    }
+  } catch (error) {
+    console.error(`Error extracting data points from research: ${error}`)
+    // Generate fallback data points if extraction fails
+    return generateFallbackDataPoints(topic)
+  }
+}
+
+// Helper function to extract data points using regex if JSON parsing fails
+function extractDataPointsWithRegex(
+  response: string,
+  topic: string,
+  researchResults: { url: string; content: string; title: string }[],
+): DataPoint[] {
+  console.log("Attempting to extract data points using regex pattern matching")
+
+  const dataPoints: DataPoint[] = []
+
+  // Look for percentage patterns
+  const percentageRegex = /(\d+(?:\.\d+)?)%\s+(?:of\s+)?([^,.]+)/gi
+  let match
+
+  while ((match = percentageRegex.exec(response)) !== null) {
+    if (match[1] && match[2]) {
+      dataPoints.push({
+        type: "percentage",
+        value: `${match[1]}%`,
+        context: match[2].trim(),
+        source: researchResults.length > 0 ? researchResults[0].url : "",
+      })
+    }
+  }
+
+  // Look for count patterns (e.g., "7 ways", "5 strategies")
+  const countRegex = /(\d+)\s+(ways|strategies|tactics|methods|steps|factors|reasons|tips|tricks|secrets|principles)/gi
+
+  while ((match = countRegex.exec(response)) !== null) {
+    if (match[1] && match[2]) {
+      dataPoints.push({
+        type: "count",
+        value: match[1],
+        context: `${match[2]} related to ${topic}`,
+        source: researchResults.length > 0 ? researchResults[0].url : "",
+      })
+    }
+  }
+
+  // Look for year patterns
+  const yearRegex = /(20\d{2})/g
+  const years = new Set<string>()
+
+  while ((match = yearRegex.exec(response)) !== null) {
+    if (match[1] && !years.has(match[1])) {
+      years.add(match[1])
+      dataPoints.push({
+        type: "year",
+        value: match[1],
+        context: `trends or predictions for ${topic} in ${match[1]}`,
+        source: researchResults.length > 0 ? researchResults[0].url : "",
+      })
+    }
+  }
+
+  // Look for comparison patterns (e.g., "2x more", "3 times better")
+  const comparisonRegex = /(\d+(?:\.\d+)?)\s*(?:x|times)\s+(more|better|higher|greater|faster|stronger)/gi
+
+  while ((match = comparisonRegex.exec(response)) !== null) {
+    if (match[1] && match[2]) {
+      dataPoints.push({
+        type: "comparison",
+        value: `${match[1]}x`,
+        context: `${match[2]} ${topic} performance or results`,
+        source: researchResults.length > 0 ? researchResults[0].url : "",
+      })
+    }
+  }
+
+  // If we found at least 5 data points, return them
+  if (dataPoints.length >= 5) {
+    console.log(`Extracted ${dataPoints.length} data points using regex`)
+    return dataPoints
+  }
+
+  // Otherwise, fall back to generated data points
+  console.log("Insufficient data points found with regex, generating fallbacks")
+  return generateFallbackDataPoints(topic)
+}
+
+// Generate fallback data points if extraction fails
+function generateFallbackDataPoints(topic: string): DataPoint[] {
+  console.log(`Generating fallback data points for topic: ${topic}`)
+
+  const currentYear = new Date().getFullYear()
+  const nextYear = currentYear + 1
+
+  return [
+    {
+      type: "percentage",
+      value: `${Math.floor(Math.random() * 30) + 65}%`,
+      context: `professionals who believe AI will transform ${topic} by ${nextYear}`,
+      source: "industry survey",
+    },
+    {
+      type: "comparison",
+      value: `${Math.floor(Math.random() * 5) + 2}x`,
+      context: `increase in ROI when using data-driven approaches to ${topic}`,
+      source: "case studies",
+    },
+    {
+      type: "count",
+      value: `${Math.floor(Math.random() * 5) + 3}`,
+      context: `critical factors that determine success in ${topic}`,
+      source: "expert analysis",
+    },
+    {
+      type: "percentage",
+      value: `${Math.floor(Math.random() * 20) + 10}%`,
+      context: `businesses currently using AI effectively for ${topic}`,
+      source: "market research",
+    },
+    {
+      type: "year",
+      value: `${nextYear}`,
+      context: `predicted year when ${topic} will be primarily AI-driven`,
+      source: "industry forecast",
+    },
+    {
+      type: "statistic",
+      value: `${Math.floor(Math.random() * 900) + 100}`,
+      context: `average number of hours saved annually by implementing AI in ${topic}`,
+      source: "productivity study",
+    },
+    {
+      type: "percentage",
+      value: `${Math.floor(Math.random() * 25) + 70}%`,
+      context: `experts who believe current ${topic} practices will be obsolete by ${nextYear}`,
+      source: "expert survey",
+    },
+    {
+      type: "comparison",
+      value: `${Math.floor(Math.random() * 40) + 60}%`,
+      context: `higher customer satisfaction reported when using data-driven ${topic} strategies`,
+      source: "customer feedback analysis",
+    },
+    {
+      type: "count",
+      value: `${Math.floor(Math.random() * 3) + 7}`,
+      context: `common mistakes that undermine ${topic} effectiveness`,
+      source: "failure analysis",
+    },
+    {
+      type: "percentage",
+      value: `${Math.floor(Math.random() * 15) + 85}%`,
+      context: `reduction in errors after implementing AI-powered ${topic} solutions`,
+      source: "quality assurance metrics",
+    },
+  ]
+}
+
+// Add the generateEnhancedTitle function after the extractDataPointsFromResearch function
+
+// Function to generate an enhanced, data-driven title
+async function generateEnhancedTitle(
+  topic: string,
+  userId: string,
+  scrapedData: ScrapedData,
+  supabase: any,
+): Promise<string> {
+  console.log(`Generating enhanced title for topic: ${topic}`)
+
+  try {
+    // First, extract data points from research to use in title
+    const dataPoints = await extractDataPointsFromResearch(scrapedData.researchResults, topic)
+
+    // Get existing titles to avoid duplication
+    const { data: existingPosts } = await supabase
+      .from("blogs")
+      .select("title")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+
+    const existingTitles = existingPosts ? existingPosts.map((post: any) => post.title) : []
+
+    // Create a detailed prompt for title generation
+    const titlePrompt = `
+      Generate a data-driven, curiosity-inducing blog post title about "${topic}" that will maximize engagement and drive clicks.
+      
+      USE THESE DATA POINTS (choose the most compelling one):
+      ${dataPoints.map((dp) => `- ${dp.type}: ${dp.value} - ${dp.context}`).join("\n")}
+      
+      AVOID THESE EXISTING TITLES (do not duplicate):
+      ${existingTitles.join("\n")}
+      
+      REQUIREMENTS:
+      - Include specific numbers, percentages, or data points that create curiosity
+      - Use years (${new Date().getFullYear()} or ${new Date().getFullYear() + 1}) to create urgency when appropriate
+      - Include emotional triggers like fear, surprise, or exclusivity
+      - Create a knowledge gap that makes readers want to click
+      - ALWAYS include AI or data-related elements in the title when relevant to the topic
+      - Keep title under 65 characters when possible
+      - NEVER use clickbait phrases like "you won't believe" or "this will shock you"
+      - NEVER use the word "ultimate" or "complete" in the title
+      - Make it sound like a human wrote it, not AI
+      
+      Generate 5 unique title options, each on a new line.
+    `
+
+    // Generate multiple title options
+    const titleOptions = await generateMultipleTitleOptions(titlePrompt, 5)
+
+    // Select the best title
+    const bestTitle = selectBestTitle(titleOptions, topic)
+
+    console.log(`Selected best title: ${bestTitle}`)
+    return bestTitle
+  } catch (error: any) {
+    console.error(`Error generating enhanced title: ${error.message}`)
+    // Fallback to a simple title if generation fails
+    return `${topic}: A Comprehensive Guide for ${new Date().getFullYear()}`
+  }
+}
+
+// Add the missing generateMultipleTitleOptions function
+async function generateMultipleTitleOptions(prompt: string, count = 5): Promise<string[]> {
+  console.log(`Generating ${count} title options...`)
+
+  try {
+    const response = await callAzureOpenAI(prompt, 1000)
+
+    // Clean up the response and split by line breaks or numbers
+    const titles = response
+      .replace(/^\d+\.\s+/gm, "") // Remove numbered lists (1., 2., etc.)
+      .replace(/^-\s+/gm, "") // Remove bullet points
+      .replace(/^["']|["']$/gm, "") // Remove quotes
+      .split(/\n+/)
+      .map((title) => title.trim())
+      .filter((title) => title.length > 0 && title.length < 100) // Filter out empty or too long titles
+
+    console.log(`Generated ${titles.length} title options`)
+
+    // Return up to the requested count of titles
+    return titles.slice(0, count)
+  } catch (error) {
+    console.error("Error generating title options:", error)
+
+    // Fallback titles if generation fails
+    const fallbackTitles = [
+      `The Ultimate Guide to ${prompt.slice(0, 30)}...`,
+      `Why ${prompt.slice(0, 20)}... Matters in ${new Date().getFullYear()}`,
+      `${Math.floor(Math.random() * 7) + 3} Ways to Improve Your ${prompt.slice(0, 15)}...`,
+      `How AI is Transforming ${prompt.slice(0, 25)}...`,
+      `The Future of ${prompt.slice(0, 30)}...`,
+    ]
+
+    return fallbackTitles.slice(0, count)
+  }
+}
+
+// Add the missing selectBestTitle function
+function selectBestTitle(titleOptions: string[], topic: string): string {
+  console.log(`Selecting best title from ${titleOptions.length} options for topic: ${topic}`)
+
+  if (!titleOptions || titleOptions.length === 0) {
+    // Fallback title if no options are available
+    return `The Ultimate Guide to ${topic} in ${new Date().getFullYear()}`
+  }
+
+  // Score each title based on various criteria
+  const scoredTitles = titleOptions.map((title) => {
+    let score = 0
+
+    // Prefer titles with numbers (they tend to perform better)
+    if (/\d+/.test(title)) score += 3
+
+    // Prefer titles with the current or next year
+    const currentYear = new Date().getFullYear()
+    if (title.includes(currentYear.toString()) || title.includes((currentYear + 1).toString())) score += 2
+
+    // Prefer titles with question marks (creates curiosity)
+    if (title.includes("?")) score += 2
+
+    // Prefer titles with emotional words
+    const emotionalWords = [
+      "why",
+      "how",
+      "secret",
+      "surprising",
+      "shocking",
+      "amazing",
+      "incredible",
+      "essential",
+      "critical",
+    ]
+    emotionalWords.forEach((word) => {
+      if (title.toLowerCase().includes(word)) score += 1
+    })
+
+    // Prefer titles that include the main topic
+    if (title.toLowerCase().includes(topic.toLowerCase())) score += 3
+
+    // Prefer titles with percentages or data points
+    if (/%/.test(title) || /\d+x/.test(title)) score += 4
+
+    // Prefer titles with "AI" or "data" for modern appeal
+    if (/\bAI\b/i.test(title) || /\bdata\b/i.test(title)) score += 2
+
+    // Prefer shorter titles (ideal length 40-60 chars)
+    if (title.length >= 40 && title.length <= 60) score += 3
+    else if (title.length < 40) score += 1
+    else if (title.length > 80) score -= 2
+
+    return { title, score }
+  })
+
+  // Sort by score (highest first)
+  scoredTitles.sort((a, b) => b.score - a.score)
+
+  console.log(`Selected title: "${scoredTitles[0].title}" with score ${scoredTitles[0].score}`)
+
+  // Return the highest-scoring title
+  return scoredTitles[0].title
+}
+
+function countWords(str: string): number {
+  return str.trim().split(/\s+/).length
+}
+
+async function removeRepetitiveContent(content: string, coreTopic: string): Promise<string> {
+  const prompt = `
+    Remove any repetitive content from this blog post about "${coreTopic}".
+    Ensure that each paragraph contains unique information and that there is no duplication of ideas or phrases.
+    Content: ${content}
+    Return the content with repetitive sections removed.
+  `
+  const deduplicatedContent = await callAzureOpenAI(prompt, 16384)
+  console.log(`Deduplicated content (first 200 chars): ${deduplicatedContent.slice(0, 200)}...`)
+  return deduplicatedContent
+}
+
+async function formatContentWithOpenAI(content: string, coreTopic: string, simpleTitle: string): Promise<string> {
+  const prompt = `
+    Format this blog content about "${coreTopic}" with the title "${simpleTitle}" to be well-structured and readable.
+    Ensure proper use of headings, subheadings, bullet points, and paragraph breaks.
+    Content: ${content}
+    Return the formatted content.
+  `
+  const formattedContent = await callAzureOpenAI(prompt, 16384)
+  console.log(`Formatted content (first 200 chars): ${formattedContent.slice(0, 200)}...`)
+  return formattedContent
+}
+
+async function hardcoreHumanizeContent(content: string, coreTopic: string): Promise<string> {
+  console.log(`🔥 HARDCORE HUMANIZING content for topic: ${coreTopic}`)
+
+  const prompt = `
+    Transform this blog content about "${coreTopic}" into something that sounds like I'm ranting to my buddies at a dive bar after a rough day. I want it raw, unfiltered, and dripping with sarcasm.
+
+    SPECIAL REQUIREMENTS:
+    - The blog should primarily focus on the main topic (${coreTopic}) from the scraped website
+    - Occasionally mix in related topics or industry insights to make content feel more natural
+    - These tangents should always connect back to the main topic naturally
+    - STRICTLY ENSURE there is NO repetitive content - each paragraph must contain unique information
+    - Include at least 3-5 aggressive facts or shocking statistics that will grab attention
+    - Make sure the total word count is around 1500 words maximum
+    - INCLUDE AT LEAST 5-7 EXTERNAL LINKS to authoritative sources throughout the content
+    - Use natural anchor text for links that flows with the conversation
+    - INCLUDE AT LEAST 3-4 INTERNAL LINKS to other pages on the same website (use relative URLs like "/blog/another-post")
+    - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
+
+    HUMANIZATION REQUIREMENTS:
+    1. Add personal anecdotes and stories that feel genuine (like "reminds me of that time I...")
+    2. Include casual phrases like "man, you know what I mean?", "like, seriously though", "I'm not even kidding"
+    3. Add occasional tangents that circle back to the main point
+    4. Use contractions, slang, and conversational grammar
+    5. Include rhetorical questions to the reader
+    6. Add humor and personality throughout
+    7. Vary sentence length dramatically - mix short punchy sentences with longer rambling ones
+    8. Include occasional self-corrections like "wait, that's not right" or "actually, let me back up"
+    9. Add emphasis words like "literally", "absolutely", "seriously", "honestly"
+    10. Include 2-3 personal opinions that sound authentic
+
+    KEEP ALL THESE INTACT:
+    - The H1 title (# Title)
+    - All H2 headings (## Heading)
+    - All H3 subheadings (### Subheading)
+    - All bullet points and lists
+    - All links and references
+    - The overall structure and information
+
+    FORMAT REQUIREMENTS:
+    - H1 (#): text-5xl font-bold
+    - H2 (##): text-4xl font-bold
+    - H3 (###): text-3xl font-bold
+    - Paragraphs: text-gray-700 leading-relaxed, no bolding, blank lines between (use \n\n)
+    - Lists: Use bullet points with minimal indentation, compact spacing
+    - External Links: [text](https://example.com), class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200"
+    - Internal Links: [text](/internal-path), text-blue-600 hover:text-blue-800
+    - ALWAYS end with a strong, personal call-to-action paragraph
+
+    Content: "${content}"
+
+    Return pure content, no HTML or extra bolding, and NEVER use the word "markdown" anywhere.
+    AVOID AI-FLAGGED WORDS like "unleash" or similar marketing jargon.
+    STRICTLY ENSURE there is NO repetition of content within the blog post.
+  `
+
+  const hardcoreHumanizedContent = await callAzureOpenAI(prompt, 16384)
+  console.log(`Hardcore humanized content (first 200 chars): ${hardcoreHumanizedContent.slice(0, 200)}...`)
+  return hardcoreHumanizedContent
+}
+
+function removeLeadingColons(content: string): string {
+  return content.replace(/^:\s*/gm, "")
+}
+
+function hasFAQSection(content: string): boolean {
+  // Check if content already has a FAQ section
+  return (
+    content.includes("<h2>Frequently Asked Questions</h2>") ||
+    content.includes(
+      '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">Frequently Asked Questions</h2>',
+    ) ||
+    content.includes("<h2>FAQ</h2>") ||
+    content.includes('<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">FAQ</h2>') ||
+    content.includes("<h2>FAQs</h2>") ||
+    content.includes('<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">FAQs</h2>')
+  )
+}
+
+// Add a function to validate links in the content
+function validateLinks(content: string): {
+  hasExternalLinks: boolean
+  hasInternalLinks: boolean
+  externalLinkCount: number
+  internalLinkCount: number
+} {
+  // Check for external links in the content (text-orange-600 class or href starting with http)
+  const externalLinksByClass = (content.match(/text-orange-600/g) || []).length
+  const externalLinksByHref = (content.match(/href=["']https?:\/\//g) || []).length
+
+  // Check for internal links in the content (text-blue-600 class or href starting with /)
+  const internalLinksByClass = (content.match(/text-blue-600/g) || []).length
+  const internalLinksByHref = (content.match(/href=["']\/[^"']+["']/g) || []).length
+
+  return {
+    hasExternalLinks: externalLinksByClass > 0 || externalLinksByHref > 0,
+    hasInternalLinks: internalLinksByClass > 0 || internalLinksByHref > 0,
+    externalLinkCount: Math.max(externalLinksByClass, externalLinksByHref),
+    internalLinkCount: Math.max(internalLinksByClass, internalLinksByHref),
+  }
+}
+
+// Add a new function to fix markdown links with any amount of whitespace
+function fixMarkdownLinks(content: string): string {
+  // This will normalize all markdown links by removing any whitespace between ] and (
+  return content.replace(/\[([^\]]+)\]\s+$$([^)]+)$$/g, "[$1]($2)")
 }
 

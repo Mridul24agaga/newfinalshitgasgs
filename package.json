@@ -54,6 +54,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/lodash": "^4.17.15",
     "@types/react-draft-wysiwyg": "^1.13.8",
+    "@types/string-similarity": "^4.0.2",
     "@types/uuid": "^10.0.0",
     "ai": "^4.1.36",
     "avatar": "^0.1.0",
@@ -105,6 +106,7 @@
     "slate-history": "^0.110.3",
     "slate-react": "^0.112.1",
     "snoowrap": "^1.23.0",
+    "string-similarity": "^4.0.4",
     "tailwind-merge": "^3.0.1",
     "tavily": "^1.0.2",
     "vercel-python-runtime": "^4.10.27"

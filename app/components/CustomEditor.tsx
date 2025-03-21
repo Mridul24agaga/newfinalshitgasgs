@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import type { ReactNode } from "react"
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import {
   ArrowLeft,
@@ -20,13 +19,17 @@ import {
   Link,
   ListOrdered,
   ExternalLink,
-  ChevronDown,
   Sparkles,
   Code,
   Undo,
   Redo,
+  Save,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/utitls/supabase/client"
+
+// Initialize Supabase client
+const supabase = createClient()
 
 // Formatting utility (optimized)
 const formatUtils = {
@@ -39,12 +42,21 @@ const formatUtils = {
       .replace(/^## (.*$)/gim, '<h2 class="text-4xl font-bold mt-12 mb-6 text-gray-900">$1</h2>')
       .replace(/^# (.*$)/gim, '<h1 class="text-5xl font-bold mt-14 mb-8 text-gray-900 border-b pb-4">$1</h1>')
       .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
-      .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
+      .replace(/\*(.*?)\*/gim, '<em class="italic font-normal">$1</em>')
       .replace(/^- (.*)$/gim, '<li class="ml-6 mb-4 list-disc text-gray-700 font-normal">$1</li>')
       .replace(/^[*] (.*)$/gim, '<li class="ml-6 mb-4 list-disc text-gray-700 font-normal">$1</li>')
       .replace(/(<li.*?>.*<\/li>)/gim, '<ul class="my-6">$1</ul>')
       .replace(/\n{2,}/g, '</p><p class="mt-6 mb-6 text-gray-700 leading-relaxed font-normal">')
-      .replace(/\[([^\]]+)\]$$([^)]+)$$/gim, '<a href="$2" class="text-orange-600 hover:underline font-normal">$1</a>')
+      .replace(/\[([^\]]+)\]$$([^)]+)$$/gim, (match, text, url) => {
+        // Check if the URL is internal (relative) or external
+        const isExternal = url.startsWith("http") || url.startsWith("https")
+        if (isExternal) {
+          return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-normal" target="_blank" rel="noopener noreferrer">${text}</a>`
+        } else {
+          // Internal link
+          return `<a href="${url}" class="text-blue-600 hover:text-blue-800 font-normal">${text}</a>`
+        }
+      })
       .replace(
         /^>\s+(.*)$/gim,
         '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-6 font-normal">$1</blockquote>',
@@ -75,10 +87,26 @@ const formatUtils = {
         li.classList.add("ml-6", "mb-4", "list-disc", "text-gray-700", "font-normal")
       })
       doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
-        h.classList.remove("font-bold")
-        if (h.tagName === "H1") h.classList.add("font-bold")
-        if (h.tagName === "H2") h.classList.add("font-bold")
-        if (h.tagName === "H3") h.classList.add("font-bold")
+        h.classList.remove("font-normal")
+        h.classList.add("font-bold")
+
+        if (h.tagName === "H1") {
+          h.classList.add("text-5xl", "mt-14", "mb-8", "text-gray-900", "border-b", "pb-4")
+        } else if (h.tagName === "H2") {
+          h.classList.add("text-4xl", "mt-12", "mb-6", "text-gray-900")
+        } else if (h.tagName === "H3") {
+          h.classList.add("text-3xl", "mt-10", "mb-5", "text-gray-800")
+        } else if (h.tagName === "H4") {
+          h.classList.add("text-2xl", "mt-8", "mb-4")
+        } else if (h.tagName === "H5") {
+          h.classList.add("text-xl", "mt-6", "mb-3")
+        } else if (h.tagName === "H6") {
+          h.classList.add("text-lg", "mt-6", "mb-3")
+        }
+
+        if (!h.textContent?.trim()) {
+          h.innerHTML = "<br>"
+        }
       })
 
       return doc.body.innerHTML
@@ -111,12 +139,7 @@ interface CustomEditorProps {
   images: string[]
   onGenerateMore: () => void
   citations: string[]
-}
-
-interface ToolbarButton {
-  cmd: string
-  label: ReactNode
-  title: string
+  postId: string // Added postId prop for Supabase updates
 }
 
 // Context Menu Component
@@ -130,14 +153,11 @@ const ContextMenu: React.FC<{
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (!e.target) return
-      const target = e.target as Node
       const menu = document.querySelector(".fixed.z-50")
-      if (menu && !menu.contains(target)) {
+      if (menu && !menu.contains(e.target as Node)) {
         onClose()
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [onClose])
@@ -145,16 +165,12 @@ const ContextMenu: React.FC<{
   return (
     <div
       className="fixed z-50 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200"
-      style={{
-        top: `${position.y}px`,
-        left: `${position.x}px`,
-        minWidth: "160px",
-      }}
+      style={{ top: `${position.y}px`, left: `${position.x}px`, minWidth: "160px" }}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="py-1">
         <button
-          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+          className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -170,7 +186,7 @@ const ContextMenu: React.FC<{
   )
 }
 
-// FloatingToolbar (improved)
+// FloatingToolbar
 const FloatingToolbar: React.FC<{
   visible: boolean
   position: { x: number; y: number }
@@ -185,7 +201,6 @@ const FloatingToolbar: React.FC<{
         top: `${position.y}px`,
         left: `${position.x}px`,
         transform: "translate(-50%, -120%)",
-        transition: "opacity 0.2s ease-in-out, transform 0.2s ease-in-out",
         opacity: visible ? 1 : 0,
       }}
     >
@@ -193,40 +208,19 @@ const FloatingToolbar: React.FC<{
         onClick={() => onCommand("generateImage")}
         className="p-1.5 hover:bg-gray-700 rounded-md flex items-center gap-1 text-xs"
         title="Generate Image"
-        aria-label="Generate Image"
       >
         <ImageIcon className="h-4 w-4" />
       </button>
-
       <div className="h-5 border-r border-gray-700 mx-1"></div>
-
-      <button
-        onClick={() => onCommand("bold")}
-        className="p-1.5 hover:bg-gray-700 rounded-md"
-        title="Bold"
-        aria-label="Bold"
-      >
+      <button onClick={() => onCommand("bold")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Bold">
         <Bold className="h-4 w-4" />
       </button>
-
-      <button
-        onClick={() => onCommand("italic")}
-        className="p-1.5 hover:bg-gray-700 rounded-md"
-        title="Italic"
-        aria-label="Italic"
-      >
+      <button onClick={() => onCommand("italic")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Italic">
         <Italic className="h-4 w-4" />
       </button>
-
-      <button
-        onClick={() => onCommand("underline")}
-        className="p-1.5 hover:bg-gray-700 rounded-md"
-        title="Underline"
-        aria-label="Underline"
-      >
+      <button onClick={() => onCommand("underline")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Underline">
         <Underline className="h-4 w-4" />
       </button>
-
       <button
         onClick={() => {
           const url = prompt("Enter URL:", "https://")
@@ -234,16 +228,13 @@ const FloatingToolbar: React.FC<{
         }}
         className="p-1.5 hover:bg-gray-700 rounded-md"
         title="Insert Link"
-        aria-label="Insert Link"
       >
         <Link className="h-4 w-4" />
       </button>
-
       <button
         onClick={() => onCommand("removeFormat")}
         className="p-1.5 hover:bg-gray-700 rounded-md"
         title="Clear Formatting"
-        aria-label="Clear Formatting"
       >
         <X className="h-4 w-4" />
       </button>
@@ -251,7 +242,7 @@ const FloatingToolbar: React.FC<{
   )
 }
 
-// ImageGenerationModal (improved)
+// ImageGenerationModal
 const ImageGenerationModal: React.FC<{
   isOpen: boolean
   onClose: () => void
@@ -262,7 +253,7 @@ const ImageGenerationModal: React.FC<{
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [aspectRatio, setAspectRatio] = useState<string>("16:9")
+  const [aspectRatio] = useState<string>("16:9")
 
   const determineImageCount = (content: string): number => {
     const words = content
@@ -272,98 +263,61 @@ const ImageGenerationModal: React.FC<{
     return words > 1000 ? 5 : words > 500 ? 4 : 3
   }
 
-  // Update the generatePromptsFromContent function to create much more specific, contextually relevant prompts
   const generatePromptsFromContent = (content: string, count: number): string[] => {
-    // Extract headings to understand the structure and main topics
     const headingMatches = content.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi) || []
     const headings = headingMatches.map((h) => h.replace(/<\/?[^>]+(>|$)/g, "").trim())
-
-    // Extract paragraphs for content analysis
     const paragraphs = content.split("</p>").filter((p) => p.trim().length > 0)
     const prompts: string[] = []
 
-    // Function to extract key concepts from text
     const extractKeyTopics = (text: string): string => {
-      // Remove HTML tags and get plain text
       const plainText = text.replace(/<[^>]+>/g, "").trim()
-
-      // Get the first 100-150 characters for context
       const contextText = plainText.slice(0, Math.min(plainText.length, 150))
-
-      // Extract what seems to be the main subject
-      const mainSubject = contextText.split(/[,.;:]/).filter((s) => s.trim().length > 15)[0] || contextText
-
-      return mainSubject.trim()
+      return contextText.split(/[,.;:]/).filter((s) => s.trim().length > 15)[0] || contextText
     }
 
-    // Try to match paragraphs with nearby headings for better context
     for (let i = 0; i < count && i < paragraphs.length; i++) {
-      // Find a good paragraph with enough content
       let paragraphIndex = i
       while (paragraphIndex < paragraphs.length) {
         const paragraph = paragraphs[paragraphIndex].replace(/<[^>]+>/g, "").trim()
         if (paragraph.length >= 50) break
         paragraphIndex++
       }
-
-      if (paragraphIndex >= paragraphs.length) paragraphIndex = i // Fallback
+      if (paragraphIndex >= paragraphs.length) paragraphIndex = i
 
       const paragraph = paragraphs[paragraphIndex].replace(/<[^>]+>/g, "").trim()
-
-      // Find the nearest heading above this paragraph
       let nearestHeading = ""
       for (let j = 0; j < headingMatches.length; j++) {
         const headingPos = content.indexOf(headingMatches[j])
         const paragraphPos = content.indexOf(paragraphs[paragraphIndex])
-        if (headingPos < paragraphPos) {
-          nearestHeading = headings[j]
-        } else {
-          break
-        }
+        if (headingPos < paragraphPos) nearestHeading = headings[j]
+        else break
       }
 
-      // Extract key topics from this paragraph
       const keyTopic = extractKeyTopics(paragraph)
-
-      // Create a very specific prompt combining heading context and paragraph content
       if (paragraph) {
-        let specificPrompt = `Create a professional 16:9 photograph that precisely illustrates "${keyTopic}"`
-
-        if (nearestHeading) {
-          specificPrompt += ` in the context of "${nearestHeading}"`
-        }
-
-        // Add specific details from the paragraph
-        specificPrompt += `. The image should show ${paragraph.slice(0, 100)}...`
-
-        // Add style guidance
-        specificPrompt += ` Style: high-quality, realistic photography with natural lighting, not AI-generated looking, no text overlay, professional composition.`
-
-        prompts.push(specificPrompt)
+        let prompt = `Create a professional 16:9 photograph that precisely illustrates "${keyTopic}"`
+        if (nearestHeading) prompt += ` in the context of "${nearestHeading}"`
+        prompt += `. The image should show ${paragraph.slice(0, 100)}... Style: high-quality, realistic photography with natural lighting, professional composition.`
+        prompts.push(prompt)
       }
     }
 
-    // If we couldn't get enough specific prompts, create some from headings
     while (prompts.length < count) {
       if (headings.length > 0) {
         const headingIndex = prompts.length % headings.length
         prompts.push(
-          `Create a professional 16:9 photograph that precisely illustrates "${headings[headingIndex]}". Style: high-quality, realistic photography with natural lighting, not AI-generated looking, no text overlay, professional composition.`,
+          `Create a professional 16:9 photograph that precisely illustrates "${headings[headingIndex]}". Style: high-quality, realistic photography with natural lighting, professional composition.`,
         )
       } else {
-        // Last resort fallback
         prompts.push(
           `Create a professional 16:9 photograph related to ${content
             .replace(/<[^>]+>/g, "")
             .split(" ")
             .slice(0, 10)
-            .join(
-              " ",
-            )}... Style: high-quality, realistic photography with natural lighting, not AI-generated looking, no text overlay, professional composition.`,
+            .join(" ")}... Style: high-quality, realistic photography with natural lighting, professional composition.`,
         )
       }
     }
-
     return prompts.slice(0, count)
   }
 
@@ -372,7 +326,6 @@ const ImageGenerationModal: React.FC<{
       setError("No blog content available to generate images.")
       return
     }
-
     setIsGenerating(true)
     setError(null)
     setGeneratedImages([])
@@ -381,44 +334,20 @@ const ImageGenerationModal: React.FC<{
     try {
       const imageCount = determineImageCount(blogContent)
       const prompts = generatePromptsFromContent(blogContent, imageCount)
-      console.log("Generating images with prompts:", prompts)
-
       const imagePromises = prompts.map((prompt) =>
         fetch("/api/generate-image", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt, aspect_ratio: aspectRatio }),
-        }),
+        }).then((res) => res.json()),
       )
-
-      const responses = await Promise.all(imagePromises)
-
-      const images: string[] = []
-      for (const response of responses) {
-        if (!response.ok) {
-          const text = await response.text()
-          throw new Error(`Server error: ${response.status} - ${text}`)
-        }
-
-        const data = await response.json()
-        if (data.images && data.images.length > 0) {
-          images.push(data.images[0])
-        } else {
-          throw new Error(data.error || "No images were generated")
-        }
-      }
-
-      if (images.length === 0) {
-        throw new Error("No images were successfully generated.")
-      }
-
+      const results = await Promise.all(imagePromises)
+      const images = results.flatMap((data) => data.images || [])
+      if (!images.length) throw new Error("No images generated")
       setGeneratedImages(images)
       setSelectedImage(images[0])
     } catch (err) {
-      console.error("Error generating images:", err)
-      setError(err instanceof Error ? err.message : "Failed to generate images. Please try again.")
+      setError(err instanceof Error ? err.message : "Failed to generate images.")
     } finally {
       setIsGenerating(false)
     }
@@ -442,100 +371,61 @@ const ImageGenerationModal: React.FC<{
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-semibold flex items-center">
             <ImageIcon className="h-5 w-5 mr-2 text-orange-600" />
-            Generate Images with Clipdrop
+            Generate Images
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close modal"
-          >
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full">
             <X className="h-5 w-5" />
           </button>
         </div>
-
         <div className="p-5 flex-1 overflow-auto">
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-3">
-              Generating {determineImageCount(blogContent)} images based on your blog post content.
-            </p>
-
-            <div className="mb-4">
-              <label htmlFor="aspect-ratio" className="block text-sm font-medium text-gray-700 mb-1">
-                Aspect Ratio
-              </label>
-              <div className="relative">
-                <select
-                  id="aspect-ratio"
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 appearance-none bg-white"
-                  aria-label="Select aspect ratio"
-                  disabled
-                >
-                  <option value="16:9">Landscape - Best for blog posts (16:9)</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full mt-4 px-4 py-2.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-              aria-label={isGenerating ? "Generating images..." : "Generate Images"}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Images
-                </>
-              )}
-            </button>
-          </div>
-
+          <p className="text-sm text-gray-600 mb-3">
+            Generating {determineImageCount(blogContent)} images based on your content.
+          </p>
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="w-full mt-4 px-4 py-2.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 flex items-center justify-center"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Images
+              </>
+            )}
+          </button>
           {error && (
             <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md flex items-start">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
               <p className="text-sm">{error}</p>
             </div>
           )}
-
           {isGenerating && (
-            <div className="mt-6 flex flex-col items-center justify-center py-8">
+            <div className="mt-6 flex flex-col items-center py-8">
               <Loader2 className="h-10 w-10 text-orange-600 animate-spin mb-4" />
-              <p className="text-gray-600">Generating high-quality images with Clipdrop...</p>
-              <p className="text-gray-500 text-sm mt-2">This may take a few moments</p>
+              <p className="text-gray-600">Generating images...</p>
             </div>
           )}
-
           {generatedImages.length > 0 && (
             <div className="mt-6">
               <h3 className="text-lg font-medium mb-3">Generated Images</h3>
-              <p className="text-sm text-gray-500 mb-3">Select an image to insert into your content</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {generatedImages.map((img, index) => (
                   <div
                     key={index}
-                    className={`relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
-                      selectedImage === img
-                        ? "border-orange-500 ring-2 ring-orange-200"
-                        : "border-transparent hover:border-orange-300"
+                    className={`relative rounded-lg overflow-hidden border-2 cursor-pointer ${
+                      selectedImage === img ? "border-orange-500" : "border-transparent hover:border-orange-300"
                     }`}
                     onClick={() => setSelectedImage(img)}
-                    aria-label={`Select image ${index + 1}`}
                   >
                     <img
                       src={img || "/placeholder.svg"}
                       alt={`Generated image ${index + 1}`}
-                      className="w-full aspect-square object-cover"
-                      onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                      className="w-full aspect-video object-cover"
                     />
                   </div>
                 ))}
@@ -543,20 +433,14 @@ const ImageGenerationModal: React.FC<{
             </div>
           )}
         </div>
-
         <div className="p-4 border-t flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            aria-label="Cancel"
-          >
+          <button onClick={onClose} className="px-4 py-2 border rounded-md hover:bg-gray-50">
             Cancel
           </button>
           <button
             onClick={handleInsert}
             disabled={!selectedImage}
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            aria-label="Insert Image"
+            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400"
           >
             Insert Image
           </button>
@@ -566,177 +450,182 @@ const ImageGenerationModal: React.FC<{
   )
 }
 
-// Updated CustomRichEditor with improved UI and performance
-const CustomRichEditor: React.FC<{
+// Basic Editor Component (Fixed)
+const BasicEditor: React.FC<{
   value: string
   onChange: (value: string) => void
   className?: string
-}> = ({ value, onChange, className }) => {
-  const [editorContent, setEditorContent] = useState(value)
+  postId: string // Added postId prop
+}> = ({ value, onChange, className, postId }) => {
   const editorRef = useRef<HTMLDivElement>(null)
   const [showToolbar, setShowToolbar] = useState(false)
   const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 })
   const selectionTimeout = useRef<NodeJS.Timeout | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const lastSelectionRef = useRef<Range | null>(null)
-  const draggedImageRef = useRef<HTMLImageElement | null>(null)
-  const dropPlaceholderRef = useRef<HTMLDivElement | null>(null)
-  const inputTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Context menu state
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
   const contextMenuTarget = useRef<HTMLImageElement | null>(null)
+  const isComposingRef = useRef(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [hasPostId, setHasPostId] = useState(!!postId)
+  const [isPostIdInitialized, setIsPostIdInitialized] = useState(false)
 
-  const [isSettingUpImageInteractions, setIsSettingUpImageInteractions] = useState(false)
-  const [formattedHtml, setFormattedHtml] = useState(
-    value.startsWith("<") ? formatUtils.sanitizeHtml(value) : formatUtils.convertMarkdownToHtml(value),
-  )
-
-  const [isMounted, setIsMounted] = useState(false)
-
+  // Initialize editor only once on mount
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  const handleDragStart = useCallback((e: React.DragEvent<HTMLImageElement>) => {
-    const img = e.target as HTMLImageElement
-    if (!img.closest(".image-wrapper")) return
-    draggedImageRef.current = img
-    e.dataTransfer.setData("text/html", img.outerHTML)
-    e.dataTransfer.effectAllowed = "move"
-    img.style.opacity = "0.5"
-
-    if (!dropPlaceholderRef.current) {
-      const placeholder = document.createElement("div")
-      placeholder.className = "drop-placeholder h-2 bg-orange-300 opacity-50 my-2 rounded-full"
-      dropPlaceholderRef.current = placeholder
+    if (editorRef.current && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value.startsWith("<")
+        ? formatUtils.sanitizeHtml(value)
+        : formatUtils.convertMarkdownToHtml(value)
     }
-  }, [])
+  }, []) // Empty dependency array to run only on mount
 
-  const handleDragEnd = useCallback((e: React.DragEvent<HTMLImageElement>) => {
-    const img = e.target as HTMLImageElement
-    img.style.opacity = "1"
-    if (dropPlaceholderRef.current?.parentNode) {
-      dropPlaceholderRef.current.parentNode.removeChild(dropPlaceholderRef.current)
-    }
-    draggedImageRef.current = null
-  }, [])
-
-  const setupImageInteractions = useCallback(() => {
-    if (!editorRef.current || isSettingUpImageInteractions) return
-
-    setIsSettingUpImageInteractions(true)
-    try {
-      const images = editorRef.current.querySelectorAll("img")
-      images.forEach((img) => {
-        img.setAttribute("draggable", "true")
-        img.addEventListener("dragstart", (e: DragEvent) => handleDragStart(e as any))
-        img.addEventListener("dragend", (e: DragEvent) => handleDragEnd(e as any))
-      })
-    } finally {
-      setIsSettingUpImageInteractions(false)
-    }
-  }, [handleDragStart, handleDragEnd, isSettingUpImageInteractions])
-
+  // Sync external value changes while preserving cursor
   useEffect(() => {
-    setFormattedHtml(value.startsWith("<") ? formatUtils.sanitizeHtml(value) : formatUtils.convertMarkdownToHtml(value))
+    if (!editorRef.current) return
+    const currentContent = editorRef.current.innerHTML
+    const newContent = value.startsWith("<")
+      ? formatUtils.sanitizeHtml(value)
+      : formatUtils.convertMarkdownToHtml(value)
+
+    if (currentContent !== newContent) {
+      const selection = window.getSelection()
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+
+      editorRef.current.innerHTML = newContent
+
+      if (range && editorRef.current.contains(range.startContainer)) {
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+    }
   }, [value])
 
+  // Set up Supabase realtime subscription
   useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = formattedHtml
-      setEditorContent(formattedHtml)
+    let channel: any = null
+
+    // Only proceed if postId is available and not yet initialized
+    if (postId && !isPostIdInitialized) {
+      setHasPostId(true)
+      setIsPostIdInitialized(true) // Mark postId as initialized
+
+      // Subscribe to changes on the posts table for this specific post
+      channel = supabase
+        .channel(`post-${postId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "posts",
+            filter: `id=eq.${postId}`,
+          },
+          (payload) => {
+            // Only update if the content is different from our current state
+            // and we're not the ones who made the change
+            if (payload.new && payload.new.content !== value && !isSaving) {
+              const newContent = payload.new.content
+              if (editorRef.current) {
+                editorRef.current.innerHTML = newContent.startsWith("<")
+                  ? formatUtils.sanitizeHtml(newContent)
+                  : formatUtils.convertMarkdownToHtml(newContent)
+                onChange(newContent)
+              }
+            }
+          },
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            setIsSubscribed(true)
+          }
+        })
     }
-  }, [formattedHtml])
 
-  useEffect(() => {
-    if (!isMounted) return
-    setupImageInteractions()
-  }, [editorContent, setupImageInteractions, isMounted])
-
-  const handleInput = useCallback(() => {
-    if (inputTimeoutRef.current) {
-      clearTimeout(inputTimeoutRef.current)
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+      setIsSubscribed(false)
     }
+  }, [postId, value, onChange, isSaving, isPostIdInitialized])
 
-    inputTimeoutRef.current = setTimeout(() => {
-      if (editorRef.current) {
-        const selection = window.getSelection()
-        const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null
-        const scrollTop = editorRef.current.scrollTop
+  // Save content to Supabase with debounce
+  const saveContent = useCallback(
+    async (content: string) => {
+      if (!postId || !content) return
 
-        const newContent = formatUtils.sanitizeHtml(editorRef.current.innerHTML)
-        editorRef.current.innerHTML = newContent
-        setEditorContent(newContent)
-        onChange(newContent)
+      // Clear any existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
 
-        editorRef.current.scrollTop = scrollTop
+      // Set a new timeout to save after 500ms of inactivity
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          setIsSaving(true)
+          setSaveStatus("saving")
 
-        if (range && editorRef.current) {
-          selection?.removeAllRanges()
-          selection?.addRange(range)
+          const { error } = await supabase
+            .from("posts")
+            .update({ content, updated_at: new Date().toISOString() })
+            .eq("id", postId)
+
+          if (error) throw error
+          setSaveStatus("saved")
+
+          // Reset to idle after 2 seconds
+          setTimeout(() => {
+            setSaveStatus("idle")
+          }, 2000)
+        } catch (err) {
+          console.error("Error saving content:", err)
+          setSaveStatus("error")
+        } finally {
+          setIsSaving(false)
         }
-      }
-    }, 150)
-  }, [onChange])
-
-  const execCommand = useCallback(
-    (command: string, value?: string) => {
-      console.log(`Executing command: ${command}, value: ${value}`)
-      if (command === "generateImage") {
-        const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          lastSelectionRef.current = selection.getRangeAt(0).cloneRange()
-        }
-        setShowImageModal(true)
-        return
-      }
-
-      if (editorRef.current) {
-        document.execCommand(command, false, value || undefined)
-        handleInput()
-      }
+      }, 500)
     },
-    [handleInput],
+    [postId],
   )
 
-  const handleSelectionChange = useCallback(() => {
-    const selection = window.getSelection()
-
-    if (selectionTimeout.current) {
-      clearTimeout(selectionTimeout.current)
-    }
-
-    if (
-      selection &&
-      !selection.isCollapsed &&
-      selection.rangeCount > 0 &&
-      editorRef.current?.contains(selection.anchorNode)
-    ) {
-      const range = selection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
-
-      if (rect.width > 0 && editorRef.current) {
-        setToolbarPosition({
-          x: rect.left + rect.width / 2,
-          y: rect.top - 10 + window.scrollY,
-        })
-        setShowToolbar(true)
+  // Selection change for toolbar
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection()
+      if (
+        selection &&
+        !selection.isCollapsed &&
+        selection.rangeCount > 0 &&
+        editorRef.current?.contains(selection.anchorNode)
+      ) {
+        const range = selection.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        if (rect.width > 0) {
+          setToolbarPosition({ x: rect.left + rect.width / 2, y: rect.top - 10 + window.scrollY })
+          setShowToolbar(true)
+        }
       } else {
-        selectionTimeout.current = setTimeout(() => setShowToolbar(false), 300)
+        if (selectionTimeout.current) clearTimeout(selectionTimeout.current)
+        selectionTimeout.current = setTimeout(() => setShowToolbar(false), 200)
       }
-    } else {
-      selectionTimeout.current = setTimeout(() => setShowToolbar(false), 300)
+    }
+    document.addEventListener("selectionchange", handleSelectionChange)
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange)
+      if (selectionTimeout.current) clearTimeout(selectionTimeout.current)
     }
   }, [])
 
-  const handleContextMenu = useCallback(
-    (e: MouseEvent) => {
-      if (!editorRef.current) return
-
+  // Handle context menu for images
+  useEffect(() => {
+    if (!editorRef.current) return
+    const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.tagName === "IMG" && editorRef.current.contains(target)) {
+      if (target.tagName === "IMG" && editorRef.current?.contains(target)) {
         e.preventDefault()
         setContextMenuPosition({ x: e.clientX, y: e.clientY })
         contextMenuTarget.current = target as HTMLImageElement
@@ -744,176 +633,225 @@ const CustomRichEditor: React.FC<{
       } else if (showContextMenu) {
         setShowContextMenu(false)
       }
+    }
+    editorRef.current.addEventListener("contextmenu", handleContextMenu)
+    return () => editorRef.current?.removeEventListener("contextmenu", handleContextMenu)
+  }, [showContextMenu])
+
+  // Execute editor commands
+  const execCommand = useCallback(
+    (command: string, value?: string) => {
+      // First, focus the editor if it's not already focused
+      if (document.activeElement !== editorRef.current) {
+        editorRef.current?.focus()
+      }
+
+      // Special handling for certain commands
+      if (command === "generateImage") {
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) lastSelectionRef.current = selection.getRangeAt(0).cloneRange()
+        setShowImageModal(true)
+        return
+      }
+
+      if (command === "code") {
+        // Handle code blocks more explicitly
+        document.execCommand("formatBlock", false, "pre")
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          const pre = range.startContainer.parentElement?.closest("pre")
+          if (pre) {
+            pre.className = "bg-gray-100 p-2 rounded-md font-mono text-sm my-4"
+          }
+        }
+      } else if (command === "createLink" && value) {
+        document.execCommand(command, false, value)
+        // Apply styling to the newly created link
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          const linkNode = range.startContainer.parentElement?.closest("a")
+          if (linkNode) {
+            // Check if it's an external link
+            const isExternal = value.startsWith("http") || value.startsWith("https")
+            if (isExternal) {
+              linkNode.className = "text-orange-600 underline hover:text-orange-700 font-normal"
+              linkNode.target = "_blank"
+              linkNode.rel = "noopener noreferrer"
+            } else {
+              // Internal link
+              linkNode.className = "text-blue-600 hover:text-blue-800 font-normal"
+            }
+          }
+        }
+      } else {
+        // Standard command execution
+        document.execCommand(command, false, value)
+      }
+
+      // Update content and save changes
+      if (editorRef.current) {
+        const newContent = editorRef.current.innerHTML
+        onChange(newContent)
+        saveContent(newContent)
+      }
     },
-    [showContextMenu],
+    [onChange, saveContent],
   )
 
+  // Handle image deletion
   const handleDeleteImage = useCallback(() => {
     if (contextMenuTarget.current && editorRef.current) {
       const elementToRemove = contextMenuTarget.current.closest(".image-wrapper") || contextMenuTarget.current
-      if (elementToRemove) {
-        elementToRemove.remove()
-        const newContent = formatUtils.sanitizeHtml(editorRef.current.innerHTML)
-        const scrollTop = editorRef.current.scrollTop
-        const selection = window.getSelection()
-        const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null
-
-        editorRef.current.innerHTML = newContent
-        setEditorContent(newContent)
-        onChange(newContent)
-
-        editorRef.current.scrollTop = scrollTop
-
-        if (range && editorRef.current) {
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-        }
-      }
-      contextMenuTarget.current = null
+      elementToRemove?.remove()
+      const newContent = editorRef.current.innerHTML
+      onChange(newContent)
+      saveContent(newContent)
       setShowContextMenu(false)
     }
-  }, [onChange])
+  }, [onChange, saveContent])
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-
-    if (!editorRef.current || !dropPlaceholderRef.current) return
-
-    const rect = editorRef.current.getBoundingClientRect()
-    const y = e.clientY - rect.top + editorRef.current.scrollTop
-    const children = Array.from(editorRef.current.childNodes) as HTMLElement[]
-
-    let insertBeforeElement: HTMLElement | null = null
-    for (const child of children) {
-      if (child.className === "drop-placeholder") continue
-      const childRect = child.getBoundingClientRect()
-      const childTop = childRect.top - rect.top + editorRef.current.scrollTop
-      const childBottom = childTop + childRect.height
-
-      if (y < childTop + childRect.height / 2) {
-        insertBeforeElement = child
-        break
-      }
-    }
-
-    if (insertBeforeElement && editorRef.current) {
-      editorRef.current.insertBefore(dropPlaceholderRef.current, insertBeforeElement)
-    } else if (editorRef.current) {
-      editorRef.current.appendChild(dropPlaceholderRef.current)
-    }
-  }, [])
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      if (!draggedImageRef.current || !editorRef.current || !dropPlaceholderRef.current) return
-
-      const originalWrapper = draggedImageRef.current.closest(".image-wrapper")
-      if (originalWrapper) {
-        originalWrapper.remove()
-      } else if (draggedImageRef.current.parentNode) {
-        draggedImageRef.current.parentNode.removeChild(draggedImageRef.current)
-      }
-
-      const newImageWrapper = document.createElement("div")
-      newImageWrapper.className = "image-wrapper my-4"
-      const newImage = draggedImageRef.current.cloneNode(true) as HTMLImageElement
-      newImage.style.opacity = "1"
-      newImageWrapper.appendChild(newImage)
-
-      const scrollTop = editorRef.current.scrollTop
-      const selection = window.getSelection()
-      const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null
-
-      if (dropPlaceholderRef.current.parentNode && editorRef.current) {
-        dropPlaceholderRef.current.parentNode.insertBefore(newImageWrapper, dropPlaceholderRef.current)
-        dropPlaceholderRef.current.parentNode.removeChild(dropPlaceholderRef.current)
-      }
-
-      handleInput()
-      draggedImageRef.current = null
-      setupImageInteractions()
-
-      if (editorRef.current) {
-        editorRef.current.scrollTop = scrollTop
-        if (range && editorRef.current) {
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-        }
-      }
-    },
-    [handleInput, setupImageInteractions],
-  )
-
+  // Handle image insertion
   const handleInsertImage = useCallback(
     (imageUrl: string) => {
       if (lastSelectionRef.current && editorRef.current) {
         const selection = window.getSelection()
-        if (selection) {
+        selection?.removeAllRanges()
+        selection?.addRange(lastSelectionRef.current)
+
+        const imgWrapper = document.createElement("div")
+        imgWrapper.className = "image-wrapper my-4"
+        const img = document.createElement("img")
+        img.src = imageUrl
+        img.alt = "Generated image"
+        img.className = "rounded-lg w-full h-auto shadow-md aspect-video object-cover"
+        imgWrapper.appendChild(img)
+
+        const range = lastSelectionRef.current
+        range.deleteContents()
+        range.insertNode(imgWrapper)
+
+        const newContent = editorRef.current.innerHTML
+        onChange(newContent)
+        saveContent(newContent)
+        setShowImageModal(false)
+      }
+    },
+    [onChange, saveContent],
+  )
+
+  // Handle input events
+  const handleInput = useCallback(() => {
+    if (editorRef.current && !isComposingRef.current) {
+      const selection = window.getSelection()
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+      const newContent = editorRef.current.innerHTML
+      onChange(newContent)
+      saveContent(newContent)
+      if (range && editorRef.current.contains(range.startContainer)) {
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+    }
+  }, [onChange, saveContent])
+
+  // Handle composition (e.g., IME input)
+  const handleCompositionStart = () => {
+    isComposingRef.current = true
+  }
+
+  const handleCompositionEnd = () => {
+    isComposingRef.current = false
+    handleInput()
+  }
+
+  // Handle keydown (e.g., Enter, Backspace)
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Handle special key combinations for formatting
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case "b":
+            e.preventDefault()
+            execCommand("bold")
+            return
+          case "i":
+            e.preventDefault()
+            execCommand("italic")
+            return
+          case "u":
+            e.preventDefault()
+            execCommand("underline")
+            return
+          case "k":
+            e.preventDefault()
+            const url = prompt("Enter URL:", "https://")
+            if (url && url.trim()) execCommand("createLink", url.trim())
+            return
+          case "z":
+            e.preventDefault()
+            execCommand("undo")
+            return
+          case "y":
+            e.preventDefault()
+            execCommand("redo")
+            return
+        }
+      }
+
+      // Original Enter key handling for headings
+      if (e.key === "Enter") {
+        const selection = window.getSelection()
+        if (!selection || !selection.rangeCount) return
+        const range = selection.getRangeAt(0)
+        let currentNode: Node | null = range.startContainer
+
+        while (currentNode && !["H1", "H2", "H3", "H4", "H5", "H6"].includes(currentNode.nodeName)) {
+          currentNode = currentNode.nodeType === 3 ? currentNode.parentNode : currentNode.parentElement
+          if (!currentNode) break
+        }
+
+        if (currentNode && currentNode.parentNode) {
+          e.preventDefault()
+          const p = document.createElement("p")
+          p.className = "mt-6 mb-6 text-gray-700 leading-relaxed font-normal"
+          p.innerHTML = "<br>"
+          if (currentNode.nextSibling) {
+            currentNode.parentNode.insertBefore(p, currentNode.nextSibling)
+          } else {
+            currentNode.parentNode.appendChild(p)
+          }
+          const newRange = document.createRange()
+          newRange.setStart(p, 0)
+          newRange.collapse(true)
           selection.removeAllRanges()
-          selection.addRange(lastSelectionRef.current)
-
-          const imgWrapper = document.createElement("div")
-          imgWrapper.className = "image-wrapper my-4"
-          const img = document.createElement("img")
-          img.src = imageUrl
-          img.alt = "Generated image"
-          img.className = "rounded-lg w-full h-auto shadow-md aspect-video object-cover"
-          img.draggable = true
-          imgWrapper.appendChild(img)
-
-          const range = lastSelectionRef.current
-          const scrollTop = editorRef.current.scrollTop
-
-          range.deleteContents()
-          range.insertNode(imgWrapper)
-          handleInput()
-
-          setupImageInteractions()
-          setShowImageModal(false)
-
+          selection.addRange(newRange)
           if (editorRef.current) {
-            editorRef.current.scrollTop = scrollTop
-            selection.removeAllRanges()
-            selection.addRange(range)
+            const newContent = editorRef.current.innerHTML
+            onChange(newContent)
+            saveContent(newContent)
           }
         }
       }
     },
-    [handleInput, setupImageInteractions],
+    [onChange, saveContent, execCommand],
   )
 
-  useEffect(() => {
-    if (!isMounted) return
-
-    if (!editorRef.current) return
-
-    const handleSelectionChangeBound = () => handleSelectionChange()
-    document.addEventListener("selectionchange", handleSelectionChangeBound)
-
-    editorRef.current.addEventListener("contextmenu", handleContextMenu)
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === "childList") {
-          setupImageInteractions()
-        }
-      })
-    })
-
-    observer.observe(editorRef.current, { childList: true, subtree: true })
-
-    return () => {
-      document.removeEventListener("selectionchange", handleSelectionChangeBound)
-      if (selectionTimeout.current) clearTimeout(selectionTimeout.current)
-      if (inputTimeoutRef.current) clearTimeout(inputTimeoutRef.current)
+  // Handle paste
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      e.preventDefault()
+      const text = e.clipboardData.getData("text/plain")
+      document.execCommand("insertText", false, text)
       if (editorRef.current) {
-        editorRef.current.removeEventListener("contextmenu", handleContextMenu)
+        const newContent = editorRef.current.innerHTML
+        onChange(newContent)
+        saveContent(newContent)
       }
-      observer.disconnect()
-    }
-  }, [handleSelectionChange, handleContextMenu, setupImageInteractions, isMounted])
+    },
+    [onChange, saveContent],
+  )
 
   return (
     <div className="relative bg-white">
@@ -924,20 +862,17 @@ const CustomRichEditor: React.FC<{
         onInsertImage={handleInsertImage}
         blogContent={value}
       />
-
       <ContextMenu
         visible={showContextMenu}
         position={contextMenuPosition}
         onClose={() => setShowContextMenu(false)}
         onDelete={handleDeleteImage}
       />
-
       <div className="border-b border-gray-200 bg-gray-50">
         <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3">
           <select
             onChange={(e) => execCommand("formatBlock", e.target.value)}
-            className="px-3 py-1.5 border border-gray-200 rounded-md bg-white text-sm min-w-[100px] focus:ring-orange-500 focus:outline-none"
-            aria-label="Select heading level"
+            className="px-3 py-1.5 border rounded-md bg-white text-sm min-w-[100px]"
           >
             <option value="p">Normal</option>
             <option value="h1">Heading 1</option>
@@ -947,62 +882,40 @@ const CustomRichEditor: React.FC<{
             <option value="h5">Heading 5</option>
             <option value="h6">Heading 6</option>
           </select>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => execCommand("bold")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Bold"
-              aria-label="Bold"
-            >
-              <Bold className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand("italic")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Italic"
-              aria-label="Italic"
-            >
-              <Italic className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand("underline")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Underline"
-              aria-label="Underline"
-            >
-              <Underline className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => execCommand("insertOrderedList")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Ordered List"
-              aria-label="Ordered List"
-            >
-              <ListOrdered className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand("insertUnorderedList")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Unordered List"
-              aria-label="Unordered List"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-
+          <button onClick={() => execCommand("bold")} className="p-1.5 hover:bg-gray-200 rounded" title="Bold">
+            <Bold className="w-4 h-4" />
+          </button>
+          <button onClick={() => execCommand("italic")} className="p-1.5 hover:bg-gray-200 rounded" title="Italic">
+            <Italic className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => execCommand("underline")}
+            className="p-1.5 hover:bg-gray-200 rounded"
+            title="Underline"
+          >
+            <Underline className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => execCommand("insertOrderedList")}
+            className="p-1.5 hover:bg-gray-200 rounded"
+            title="Ordered List"
+          >
+            <ListOrdered className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => execCommand("insertUnorderedList")}
+            className="p-1.5 hover:bg-gray-200 rounded"
+            title="Unordered List"
+          >
+            <List className="w-4 h-4" />
+          </button>
           <button
             onClick={() => execCommand("generateImage")}
             className="p-1.5 hover:bg-gray-200 rounded"
             title="Insert Image"
-            aria-label="Insert Image"
           >
             <ImageIcon className="w-4 h-4" />
           </button>
-
           <button
             onClick={() => {
               const url = prompt("Enter URL:", "https://")
@@ -1010,105 +923,53 @@ const CustomRichEditor: React.FC<{
             }}
             className="p-1.5 hover:bg-gray-200 rounded"
             title="Insert Link"
-            aria-label="Insert Link"
           >
             <Link className="w-4 h-4" />
           </button>
-
-          <button
-            onClick={() => execCommand("code")}
-            className="p-1.5 hover:bg-gray-200 rounded"
-            title="Code Block"
-            aria-label="Code Block"
-          >
+          <button onClick={() => execCommand("code")} className="p-1.5 hover:bg-gray-200 rounded" title="Code Block">
             <Code className="w-4 h-4" />
           </button>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => execCommand("undo")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Undo"
-              aria-label="Undo"
-            >
-              <Undo className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => execCommand("redo")}
-              className="p-1.5 hover:bg-gray-200 rounded"
-              title="Redo"
-              aria-label="Redo"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
+          <button onClick={() => execCommand("undo")} className="p-1.5 hover:bg-gray-200 rounded" title="Undo">
+            <Undo className="w-4 h-4" />
+          </button>
+          <button onClick={() => execCommand("redo")} className="p-1.5 hover:bg-gray-200 rounded" title="Redo">
+            <Redo className="w-4 h-4" />
+          </button>
+          <div className="ml-auto flex items-center">
+            {saveStatus === "saving" && (
+              <div className="flex items-center text-gray-500 text-xs">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Saving...
+              </div>
+            )}
+            {saveStatus === "saved" && (
+              <div className="flex items-center text-green-600 text-xs">
+                <Save className="w-3 h-3 mr-1" />
+                Saved
+              </div>
+            )}
+            {saveStatus === "error" && (
+              <div className="flex items-center text-red-600 text-xs">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Error saving
+              </div>
+            )}
           </div>
         </div>
       </div>
       <div
         ref={editorRef}
         contentEditable
+        suppressContentEditableWarning
         onInput={handleInput}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onPaste={(e) => {
-          e.preventDefault()
-          const text = e.clipboardData?.getData("text/plain") || ""
-          document.execCommand("insertText", false, text)
-          handleInput()
-        }}
-        className={`p-4 sm:p-6 md:p-8 min-h-[500px] sm:min-h-[600px] md:min-h-[800px] focus:outline-none prose prose-lg max-w-none ${className}`}
-        style={{
-          backgroundColor: "white",
-          outline: "none",
-        }}
-        aria-label="Rich text editor"
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        className={`p-4 sm:p-6 md:p-8 min-h-[500px] focus:outline-none prose prose-lg max-w-none ${className}`}
+        style={{ backgroundColor: "white" }}
       />
-
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
-        [contenteditable] {
-          -webkit-user-modify: read-write-plaintext-only;
-          overflow-wrap: break-word;
-          -webkit-line-break: after-white-space;
-          -webkit-user-select: text;
-          cursor: text;
-          outline: none !important;
-        }
-        .image-wrapper {
-          display: block;
-          margin: 1rem 0;
-        }
-        .drop-placeholder {
-          transition: opacity 0.2s ease-in-out;
-        }
-        @media (max-width: 768px) {
-          .prose {
-            font-size: 16px;
-            line-height: 1.6;
-          }
-          .prose h1 {
-            font-size: 2rem;
-          }
-          .prose h2 {
-            font-size: 1.75rem;
-          }
-          .prose h3 {
-            font-size: 1.5rem;
-          }
-        }
         .prose img {
           border-radius: 0.5rem;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -1116,12 +977,99 @@ const CustomRichEditor: React.FC<{
           object-fit: cover;
           width: 100%;
         }
+        [contenteditable] {
+          outline: none;
+        }
+        
+        /* Formatting styles */
+        [contenteditable] h1 {
+          font-size: 2.5rem;
+          font-weight: bold;
+          margin-top: 1.5rem;
+          margin-bottom: 1rem;
+        }
+        [contenteditable] h2 {
+          font-size: 2rem;
+          font-weight: bold;
+          margin-top: 1.4rem;
+          margin-bottom: 0.8rem;
+        }
+        [contenteditable] h3 {
+          font-size: 1.75rem;
+          font-weight: bold;
+          margin-top: 1.3rem;
+          margin-bottom: 0.7rem;
+        }
+        [contenteditable] h4 {
+          font-size: 1.5rem;
+          font-weight: bold;
+          margin-top: 1.2rem;
+          margin-bottom: 0.6rem;
+        }
+        [contenteditable] h5 {
+          font-size: 1.25rem;
+          font-weight: bold;
+          margin-top: 1.1rem;
+          margin-bottom: 0.5rem;
+        }
+        [contenteditable] h6 {
+          font-size: 1.1rem;
+          font-weight: bold;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        [contenteditable] pre {
+          background-color: #f3f4f6;
+          padding: 0.75rem;
+          border-radius: 0.375rem;
+          font-family: monospace;
+          font-size: 0.875rem;
+          margin: 1rem 0;
+          white-space: pre-wrap;
+        }
+        [contenteditable] ul {
+          list-style-type: disc;
+          margin: 1rem 0;
+          padding-left: 2rem;
+        }
+        [contenteditable] ol {
+          list-style-type: decimal;
+          margin: 1rem 0;
+          padding-left: 2rem;
+        }
+        [contenteditable] li {
+          margin-bottom: 0.5rem;
+        }
+        [contenteditable] a {
+          color: #ea580c; /* orange-600 */
+          text-decoration: underline;
+        }
+        [contenteditable] a:hover {
+          color: #c2410c; /* orange-700 */
+        }
+        [contenteditable] strong {
+          font-weight: bold;
+        }
+        [contenteditable] em {
+          font-style: italic;
+        }
+        [contenteditable] u {
+          text-decoration: underline;
+        }
       `}</style>
     </div>
   )
 }
 
-export default function CustomEditor({ initialValue, onChange, images, onGenerateMore, citations }: CustomEditorProps) {
+// Main CustomEditor Component
+export default function CustomEditor({
+  initialValue,
+  onChange,
+  images,
+  onGenerateMore,
+  citations,
+  postId,
+}: CustomEditorProps) {
   const [content, setContent] = useState(initialValue)
   const [toc, setToc] = useState<{ id: string; text: string; level: number }[]>([])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -1166,11 +1114,10 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Go back">
+            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex items-center gap-2 text-gray-600">
@@ -1180,181 +1127,138 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2"
-              aria-label="Share"
-            >
+            <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2">
               <Share2 className="w-4 h-4" />
               Share
             </button>
-            <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700" aria-label="Publish">
-              Publish
-            </button>
+            <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">Publish</button>
             <button
               className="sm:hidden p-2 hover:bg-gray-100 rounded-full"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              aria-label="Toggle sidebar"
             >
               <BarChart2 className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
       </header>
-
       <main className="flex-1 max-w-screen-2xl mx-auto flex flex-col md:flex-row">
-        {/* Editor Area */}
         <div className="flex-1">
-          <CustomRichEditor value={content} onChange={handleContentChange} className="w-full h-full" />
+          <BasicEditor value={content} onChange={handleContentChange} className="w-full h-full" postId={postId} />
         </div>
-
-        {/* Metrics Sidebar */}
         <div
           className={`md:w-80 flex-shrink-0 border-l border-gray-200 ${isSidebarOpen ? "block" : "hidden md:block"}`}
         >
-          <div className="h-full overflow-auto">
-            {/* Content Stats */}
-            <div className="p-4">
-              <h3 className="font-medium mb-3">Content Brief</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Words</span>
-                    <span className="text-sm font-medium">
-                      {metrics.words} {metrics.words >= 2000 && metrics.words <= 2404 ? "✓" : ""}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">2,000-2,404</div>
+          <div className="p-4">
+            <h3 className="font-medium mb-3">Content Brief</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Words</span>
+                  <span className="text-sm font-medium">{metrics.words}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Headings</span>
-                    <span className="text-sm font-medium">
-                      {metrics.headings} {metrics.headings >= 5 && metrics.headings <= 36 ? "✓" : ""}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">5-36</div>
+                <div className="text-xs text-gray-500">2,000-2,404</div>
+              </div>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Headings</span>
+                  <span className="text-sm font-medium">{metrics.headings}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Paragraphs</span>
-                    <span className="text-sm font-medium">
-                      {metrics.paragraphs} {metrics.paragraphs >= 65 && metrics.paragraphs <= 117 ? "✓" : ""}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">65-117</div>
+                <div className="text-xs text-gray-500">5-36</div>
+              </div>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Paragraphs</span>
+                  <span className="text-sm font-medium">{metrics.paragraphs}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Images</span>
-                    <span className="text-sm font-medium">
-                      {metrics.images} {metrics.images >= 3 && metrics.images <= 29 ? "✓" : ""}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">3-29</div>
+                <div className="text-xs text-gray-500">65-117</div>
+              </div>
+              <div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Images</span>
+                  <span className="text-sm font-medium">{metrics.images}</span>
                 </div>
+                <div className="text-xs text-gray-500">3-29</div>
               </div>
             </div>
-
-            <div className="border-t border-gray-200"></div>
-
-            {/* Table of Contents */}
-            <div className="p-4">
-              <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                <List className="h-4 w-4 mr-2 text-orange-600" />
-                Table of Contents
-              </h2>
-              <div className="max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
-                {toc.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {toc.map((item) => (
-                      <li key={item.id} className={`text-sm ${item.level > 1 ? `ml-${(item.level - 1) * 3}` : ""}`}>
-                        <a
-                          href={`#${item.id}`}
-                          className="text-orange-600 hover:text-orange-800 hover:underline transition-colors block truncate py-1"
-                          aria-label={`Jump to ${item.text}`}
-                        >
-                          {item.text}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500 italic">No headings found</p>
-                )}
+          </div>
+          <div className="border-t border-gray-200"></div>
+          <div className="p-4">
+            <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+              <List className="h-4 w-4 mr-2 text-orange-600" />
+              Table of Contents
+            </h2>
+            <div className="max-h-[240px] overflow-y-auto">
+              {toc.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {toc.map((item) => (
+                    <li key={item.id} className={`text-sm ${item.level > 1 ? `ml-${(item.level - 1) * 3}` : ""}`}>
+                      <a href={`#${item.id}`} className="text-orange-600 hover:underline">
+                        {item.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No headings found</p>
+              )}
+            </div>
+          </div>
+          {citations.length > 0 && (
+            <>
+              <div className="border-t border-gray-200"></div>
+              <div className="p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2 text-orange-600" />
+                  References
+                </h2>
+                <ul className="space-y-2">
+                  {citations.map((citation, index) => (
+                    <li key={index} className="text-sm">
+                      <a
+                        href={citation}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-orange-600 hover:underline flex items-center gap-1"
+                      >
+                        <span>{citation}</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-
-            <div className="border-t border-gray-200"></div>
-
-            {/* Citations */}
-            {citations.length > 0 && (
-              <>
-                <div className="p-4">
-                  <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                    <BookOpen className="h-4 w-4 mr-2 text-orange-600" />
-                    References
-                  </h2>
-                  <div className="max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                    <ul className="space-y-2">
-                      {citations.map((citation, index) => (
-                        <li key={index} className="text-sm">
-                          <a
-                            href={citation}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-orange-600 hover:text-orange-800 hover:underline line-clamp-2 flex items-center gap-1"
-                            aria-label={`Open reference ${index + 1}`}
-                          >
-                            <span>{citation}</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            </>
+          )}
+          {images.length > 0 && (
+            <>
+              <div className="border-t border-gray-200"></div>
+              <div className="p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3">Images</h2>
+                <div className="space-y-3">
+                  {images.map((src, index) => (
+                    <img
+                      key={index}
+                      src={src || "/placeholder.svg"}
+                      alt={`Image ${index + 1}`}
+                      className="w-full rounded-md shadow-sm border"
+                    />
+                  ))}
                 </div>
-                <div className="border-t border-gray-200"></div>
-              </>
-            )}
-
-            {/* Images */}
-            {images.length > 0 && (
-              <>
-                <div className="p-4">
-                  <h2 className="text-base font-semibold text-gray-900 mb-3">Images</h2>
-                  <div className="max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="space-y-3">
-                      {images.map((src, index) => (
-                        <img
-                          key={index}
-                          src={src || "/placeholder.svg"}
-                          alt={`Image ${index + 1}`}
-                          className="w-full rounded-md shadow-sm border border-gray-200"
-                          onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t border-gray-200"></div>
-              </>
-            )}
-
-            {/* Generate More Button */}
-            <div className="p-4">
-              <button
-                onClick={onGenerateMore}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-3 flex items-center justify-center transition-colors"
-                aria-label="Generate More Content"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Generate More Content
-              </button>
-            </div>
+              </div>
+            </>
+          )}
+          <div className="border-t border-gray-200"></div>
+          <div className="p-4">
+            <button
+              onClick={onGenerateMore}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-3 flex items-center justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Generate More Content
+            </button>
           </div>
         </div>
       </main>
-
       <style jsx global>{`
         .prose h1 {
           font-size: 2.5rem;
@@ -1368,48 +1272,17 @@ export default function CustomEditor({ initialValue, onChange, images, onGenerat
           margin-top: 2.5rem;
           margin-bottom: 1.5rem;
         }
-        .prose h3 {
-          font-size: 1.75rem;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-        }
         .prose p {
           margin-top: 1.5rem;
           margin-bottom: 1.5rem;
           line-height: 1.75;
         }
-        .prose ul {
-          margin-top: 1.5rem;
-          margin-bottom: 1.5rem;
-        }
-        .prose li {
-          margin-bottom: 0.75rem;
-        }
-        .prose a {
-          color: #2563eb;
+        [contenteditable] a {
+          color: #ea580c; /* orange-600 */
           text-decoration: underline;
-          transition: color 0.2s;
         }
-        .prose a:hover {
-          color: #1e40af;
-        }
-        .prose img {
-          border-radius: 0.5rem;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        @media (max-width: 768px) {
-          .prose h1 {
-            font-size: 2rem;
-          }
-          .prose h2 {
-            font-size: 1.75rem;
-          }
-          .prose h3 {
-            font-size: 1.5rem;
-          }
-          .prose p {
-            font-size: 1rem;
-          }
+        [contenteditable] a:hover {
+          color: #c2410c; /* orange-700 */
         }
       `}</style>
     </div>
