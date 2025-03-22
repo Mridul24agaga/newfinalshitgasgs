@@ -17,7 +17,18 @@ import {
   ChevronDown,
   Link2,
   ExternalLink,
+  Sparkles,
+  CreditCard,
+  Zap,
 } from "lucide-react"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-saira",
+})
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -213,17 +224,19 @@ export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
   }
 
   const remainingCredits = subscription?.credits || 0
+  const planName = formatPlanName(subscription?.plan_id)
+  const isPro = planName === "Professional" || planName === "Pro"
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
-      <div className="flex items-center p-5">
-        <Image src="/logo.png" alt="Texta.ai Logo" width={120} height={32} className="object-contain" />
+    <div className={`${saira.className} w-64 bg-white flex flex-col h-screen text-gray-900 border-r border-gray-200`}>
+      <div className="flex items-center justify-center p-5 border-b border-gray-200">
+        <Image src="/logo.png" alt="Texta.ai Logo" width={140} height={40} className="object-contain" />
       </div>
 
-      <div className="px-4 mt-2 mb-8">
+      <div className="px-5 mt-6 mb-8">
         <Link href="/dashboard/summarizer">
-          <button className="w-full bg-orange-500 text-white font-medium py-3.5 rounded-xl hover:bg-orange-600 transition-colors">
-            Get Started
+          <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium py-3.5 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] border border-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.2)]">
+            Create Content
           </button>
         </Link>
       </div>
@@ -240,39 +253,58 @@ export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
-                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                  "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-2 group",
+                  isActive
+                    ? "text-orange-600 bg-orange-50 border border-orange-100"
+                    : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
                 )}
               >
-                <Icon className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                <Icon
+                  className={cn(
+                    "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                    isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                  )}
+                />
                 {item.name}
+                {item.name === "Dashboard" && (
+                  <span className="ml-auto text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                    Home
+                  </span>
+                )}
               </Link>
             )
           }
 
           return (
-            <div key={item.name}>
+            <div key={item.name} className="mb-2">
               <div
                 className={cn(
-                  "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-colors mb-2",
+                  "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 group",
                   item.href ? "cursor-pointer" : "cursor-default",
-                  isActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                  isActive
+                    ? "text-orange-600 bg-orange-50 border border-orange-100"
+                    : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
                 )}
                 onClick={() => item.subItems && setOpenSubmenu(openSubmenu === item.name ? "" : item.name)}
               >
-                <Icon className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                <Icon
+                  className={cn(
+                    "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                    isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                  )}
+                />
                 {item.name}
                 {item.subItems && (
                   <ChevronDown
                     className={cn(
-                      "ml-auto w-4 h-4 transition-transform",
+                      "ml-auto w-4 h-4 transition-transform duration-300 text-gray-400 group-hover:text-gray-600",
                       openSubmenu === item.name ? "transform rotate-180" : "",
                     )}
                   />
                 )}
               </div>
               {item.subItems && openSubmenu === item.name && (
-                <div className="ml-6 space-y-2">
+                <div className="ml-6 space-y-1 mt-1 mb-2">
                   {item.subItems.map((subItem) => {
                     const SubIcon = subItem.icon
                     const isSubActive = pathname === subItem.href
@@ -284,14 +316,22 @@ export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
                           key={subItem.name}
                           href={subItem.href}
                           className={cn(
-                            "flex flex-col px-4 py-2 text-[14px] font-medium rounded-lg transition-colors",
-                            isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                            "flex flex-col px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
+                            isSubActive
+                              ? "text-orange-600 bg-orange-50 border border-orange-100"
+                              : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
                           )}
                         >
                           <div className="flex items-center">
-                            <SubIcon className="w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                            <SubIcon
+                              className={cn(
+                                "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                                isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                              )}
+                            />
                             {subItem.name}
-                            <span className="ml-auto text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                            <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full border border-green-200 flex items-center">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse"></span>
                               Active
                             </span>
                           </div>
@@ -305,11 +345,18 @@ export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
                         key={subItem.name}
                         href={subItem.href}
                         className={cn(
-                          "flex items-center px-4 py-2 text-[14px] font-medium rounded-lg transition-colors",
-                          isSubActive ? "text-black bg-gray-100" : "text-gray-600 hover:text-black hover:bg-gray-50",
+                          "flex items-center px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
+                          isSubActive
+                            ? "text-orange-600 bg-orange-50 border border-orange-100"
+                            : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
                         )}
                       >
-                        <SubIcon className="w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px]" />
+                        <SubIcon
+                          className={cn(
+                            "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                            isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                          )}
+                        />
                         {subItem.name}
                       </Link>
                     )
@@ -321,36 +368,53 @@ export function Sidebar({ subscription: initialSubscription }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 bg-gray-50 mt-auto border-t border-gray-200">
+      <div className="p-5 mt-auto border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
         <div className="flex flex-col space-y-4">
-          <div className="grid grid-cols-2 gap-1">
-            <div>
-              <p className="text-sm font-medium text-black">Credits</p>
-              <p className="text-sm text-gray-500">Used / Total</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <CreditCard className="w-4 h-4 mr-2 text-orange-500" />
+              <p className="text-sm font-medium text-gray-800">Credits</p>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-black">{remainingCredits}</p>
-              <p className="text-sm text-gray-500">
-                {creditsUsed} / {totalCredits}
-              </p>
+            <div className="flex items-center">
+              <span className="text-sm font-bold text-gray-800">{remainingCredits}</span>
+              <span className="text-xs text-gray-500 ml-1">remaining</span>
             </div>
           </div>
 
           {/* Credit progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-100 rounded-full h-2.5 border border-gray-200">
             <div
-              className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 h-2.5 rounded-full transition-all duration-300 relative"
               style={{ width: `${totalCredits > 0 ? (creditsUsed / totalCredits) * 100 : 0}%` }}
-            ></div>
+            >
+              {totalCredits > 0 && creditsUsed / totalCredits > 0.8 && (
+                <span className="absolute -right-1 -top-1 w-3 h-3 bg-orange-500 rounded-full animate-ping opacity-75"></span>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-sm font-medium text-black">{formatPlanName(subscription?.plan_id)}</span>
+          <div className="flex justify-between text-xs text-gray-500 px-1">
+            <span>{creditsUsed} used</span>
+            <span>{totalCredits} total</span>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center">
+              {isPro ? (
+                <div className="flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1.5 text-orange-500" />
+                  <span className="text-sm font-semibold text-orange-500">{planName}</span>
+                </div>
+              ) : (
+                <span className="text-sm font-medium text-gray-700">{planName}</span>
+              )}
+            </div>
             <Link
               href="/upgrade"
-              className="bg-black text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 flex items-center gap-1 transform hover:scale-105 border border-orange-600"
             >
-              Upgrade <span className="text-orange-500">↗</span>
+              <Zap className="w-3.5 h-3.5 mr-1" />
+              Upgrade
             </Link>
           </div>
         </div>

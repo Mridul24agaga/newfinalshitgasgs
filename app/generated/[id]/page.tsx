@@ -6,18 +6,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import CustomEditor from "@/app/components/CustomEditor"
 import { createClient } from "@/utitls/supabase/client"
-import {
-  Loader2,
-  ArrowLeft,
-  Save,
-  Clock,
-  FileText,
-  ChevronLeft,
-  MoreHorizontal,
-  Share2,
-  Download,
-  Trash2,
-} from "lucide-react"
+import { Loader2, ArrowLeft, Save, FileText, ChevronLeft, MoreHorizontal, Share2, Download, Trash2 } from "lucide-react"
 
 // Types
 type MetricType = {
@@ -291,7 +280,6 @@ export default function GeneratedBlogPage() {
 
           <div className="flex items-center gap-2">
             {/* Desktop action buttons */}
-            
 
             {/* Dropdown menu */}
             <div className="relative">
@@ -353,8 +341,6 @@ export default function GeneratedBlogPage() {
         </div>
       </header>
 
-     
-
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-auto bg-white">
@@ -368,13 +354,13 @@ export default function GeneratedBlogPage() {
                   images={[]}
                   onGenerateMore={() => handleAction("generateMore")}
                   citations={citations}
+                  postId={params.id as string}
                 />
               </div>
             </div>
           </div>
         </main>
       </div>
-
     </div>
   )
 }

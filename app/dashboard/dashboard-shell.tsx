@@ -1,16 +1,16 @@
 "use client"
 
+import Link from "next/link"
+
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/utitls/supabase/client"
 import {
   Menu,
-  CreditCard,
   FileText,
   Lightbulb,
   Users,
-  ArrowRight,
   Check,
   Sparkles,
   Target,
@@ -18,9 +18,30 @@ import {
   Key,
   LogOut,
   Calendar,
+  BarChart3,
+  ChevronRight,
+  Bell,
+  PlusCircle,
+  CreditCard,
 } from "lucide-react"
-import { Sidebar } from "@/app/components/sidebar"
 import { PaymentPage } from "@/app/components/PaymentPage"
+import { Saira } from "next/font/google"
+
+// Remove this line:
+// import { Sidebar } from "@/app/components/sidebar"
+
+// Add these imports:
+import { usePathname } from "next/navigation"
+import Image from "next/image"
+import { cn } from "@/lib/utils"
+import { PenLine, LayoutGrid, BarChart2, Database, Home, ChevronDown, Link2, ExternalLink, Zap } from "lucide-react"
+
+// Initialize the Saira font
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-saira",
+})
 
 interface DashboardShellProps {
   user: User
@@ -57,10 +78,44 @@ export function DashboardShell({ user }: DashboardShellProps) {
     creditsUsed: 0,
   })
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string[]>([])
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+
+  const [openSubmenu, setOpenSubmenu] = useState("Company Database")
+  const pathname = usePathname()
+
+  // Format plan name for display
+  const formatPlanName = (planId: string | undefined) => {
+    if (!planId) return "No Plan"
+    const plan = planId?.toLowerCase()
+    if (plan === "basic") return "Starter"
+    if (plan === "pro") return "Professional"
+    return planId.charAt(0).toUpperCase() + planId.slice(1)
+  }
+
+  const planName = formatPlanName(subscription?.plan_id)
+
+  // Navigation items
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Content Planner", href: "/dashboard/summarizer", icon: PenLine },
+    {
+      name: "Company Database",
+      icon: Database,
+      subItems: [
+        { name: "Content Ideas", href: "/company-database/ideas", icon: Lightbulb },
+        { name: "Brand Profile", href: "/company-database/brand", icon: FileText },
+        { name: "Blog Settings", href: "/company-database/blog", icon: LayoutGrid },
+        { name: "Audience and Keywords", href: "/settings", icon: BarChart2 },
+      ],
+    },
+    {
+      name: "Integrations",
+      icon: Link2,
+      subItems: [{ name: "GetMoreBacklinks", href: "/integrations", icon: ExternalLink }],
+    },
+  ]
 
   // Plan credits mapping
   const planCreditsMap: { [key: string]: number } = {
@@ -69,15 +124,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
     professional: 60,
     basic: 30, // Map basic to starter
     pro: 60, // Map pro to professional
-  }
-
-  // Add debug info function
-  const addDebugInfo = (info: string) => {
-    console.log(info)
-    // Only add to debug info in development and inside effects/handlers
-    if (process.env.NODE_ENV === "development") {
-      setDebugInfo((prev) => [...prev, info])
-    }
   }
 
   // Handle window resize for sidebar
@@ -227,7 +273,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
       }
 
       if (subscriptionData) {
-        addDebugInfo(`Subscription data: ${JSON.stringify(subscriptionData)}`)
+        console.log(`Subscription data: ${JSON.stringify(subscriptionData)}`)
 
         const planId = subscriptionData.plan_id.toLowerCase()
         const maxPosts = planCreditsMap[planId] || 0
@@ -248,7 +294,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
         // Ensure subscription_type is set based on billing_cycle if it's not already set
         if (!subscriptionData.subscription_type && subscriptionData.billing_cycle) {
           const subType = subscriptionData.billing_cycle === "annually" ? "annual" : "monthly"
-          addDebugInfo(
+          console.log(
             `Setting subscription_type to ${subType} based on billing_cycle ${subscriptionData.billing_cycle}`,
           )
 
@@ -367,7 +413,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
     currency = "USD",
   ) => {
     try {
-      addDebugInfo(
+      console.log(
         `Processing payment success: Plan=${plan}, Billing=${billingCycle}, Credits=${credits}, Monthly=${monthlyPrice}, Annual=${annualPrice}, Currency=${currency}`,
       )
 
@@ -380,7 +426,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
       const billingCycleValue = isAnnual ? "annually" : "monthly"
       const subscriptionTypeValue = isAnnual ? "annual" : "monthly"
 
-      addDebugInfo(
+      console.log(
         `Billing cycle determination: billingCycle=${billingCycle}, isAnnual=${isAnnual}, billingCycleValue=${billingCycleValue}`,
       )
 
@@ -404,7 +450,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
         current_period_end: periodEnd.toISOString(),
       }
 
-      addDebugInfo(`Saving subscription data: ${JSON.stringify(subscriptionData)}`)
+      console.log(`Saving subscription data: ${JSON.stringify(subscriptionData)}`)
 
       const { error } = await supabase.from("subscriptions").upsert(subscriptionData)
 
@@ -494,9 +540,9 @@ export function DashboardShell({ user }: DashboardShellProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className={`${saira.className} min-h-screen flex items-center justify-center bg-gray-100`}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
@@ -513,14 +559,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
   const creditsRemaining = subscription?.credits || 0
   const creditsUsagePercentage = totalCredits ? ((totalCredits - creditsRemaining) / totalCredits) * 100 : 0
 
-  // Format plan name for display
-  const formatPlanName = (planId: string) => {
-    const plan = planId.toLowerCase()
-    if (plan === "basic") return "Starter"
-    if (plan === "pro") return "Professional"
-    return planId.charAt(0).toUpperCase() + planId.slice(1)
-  }
-
   // Determine subscription type - check both fields to be safe
   // Only consider it annual if explicitly set to annual/annually
   const isAnnual =
@@ -529,29 +567,220 @@ export function DashboardShell({ user }: DashboardShellProps) {
     subscription?.billing_cycle === "annual" ||
     subscription?.billing_cycle === "annually"
 
-  // REMOVE THIS LINE that's causing the infinite loop:
-  // addDebugInfo(`Subscription type determination: subscription_type=${subscription?.subscription_type}, billing_cycle=${subscription?.billing_cycle}, isAnnual=${isAnnual}`)
-
-  // Replace with a console.log that doesn't update state:
   console.log(
     `Subscription type: ${subscription?.subscription_type}, billing_cycle=${subscription?.billing_cycle}, isAnnual=${isAnnual}`,
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className={`${saira.className} flex h-screen overflow-hidden bg-gray-50`}>
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 h-screen bg-white border-r border-gray-200 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 h-screen ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-200 ease-in-out lg:translate-x-0`}
       >
-        <Sidebar subscription={subscription} />
+        <div
+          className={`${saira.className} w-64 bg-white flex flex-col h-screen text-gray-900 border-r border-gray-200`}
+        >
+          <div className="flex items-center justify-center p-5 border-b border-gray-200">
+            <Image src="/logo.png" alt="Texta.ai Logo" width={140} height={40} className="object-contain" />
+          </div>
+
+          <div className="px-5 mt-6 mb-8">
+            <Link href="/dashboard/summarizer">
+              <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium py-3.5 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] border border-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.2)]">
+                Create Content
+              </button>
+            </Link>
+          </div>
+
+          <nav className="flex-1 px-4 overflow-y-auto">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              const isActive =
+                pathname === item.href || (item.subItems && item.subItems.some((subItem) => pathname === subItem.href))
+
+              if (item.href && !item.subItems) {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-2 group",
+                      isActive
+                        ? "text-orange-600 bg-orange-50 border border-orange-100"
+                        : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                        isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                      )}
+                    />
+                    {item.name}
+                    {item.name === "Dashboard" && (
+                      <span className="ml-auto text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                        Home
+                      </span>
+                    )}
+                  </Link>
+                )
+              }
+
+              return (
+                <div key={item.name} className="mb-2">
+                  <div
+                    className={cn(
+                      "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 group",
+                      item.href ? "cursor-pointer" : "cursor-default",
+                      isActive
+                        ? "text-orange-600 bg-orange-50 border border-orange-100"
+                        : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                    )}
+                    onClick={() => item.subItems && setOpenSubmenu(openSubmenu === item.name ? "" : item.name)}
+                  >
+                    <Icon
+                      className={cn(
+                        "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                        isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                      )}
+                    />
+                    {item.name}
+                    {item.subItems && (
+                      <ChevronDown
+                        className={cn(
+                          "ml-auto w-4 h-4 transition-transform duration-300 text-gray-400 group-hover:text-gray-600",
+                          openSubmenu === item.name ? "transform rotate-180" : "",
+                        )}
+                      />
+                    )}
+                  </div>
+                  {item.subItems && openSubmenu === item.name && (
+                    <div className="ml-6 space-y-1 mt-1 mb-2">
+                      {item.subItems.map((subItem) => {
+                        const SubIcon = subItem.icon
+                        const isSubActive = pathname === subItem.href
+
+                        // Special case for GetMoreBacklinks to show it's auto-publishing blogs
+                        if (subItem.name === "GetMoreBacklinks") {
+                          return (
+                            <Link
+                              key={subItem.name}
+                              href={subItem.href}
+                              className={cn(
+                                "flex flex-col px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
+                                isSubActive
+                                  ? "text-orange-600 bg-orange-50 border border-orange-100"
+                                  : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                              )}
+                            >
+                              <div className="flex items-center">
+                                <SubIcon
+                                  className={cn(
+                                    "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                                    isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                                  )}
+                                />
+                                {subItem.name}
+                                <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full border border-green-200 flex items-center">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse"></span>
+                                  Active
+                                </span>
+                              </div>
+                              <div className="ml-9 mt-1 text-xs text-gray-500">
+                                Auto-publishing blogs to external sites
+                              </div>
+                            </Link>
+                          )
+                        }
+
+                        return (
+                          <Link
+                            key={subItem.name}
+                            href={subItem.href}
+                            className={cn(
+                              "flex items-center px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
+                              isSubActive
+                                ? "text-orange-600 bg-orange-50 border border-orange-100"
+                                : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                            )}
+                          >
+                            <SubIcon
+                              className={cn(
+                                "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
+                                isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                              )}
+                            />
+                            {subItem.name}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </nav>
+
+          <div className="p-5 mt-auto border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <CreditCard className="w-4 h-4 mr-2 text-orange-500" />
+                  <p className="text-sm font-medium text-gray-800">Credits</p>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm font-bold text-gray-800">{creditsRemaining}</span>
+                  <span className="text-xs text-gray-500 ml-1">remaining</span>
+                </div>
+              </div>
+
+              {/* Credit progress bar */}
+              <div className="w-full bg-gray-100 rounded-full h-2.5 border border-gray-200">
+                <div
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 h-2.5 rounded-full transition-all duration-300 relative"
+                  style={{ width: `${totalCredits > 0 ? (stats.creditsUsed / totalCredits) * 100 : 0}%` }}
+                >
+                  {totalCredits > 0 && stats.creditsUsed / totalCredits > 0.8 && (
+                    <span className="absolute -right-1 -top-1 w-3 h-3 bg-orange-500 rounded-full animate-ping opacity-75"></span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between text-xs text-gray-500 px-1">
+                <span>{stats.creditsUsed} used</span>
+                <span>{totalCredits} total</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center">
+                  {subscription && (planName === "Professional" || planName === "Pro") ? (
+                    <div className="flex items-center">
+                      <Sparkles className="w-4 h-4 mr-1.5 text-orange-500" />
+                      <span className="text-sm font-semibold text-orange-500">{planName}</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-gray-700">{planName}</span>
+                  )}
+                </div>
+                <Link
+                  href="/upgrade"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 flex items-center gap-1 transform hover:scale-105 border border-orange-600"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1" />
+                  Upgrade
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Main content */}
       <div className="flex flex-col flex-1 w-full lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-30 bg-white border-b">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center">
               <button
@@ -562,15 +791,20 @@ export function DashboardShell({ user }: DashboardShellProps) {
               >
                 <Menu size={24} />
               </button>
-              <h2 className="text-lg font-semibold text-gray-800">Dashboard</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
             </div>
 
-            {/* Profile dropdown */}
-            <div className="flex items-center space-x-4">
+            {/* Header actions */}
+            <div className="flex items-center space-x-3">
+              <button className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
+                <Bell size={20} />
+              </button>
+
+              {/* Profile dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-md hover:shadow-lg transition-all duration-200"
+                  className="flex items-center justify-center w-9 h-9 rounded-full overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
                   aria-expanded={isProfileOpen}
                   aria-haspopup="true"
                   type="button"
@@ -579,69 +813,67 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <img
                       src={user.user_metadata.avatar_url || "/placeholder.svg"}
                       alt="Profile"
-                      className="w-10 h-10 object-cover"
+                      className="w-9 h-9 object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-medium">
+                    <div className="w-9 h-9 bg-black flex items-center justify-center text-white font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-3 w-72 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100 overflow-hidden transition-all duration-200 ease-in-out">
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-md py-1 z-50 border border-gray-200 overflow-hidden">
                     {/* Profile header */}
-                    <div className="px-5 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-100">
+                    <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md mr-4">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-3">
                           {user.user_metadata?.avatar_url ? (
                             <img
                               src={user.user_metadata.avatar_url || "/placeholder.svg"}
                               alt="Profile"
-                              className="w-12 h-12 object-cover"
+                              className="w-10 h-10 object-cover"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-medium text-lg">
+                            <div className="w-10 h-10 bg-black flex items-center justify-center text-white font-medium text-lg">
                               {user.email?.charAt(0).toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800 text-lg">
+                          <p className="font-medium text-gray-900">
                             {user.user_metadata?.name || user.email?.split("@")[0] || "User"}
                           </p>
-                          <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                          <p className="text-xs text-gray-500 truncate">{user.email}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Menu items */}
-                    <div className="py-2 px-1">
-                      <div className="grid grid-cols-1 gap-0.5">
-                        <button
-                          onClick={() => navigateTo("/settings")}
-                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 rounded-lg mx-1 transition-colors duration-150 text-left"
-                        >
-                          <Settings className="h-4 w-4 mr-3 text-orange-500" />
-                          Account Settings
-                        </button>
+                    <div className="py-1">
+                      <button
+                        onClick={() => navigateTo("/settings")}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                        Account Settings
+                      </button>
 
-                        <button
-                          onClick={() => navigateTo("/apigenerate")}
-                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 rounded-lg mx-1 transition-colors duration-150 text-left"
-                        >
-                          <Key className="h-4 w-4 mr-3 text-orange-500" />
-                          API Keys
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => navigateTo("/apigenerate")}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Key className="h-4 w-4 mr-3 text-gray-500" />
+                        API Keys
+                      </button>
                     </div>
 
                     {/* Sign out button */}
-                    <div className="mt-1 pt-2 border-t border-gray-100">
+                    <div className="border-t border-gray-100">
                       <button
                         onClick={handleSignOut}
                         disabled={isSigningOut}
-                        className="flex w-full items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg mx-1 transition-colors duration-150 disabled:opacity-50 text-left"
+                        className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                       >
                         <LogOut className="h-4 w-4 mr-3 text-red-500" />
                         {isSigningOut ? "Signing out..." : "Log out"}
@@ -656,170 +888,231 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+          <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
             {/* Welcome banner */}
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-sm p-6 text-white">
-              <div className="flex items-start justify-between">
+            <div className="bg-black rounded-lg p-6 text-white border border-gray-800 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-orange-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-radial from-orange-500/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
+              <div className="flex items-start justify-between relative z-10">
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-                    Welcome to Blogosocial <Sparkles className="h-6 w-6" />
+                  <h1 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-2">
+                    Welcome to Blogosocial <Sparkles className="h-5 w-5 text-orange-500" />
                   </h1>
-                  <p className="text-orange-100 text-lg">
-                    Your AI-powered content creation platform is ready to help you create amazing content.
+                  <p className="text-gray-300 text-sm">
+                    Your professional content creation platform is ready to help you craft engaging content.
                   </p>
+                </div>
+                <button
+                  onClick={() => router.push("/dashboard/summarizer")}
+                  className="hidden sm:flex items-center px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-all duration-300 text-sm font-medium border border-orange-600 transform hover:scale-105"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Content
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Subscription info */}
+              {subscription && (
+                <div className="md:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                        <span className="text-orange-500 mr-2">★</span>
+                        Your Subscription
+                      </h2>
+                      <button
+                        onClick={() => router.push("/upgrade")}
+                        className="px-4 py-1.5 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-300 text-xs font-medium border border-black transform hover:scale-105"
+                      >
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Current Plan</p>
+                        <p className="text-xl font-bold text-black">{formatPlanName(subscription.plan_id)}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Status</p>
+                        <div className="flex items-center">
+                          <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                          <p className="text-xl font-bold text-black capitalize">{subscription.status || "Active"}</p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Billing Cycle</p>
+                        <p className="text-xl font-bold text-black capitalize flex items-center">
+                          {isAnnual ? (
+                            <>
+                              Yearly <Calendar className="ml-2 h-4 w-4 text-orange-500" />
+                            </>
+                          ) : (
+                            "Monthly"
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-6 bg-orange-50 p-4 rounded-lg border border-orange-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-700 flex items-center">
+                          <CreditCard className="h-4 w-4 mr-2 text-orange-500" />
+                          Credits Usage
+                        </p>
+                        <p className="text-sm font-medium bg-white px-2 py-1 rounded-full border border-orange-200">
+                          {Math.max(0, totalCredits - stats.creditsUsed)} / {totalCredits} credits
+                        </p>
+                      </div>
+                      <div className="w-full bg-white rounded-full h-3 overflow-hidden border border-orange-200">
+                        <div
+                          className="bg-gradient-to-r from-orange-400 to-orange-600 h-3 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, (stats.creditsUsed / totalCredits) * 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between mt-2 text-xs text-gray-600">
+                        <span className="font-medium text-orange-600">{stats.creditsUsed} credits used</span>
+                        <span className="font-medium">{Math.max(0, totalCredits - stats.creditsUsed)} remaining</span>
+                      </div>
+                    </div>
+                    {subscription.current_period_end && (
+                      <div className="flex items-center justify-end mt-4 text-xs text-gray-500">
+                        <Calendar className="h-3 w-3 mr-1 text-gray-400" />
+                        <span>
+                          {isAnnual ? "Renews yearly on" : "Renews on"}{" "}
+                          <span className="font-medium">
+                            {new Date(subscription.current_period_end).toLocaleDateString()}
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Stats card */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                    <BarChart3 className="h-4 w-4 mr-2 text-orange-500" />
+                    Stats
+                  </h2>
+                </div>
+                <div className="p-5">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Posts Created</p>
+                      <p className="text-2xl font-bold">{stats.postsCreated}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Credits Used</p>
+                      <p className="text-2xl font-bold">{stats.creditsUsed}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Subscription info */}
-            {subscription && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Your Subscription</h2>
+            {/* Quick actions */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                  <span className="bg-black text-white p-1 rounded-md mr-2 text-xs">PRO</span>
+                  Quick Actions
+                </h2>
+              </div>
+              <div className="p-5">
+                <div className="grid gap-4 md:grid-cols-2">
                   <button
-                    onClick={() => router.push("/upgrade")}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center"
+                    onClick={() => router.push("/dashboard/summarizer")}
+                    className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
                   >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Upgrade Plan
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="flex items-center relative z-10">
+                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-3 border border-orange-200 group-hover:bg-orange-200 transition-colors duration-300">
+                        <Target className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-medium text-gray-900 text-base">Create New Content</span>
+                        <p className="text-xs text-gray-500 mt-1">Craft professional blog posts and articles</p>
+                      </div>
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
+                  </button>
+                  <button
+                    onClick={() => router.push("/company-database/ideas")}
+                    className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="flex items-center relative z-10">
+                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-3 border border-orange-200 group-hover:bg-orange-200 transition-colors duration-300">
+                        <Lightbulb className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-medium text-gray-900 text-base">Generate Ideas</span>
+                        <p className="text-xs text-gray-500 mt-1">Discover trending content topics</p>
+                      </div>
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
                   </button>
                 </div>
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Plan</p>
-                      <p className="text-2xl font-bold">{formatPlanName(subscription.plan_id)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-                      <p className="text-2xl font-bold capitalize">{subscription.status || "Active"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-1">Billing</p>
-                      <p className="text-2xl font-bold capitalize flex items-center">
-                        {isAnnual ? (
-                          <>
-                            Yearly <Calendar className="ml-2 h-4 w-4 text-orange-500" />
-                          </>
-                        ) : (
-                          "Monthly"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium text-gray-500">Credits Remaining</p>
-                      <p className="text-sm font-medium">
-                        {Math.max(0, totalCredits - stats.creditsUsed)} / {totalCredits} credits
-                      </p>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-4 border border-gray-200">
-                      <div
-                        className="bg-gradient-to-r from-orange-400 to-orange-500 h-4 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
-                        style={{ width: `${Math.min(100, (stats.creditsUsed / totalCredits) * 100)}%` }}
-                      >
-                        {stats.creditsUsed > 0 && (stats.creditsUsed / totalCredits) * 100 > 15 && (
-                          <span className="text-xs font-medium text-white">
-                            {Math.round((stats.creditsUsed / totalCredits) * 100)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs text-gray-500">
-                      <span className="font-medium text-orange-600">{stats.creditsUsed} credits used</span>
-                      <span>{Math.max(0, totalCredits - stats.creditsUsed)} remaining</span>
-                    </div>
-                  </div>
-                  {subscription.current_period_end && (
-                    <p className="text-sm text-gray-500">
-                      {isAnnual ? "Renews yearly on" : "Renews on"}{" "}
-                      {new Date(subscription.current_period_end).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Quick actions */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Quick Actions</h2>
-              <p className="text-sm text-gray-500 mb-4">Get started with these common tasks</p>
-              <div className="grid gap-4 md:grid-cols-2">
-                <button
-                  onClick={() => router.push("/dashboard/summarizer")}
-                  className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <span className="flex items-center">
-                    <Target className="mr-2 h-4 w-4 text-gray-500" />
-                    <span>Create New Content</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </button>
-                <button
-                  onClick={() => router.push("/company-database/ideas")}
-                  className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <span className="flex items-center">
-                    <Lightbulb className="mr-2 h-4 w-4 text-gray-500" />
-                    <span>Generate Ideas</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </button>
               </div>
             </div>
 
             {/* Setup progress */}
             {!subscription?.onboarding_completed && (
-              <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="px-6 py-5 border-b border-gray-200">
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="p-5 border-b border-gray-100">
                   <h2 className="text-lg font-medium text-gray-900">Setup Progress</h2>
                 </div>
-                <div className="px-6 py-5">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-medium text-gray-700">Completion Status</span>
                     <span className="text-sm font-medium text-gray-700">
                       {Object.values(completionStatus).filter(Boolean).length} of 3 completed
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+                  <div className="w-full bg-gray-100 rounded-full h-2 mb-6 border border-gray-200">
                     <div
-                      className="bg-orange-500 h-2.5 rounded-full transition-all duration-300"
+                      className="bg-black h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(Object.values(completionStatus).filter(Boolean).length / 3) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {/* Content Ideas */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              completionStatus.contentIdeas ? "bg-green-100" : "bg-orange-100"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                              completionStatus.contentIdeas
+                                ? "bg-green-100 border-green-200"
+                                : "bg-orange-100 border-orange-200"
                             }`}
                           >
                             {completionStatus.contentIdeas ? (
-                              <Check className="w-5 h-5 text-green-500" />
+                              <Check className="w-5 h-5 text-green-600" />
                             ) : (
-                              <Lightbulb className="w-5 h-5 text-orange-500" />
+                              <Lightbulb className="w-5 h-5 text-orange-600" />
                             )}
                           </div>
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-medium text-gray-900">Content Ideas</h3>
-                          <p className="text-sm text-gray-500">Set up your content idea sources and preferences</p>
+                          <h3 className="text-base font-medium text-gray-900">Content Ideas</h3>
+                          <p className="text-xs text-gray-500">Set up your content idea sources and preferences</p>
                         </div>
                       </div>
                       <button
                         onClick={() => router.push("/company-database/ideas")}
-                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
+                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
                           completionStatus.contentIdeas
-                            ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
-                            : "text-white bg-orange-500 hover:bg-orange-600"
-                        }`}
+                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
+                            : "text-white bg-black hover:bg-gray-800 border-black"
+                        } transition-colors`}
                       >
-                        {completionStatus.contentIdeas ? "Edit Settings" : "Complete Setup"}
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {completionStatus.contentIdeas ? "Edit" : "Complete"}
                       </button>
                     </div>
 
@@ -828,34 +1121,35 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              completionStatus.blogSettings ? "bg-green-100" : "bg-orange-100"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                              completionStatus.blogSettings
+                                ? "bg-green-100 border-green-200"
+                                : "bg-orange-100 border-orange-200"
                             }`}
                           >
                             {completionStatus.blogSettings ? (
-                              <Check className="w-5 h-5 text-green-500" />
+                              <Check className="w-5 h-5 text-green-600" />
                             ) : (
-                              <FileText className="w-5 h-5 text-orange-500" />
+                              <FileText className="w-5 h-5 text-orange-600" />
                             )}
                           </div>
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-medium text-gray-900">Blog Settings</h3>
-                          <p className="text-sm text-gray-500">
+                          <h3 className="text-base font-medium text-gray-900">Blog Settings</h3>
+                          <p className="text-xs text-gray-500">
                             Configure your blog preferences and publishing strategy
                           </p>
                         </div>
                       </div>
                       <button
                         onClick={() => router.push("/company-database/blog")}
-                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
+                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
                           completionStatus.blogSettings
-                            ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
-                            : "text-white bg-orange-500 hover:bg-orange-600"
-                        }`}
+                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
+                            : "text-white bg-black hover:bg-gray-800 border-black"
+                        } transition-colors`}
                       >
-                        {completionStatus.blogSettings ? "Edit Settings" : "Complete Setup"}
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {completionStatus.blogSettings ? "Edit" : "Complete"}
                       </button>
                     </div>
 
@@ -864,32 +1158,33 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              completionStatus.audienceKeywords ? "bg-green-100" : "bg-orange-100"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                              completionStatus.audienceKeywords
+                                ? "bg-green-100 border-green-200"
+                                : "bg-orange-100 border-orange-200"
                             }`}
                           >
                             {completionStatus.audienceKeywords ? (
-                              <Check className="w-5 h-5 text-green-500" />
+                              <Check className="w-5 h-5 text-green-600" />
                             ) : (
-                              <Users className="w-5 h-5 text-orange-500" />
+                              <Users className="w-5 h-5 text-orange-600" />
                             )}
                           </div>
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-medium text-gray-900">Audience and Keywords</h3>
-                          <p className="text-sm text-gray-500">Define your target audience and important keywords</p>
+                          <h3 className="text-base font-medium text-gray-900">Audience and Keywords</h3>
+                          <p className="text-xs text-gray-500">Define your target audience and important keywords</p>
                         </div>
                       </div>
                       <button
                         onClick={() => router.push("/settings")}
-                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
+                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
                           completionStatus.audienceKeywords
-                            ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
-                            : "text-white bg-orange-500 hover:bg-orange-600"
-                        }`}
+                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
+                            : "text-white bg-black hover:bg-gray-800 border-black"
+                        } transition-colors`}
                       >
-                        {completionStatus.audienceKeywords ? "Edit Settings" : "Complete Setup"}
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {completionStatus.audienceKeywords ? "Edit" : "Complete"}
                       </button>
                     </div>
 
@@ -897,22 +1192,14 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <div className="flex justify-center pt-4">
                       <button
                         onClick={markAllAsCompleted}
-                        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                        className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors flex items-center border border-black"
                       >
+                        <Check className="mr-2 h-4 w-4" />
                         Mark All Steps as Completed
-                        <Check className="ml-2 h-5 w-5" />
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Debug Info (only in development) */}
-            {debugInfo.length > 0 && process.env.NODE_ENV === "development" && (
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-6">
-                <h3 className="text-sm font-bold mb-2">Debug Information:</h3>
-                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-60">{debugInfo.join("\n")}</pre>
               </div>
             )}
           </div>

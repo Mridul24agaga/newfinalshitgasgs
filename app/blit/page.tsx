@@ -10,7 +10,7 @@ type Blog = {
 
 export default function BlogList() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
-  const apiKey = "4d5bc2d1afaf832f2f76b55495a0082bbb91c080256d8b50aea5b59dcf99501d"; // Replace with actual API key
+  const apiKey = "568feb6f19a409d73c11de7e3ce5cd702aca55a4590f5ccd9c4f89e92ec1c6a9"; // Replace with actual API key
 
   useEffect(() => {
     fetch("http://localhost:3000/api/user-blogs", {

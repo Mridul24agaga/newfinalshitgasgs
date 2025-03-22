@@ -5,6 +5,14 @@ import { useState, useEffect } from "react"
 import { generateBlog } from "../../actions"
 import { createClient } from "@/utitls/supabase/client"
 import { Link2, AlertCircle, Loader2, ArrowRight, Calendar, Clock, CreditCard } from "lucide-react"
+import { Saira } from "next/font/google"
+
+// Initialize the Saira font
+const saira = Saira({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-saira",
+})
 
 interface URLFormProps {
   onContentGenerated?: () => void
@@ -276,7 +284,9 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
   const daysUntilRenewal = getDaysUntilRenewal()
 
   return (
-    <div className="bg-white rounded-2xl border border-orange-200 shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl mb-8">
+    <div
+      className={`${saira.className} bg-white rounded-2xl border border-orange-200 overflow-hidden transition-all duration-300 mb-8`}
+    >
       <div className="p-8 pt-10">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
@@ -301,7 +311,7 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
 
           {userPlan && !isLoading && (
             <div className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-4 bg-orange-50 rounded-lg">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-4 bg-orange-50 rounded-lg border border-orange-100">
                 <div className="flex items-center">
                   <CreditCard className="h-5 w-5 text-orange-500 mr-2" />
                   <div>
@@ -374,7 +384,7 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
           )}
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl animate-pulse">
+            <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
               <div className="flex items-start">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
                 <div>
@@ -386,7 +396,7 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
           )}
 
           {isLoading && (
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-xl">
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
               <div className="flex items-center">
                 <Loader2 className="animate-spin h-5 w-5 text-blue-500 mr-3" />
                 <span className="text-sm font-medium text-blue-800">
@@ -397,7 +407,7 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
           )}
 
           {remainingCredits === 0 && (
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl">
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
               <div className="flex items-start">
                 <AlertCircle className="h-5 w-5 text-amber-500 mr-3 flex-shrink-0" />
                 <div>
@@ -415,10 +425,10 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
 
           <button
             type="submit"
-            className={`w-full px-6 py-3 rounded-xl text-white font-bold flex items-center justify-center transition-all duration-300 transform ${
+            className={`w-full px-6 py-3 rounded-xl text-white font-bold flex items-center justify-center transition-all duration-300 border ${
               isLoading || remainingCredits === 0
-                ? "bg-orange-400 cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                ? "bg-orange-400 border-orange-500 cursor-not-allowed"
+                : "bg-orange-500 border-orange-600 hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
             }`}
             disabled={isLoading || remainingCredits === 0}
           >
