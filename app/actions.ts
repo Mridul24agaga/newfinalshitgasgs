@@ -9,36 +9,36 @@ import { createClient } from "@/utitls/supabase/server"
 // This will be our aggressive link fixer that runs before any other processing
 
 function aggressivelyFixMarkdownLinks(content: string): string {
-  let processedContent = content;
+  let processedContent = content
 
   // Find all markdown links with any amount of whitespace between ] and (
-  const markdownLinkRegex = /\[([^\]]+)\]\s*$$([^)]+)$$/g;
+  const markdownLinkRegex = /\[([^\]]+)\]\s*$$([^)]+)$$/g
 
   // Replace them with actual HTML <a> tags
   processedContent = processedContent.replace(markdownLinkRegex, (match, text, url) => {
     // Clean up any extra whitespace
-    const cleanText = text.trim(); // Error 2: Object is possibly 'undefined'
-    const cleanUrl = url.trim();
+    const cleanText = text.trim() // Error 2: Object is possibly 'undefined'
+    const cleanUrl = url.trim()
 
     if (cleanUrl.startsWith("http") || cleanUrl.startsWith("https")) {
-      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`; // Error 1: Argument of type 'string | undefined' is not assignable to parameter of type 'string'
+      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>` // Error 1: Argument of type 'string | undefined' is not assignable to parameter of type 'string'
     } else if (cleanUrl.startsWith("/")) {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
     } else {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
     }
-  });
+  })
 
-  return processedContent;
+  return processedContent
 }
 
 const formatUtils = {
   convertMarkdownToHtml: (markdown: string) => {
     // First, directly convert markdown links to HTML <a> tags
-    let html = aggressivelyFixMarkdownLinks(markdown);
+    let html = aggressivelyFixMarkdownLinks(markdown)
 
     // Then normalize all line breaks to ensure consistent processing
-    html = html.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+    html = html.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n")
 
     // Process the markdown with updated bullet point styling
     html = html
@@ -54,67 +54,47 @@ const formatUtils = {
       .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em class="italic font-normal">$1</em>')
 
-      // Updated bullet point handling for single-line format with reduced indentation
-      // Format bullet points with term-colon-description
+      // Remove bullet point handling - convert to paragraphs instead
       .replace(
         /^- (.*?):\s*(.*$)/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong>: $2</li>',
+        '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4"><strong class="font-bold">$1</strong>: $2</p>',
       )
       .replace(
         /^[*] (.*?):\s*(.*$)/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong>: $2</li>',
+        '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4"><strong class="font-bold">$1</strong>: $2</p>',
       )
-
-      // Handle bullet points with just a term (no colon)
       .replace(
         /^- ([^:]+)$/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong></li>',
+        '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4"><strong class="font-bold">$1</strong></p>',
       )
       .replace(
         /^[*] ([^:]+)$/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong></li>',
+        '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4"><strong class="font-bold">$1</strong></p>',
       )
 
-      // Group consecutive list items into a single ul element with reduced spacing
-      .replace(
-        /(<li class="ml-4 text-gray-700 leading-relaxed font-normal">.*<\/li>)(\s*<li class="ml-4 text-gray-700 leading-relaxed font-normal">.*<\/li>)+/gim,
-        '<ul class="pl-4 my-4">$&</ul>',
-      )
-
-      // Remove any nested ul tags that might have been created
-      .replace(
-        /<ul class="pl-4 my-4">(\s*<li.*?>.*<\/li>)*\s*<ul class="pl-4 my-4">/gim,
-        '<ul class="pl-4 my-4">',
-      )
-      .replace(/<\/ul>(\s*<\/li>)*\s*<\/ul>/gim, "</ul>")
-
-      // Fix any standalone list items that weren't grouped
-      .replace(
-        /(<li class="ml-4 text-gray-700 leading-relaxed font-normal">.*<\/li>)(?!\s*<li|<\/ul>)/gim,
-        '<ul class="pl-4 my-4">$1</ul>',
-      )
+      // Remove these sections that group list items
 
       // Paragraphs with better typography and font family
-      .replace(/\n{2,}/g, '</p><p class="font-saira text-gray-700 leading-relaxed font-normal my-4">');
+      .replace(/\n{2,}/g, '</p><p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
 
     // Wrap in paragraph with better typography
-    html = `<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">${html}</p>`;
+    html = `<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">${html}</p>`
 
     // Ensure no double paragraph tags
     html = html.replace(
       /<\/p>\s*<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">\s*<\/p>/g,
       "</p>",
-    );
+    )
 
     // Ensure no empty paragraphs
-    html = html.replace(/<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">\s*<\/p>/g, "");
+    html = html.replace(/<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">\s*<\/p>/g, "")
 
-    return html;
+    return html
   },
 
   sanitizeHtml: (html: string) => {
     // First, directly handle any remaining markdown-style links
-    let sanitized = aggressivelyFixMarkdownLinks(html);
+    let sanitized = aggressivelyFixMarkdownLinks(html)
 
     // Ensure all paragraphs have better typography and font family
     sanitized = sanitized
@@ -124,10 +104,7 @@ const formatUtils = {
       .replace(/<ul[^>]*>/g, '<ul class="pl-4 my-4">')
 
       // Ensure list items are single-line with proper styling
-      .replace(
-        /<li[^>]*>([^<]*)<\/li>/g,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal">$1</li>',
-      )
+      .replace(/<li[^>]*>([^<]*)<\/li>/g, '<li class="ml-4 text-gray-700 leading-relaxed font-normal">$1</li>')
 
       // Special handling for list items with bold terms
       .replace(
@@ -169,44 +146,44 @@ const formatUtils = {
 
       // Ensure all figures have consistent styling with better spacing
       .replace(/<figure[^>]*>/g, '<figure class="my-6">')
-      .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">');
+      .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">')
 
     // Remove any empty paragraphs
-    sanitized = sanitized.replace(/<p[^>]*>\s*<\/p>/g, "");
+    sanitized = sanitized.replace(/<p[^>]*>\s*<\/p>/g, "")
 
-    return sanitized;
+    return sanitized
   },
 
   // Rest of the formatUtils object remains the same
   generateToc: (htmlContent: string) => {
     // Extract headings using regex for server-side compatibility
-    const headingRegex = /<h([1-6])[^>]*>(.*?)<\/h\1>/gi;
-    const headings: Array<{ id: string; text: string; level: number }> = [];
-    let match: RegExpExecArray | null;
-    let index = 0;
+    const headingRegex = /<h([1-6])[^>]*>(.*?)<\/h\1>/gi
+    const headings: Array<{ id: string; text: string; level: number }> = []
+    let match: RegExpExecArray | null
+    let index = 0
 
     while ((match = headingRegex.exec(htmlContent)) !== null) {
-      const level = Number.parseInt(match[1]);
-      const text = match[2].replace(/<[^>]+>/g, "").trim();
-      const id = `heading-${index}`;
+      const level = Number.parseInt(match[1])
+      const text = match[2].replace(/<[^>]+>/g, "").trim()
+      const id = `heading-${index}`
 
       // Add id to the heading in the HTML
-      const classMatch = match[0].match(/class="([^"]*)"/);
-      const headingWithId = `<h${level} id="${id}" class="${classMatch ? classMatch[1] : ""}">${match[2]}</h${level}>`;
-      htmlContent = htmlContent.replace(match[0], headingWithId);
+      const classMatch = match[0].match(/class="([^"]*)"/)
+      const headingWithId = `<h${level} id="${id}" class="${classMatch ? classMatch[1] : ""}">${match[2]}</h${level}>`
+      htmlContent = htmlContent.replace(match[0], headingWithId)
 
       headings.push({
         id,
         text,
         level,
-      });
+      })
 
-      index++;
+      index++
     }
 
-    return headings;
+    return headings
   },
-};
+}
 
 // Define types
 interface TavilySearchResult {
@@ -217,9 +194,9 @@ interface TavilySearchResult {
 }
 
 interface Keyword {
-  keyword: string;
-  relevance: number;
-  difficulty?: string; // Add this if difficulty is optional
+  keyword: string
+  relevance: number
+  difficulty?: string // Add this if difficulty is optional
 }
 
 interface BlogResult {
@@ -230,7 +207,7 @@ interface BlogResult {
   citations: string[]
   tempFileName: string
   title: string
-  difficulty?: string; // Make it optional if not always present
+  difficulty?: string // Make it optional if not always present
   timestamp: string
 }
 
@@ -501,7 +478,7 @@ async function generateSearchQueries(metaDescription: string, topic: string): Pr
     Return a JSON array, e.g., ["query1", "query2"].
   `
   const response = await callAzureOpenAI(prompt, 300)
-  const cleanedResponse = response.replace(/```json\n?|\n?```/g, "").trim()
+  const cleanedResponse = response.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim()
   try {
     const queries = (JSON.parse(cleanedResponse) as string[]) || []
     console.log(`Generated TOPIC-FOCUSED search queries: ${JSON.stringify(queries)}`)
@@ -769,7 +746,7 @@ async function generateContentTables(topic: string, content: string): Promise<st
 // Add a new function to clean table HTML
 function cleanTableHTML(tableHTML: string): string {
   // Remove any markdown code block indicators
-  let cleanHTML = tableHTML.replace(/```html\s*|\s*```/g, "")
+  let cleanHTML = tableHTML.replace(/\`\`\`html\s*|\s*\`\`\`/g, "")
 
   // Remove any HTML comments
   cleanHTML = cleanHTML.replace(/<!--[\s\S]*?-->/g, "")
@@ -958,8 +935,8 @@ async function generateArticleFromScrapedData(
     const formattedResearch = researchData
       .map((item, index) => `Source ${index + 1}: ${item.url}\nContent: ${item.content.slice(0, 300)}...`)
       .join("\n\n")
-      .slice(0, 15000);
-    console.log(`Using ${researchData.length} research sources, including Tavily search results`);
+      .slice(0, 15000)
+    console.log(`Using ${researchData.length} research sources, including Tavily search results`)
 
     // Get authoritative external links for the topic
     console.log("Finding authoritative external links for the topic...")
@@ -1236,39 +1213,36 @@ async function generateArticleFromScrapedData(
       youtubeEmbed = createYouTubeEmbed(youtubeVideo)
     }
 
-   // NEW: Generate tables related to the content
-console.log("Generating tables related to the content...");
-const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks);
+    // NEW: Generate tables related to the content
+    console.log("Generating tables related to the content...")
+    const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks)
 
-// Add a delay before converting to HTML
-console.log("Waiting 8 seconds before converting to HTML...");
-await new Promise((resolve) => setTimeout(resolve, 8000));
+    // Add a delay before converting to HTML
+    console.log("Waiting 8 seconds before converting to HTML...")
+    await new Promise((resolve) => setTimeout(resolve, 8000))
 
-const embedCode: string = youtubeEmbed ?? "";
+    const embedCode: string = youtubeEmbed ?? ""
 
-// Convert to HTML with improved typography
-console.log("Converting to HTML with improved typography...");
-let htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks) || "";
+    // Convert to HTML with improved typography
+    console.log("Converting to HTML with improved typography...")
+    let htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks) || ""
 
-// Insert YouTube video after the first or second heading
-if (embedCode) {
-  const headingMatches = htmlContent.match(/<h[23][^>]*>.*?<\/h[23]>/gi) || [];
+    // Insert YouTube video after the first or second heading
+    if (embedCode) {
+      const headingMatches = htmlContent.match(/<h[23][^>]*>.*?<\/h[23]>/gi) || []
 
-  if (headingMatches.length >= 2) {
-    // Insert after the second heading
-    const secondHeading = headingMatches[1] ?? ""; // Ensure it's a string
-    const secondHeadingPos = htmlContent.indexOf(secondHeading) + secondHeading.length;
-    htmlContent = htmlContent.slice(0, secondHeadingPos) + embedCode + htmlContent.slice(secondHeadingPos);
-  } else if (headingMatches.length >= 1) {
-    // Insert after the first heading
-    const firstHeading = headingMatches[0] ?? ""; // Ensure it's a string
-    const firstHeadingPos = htmlContent.indexOf(firstHeading) + firstHeading.length;
-    htmlContent = htmlContent.slice(0, firstHeadingPos) + embedCode + htmlContent.slice(firstHeadingPos);
-  }
-}
-
-
-
+      if (headingMatches.length >= 2) {
+        // Insert after the second heading
+        const secondHeading = headingMatches[1] ?? "" // Ensure it's a string
+        const secondHeadingPos = htmlContent.indexOf(secondHeading) + secondHeading.length
+        htmlContent = htmlContent.slice(0, secondHeadingPos) + embedCode + htmlContent.slice(secondHeadingPos)
+      } else if (headingMatches.length >= 1) {
+        // Insert after the first heading
+        const firstHeading = headingMatches[0] ?? "" // Ensure it's a string
+        const firstHeadingPos = htmlContent.indexOf(firstHeading) + firstHeading.length
+        htmlContent = htmlContent.slice(0, firstHeadingPos) + embedCode + htmlContent.slice(firstHeadingPos)
+      }
+    }
 
     // Insert tables at strategic points in the content
     if (contentTables.length > 0) {
@@ -1649,7 +1623,7 @@ async function determineImagePlacements(
     let placements = []
 
     try {
-      placements = JSON.parse(placementResult.replace(/```json\n?|\n?```/g, "").trim())
+      placements = JSON.parse(placementResult.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim())
     } catch (error) {
       console.error("Error parsing image placements:", error)
       // Fallback to simple placement if parsing fails
@@ -1871,7 +1845,7 @@ async function enhanceBlogWithImages(blogContent: string, topic: string, imageCo
       Return complete HTML for a FAQ section with 4 questions and answers.
     `
 
-    const faqContent = await callAzureOpenAI(faqPrompt, 2000)    // Create a properly formatted FAQ section
+    const faqContent = await callAzureOpenAI(faqPrompt, 2000) // Create a properly formatted FAQ section
     const faqSection = `
 <h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">Frequently Asked Questions</h2>
 
@@ -1933,74 +1907,41 @@ function processContentBeforeSaving(content: string): string {
   // Ensure bold text is properly rendered
   processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
 
-  // Ensure bullet points have proper spacing and styling
-  processedContent = processedContent.replace(/<ul[^>]*>/g, '<ul class="pl-6 my-6 space-y-1">')
-
-  // Fix empty bullet points
-  processedContent = processedContent.replace(/<li[^>]*>\s*•?\s*<\/li>/g, "")
-
-  // Remove duplicate bullet characters (• •, • • •, etc.)
+  // Remove bullet points and convert them to regular paragraphs
   processedContent = processedContent.replace(
-    /<li[^>]*><span[^>]*>•<\/span><div>•+\s*/g,
-    '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div>',
+    /<li[^>]*>(?:<span[^>]*>•<\/span>)?<div>(.*?)<\/div><\/li>/g,
+    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>',
   )
 
-  // Remove any duplicate bullet characters in the text
-  processedContent = processedContent.replace(/(<div[^>]*>)\s*•+\s*/g, "$1")
-
-  // Remove any duplicate bullet characters at the beginning of paragraphs
+  // Convert any remaining list items to paragraphs
   processedContent = processedContent.replace(
-    /<p[^>]*>\s*•+\s*/g,
-    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">',
+    /<li[^>]*>(.*?)<\/li>/g,
+    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>',
   )
 
-  // Remove any duplicate bullet characters in the text
-  processedContent = processedContent.replace(/(<div[^>]*>)\s*•\s*•\s*/g, "$1")
-
-  // Fix bullet points with dash format (• - Term)
-  processedContent = processedContent.replace(
-    /<li[^>]*><span[^>]*>•<\/span><div>-\s*([^<]+)<\/div><\/li>/g,
-    '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div><strong class="font-bold">$1</strong></div></li>',
-  )
-
-  // Update list items to support term-colon-description format with exact styling from example
-  processedContent = processedContent.replace(
-    /<li[^>]*>([^:]+):(.*?)<\/li>/g,
-    '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div><strong class="font-bold">$1</strong>: $2</div></li>',
-  )
-
-  // Special handling for list items with bold terms already in HTML
-  processedContent = processedContent.replace(
-    /<li[^>]*><strong[^>]*>([^<]+)<\/strong>:\s*([^<]*)<\/li>/g,
-    '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div><strong class="font-bold">$1</strong>: $2</div></li>',
-  )
-
-  // Fallback for regular list items - ensure they have the bullet and proper structure
-  processedContent = processedContent.replace(
-    /<li[^>]*>(?!<span class="text-gray-800 mr-2">•<\/span>)(.*?)<\/li>/g,
-    '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div>$1</div></li>',
-  )
+  // Remove any ul/ol tags
+  processedContent = processedContent.replace(/<\/?ul[^>]*>/g, "")
+  processedContent = processedContent.replace(/<\/?ol[^>]*>/g, "")
 
   return processedContent
 }
 
-// Main function to generate blogs sequentially
 export async function generateBlog(url: string, humanizeLevel: "normal" | "hardcore" = "normal"): Promise<BlogPost[]> {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error("You need to be authenticated to generate blog posts!")
+    throw new Error("You need to be authenticated to generate blog posts!");
   }
 
-  const userId = user.id
-  const blogPosts: BlogPost[] = []
-  const firstRevealDate = new Date()
-  const existingContent: string[] = [] // Track content to avoid repetition
-  const existingTitles: string[] = [] // Track titles to avoid repetition
+  const userId = user.id;
+  const blogPosts: BlogPost[] = [];
+  const firstRevealDate = new Date();
+  const existingContent: string[] = []; // Track content to avoid repetition
+  const existingTitles: string[] = []; // Track titles to avoid repetition
 
   const reformatExistingPosts = async (supabase: any, userId: string): Promise<void> => {
     try {
@@ -2008,112 +1949,163 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         .from("blogs")
         .select("id, blog_post")
         .eq("user_id", userId)
-        .is("needs_reformatting", true)
+        .is("needs_reformatting", true);
 
       if (selectError) {
-        console.error("Error selecting posts to reformat:", selectError.message)
-        return
+        console.error("Error selecting posts to reformat:", selectError.message);
+        return;
       }
 
       if (!postsToReformat || postsToReformat.length === 0) {
-        console.log("No posts need reformatting.")
-        return
+        console.log("No posts need reformatting.");
+        return;
       }
 
       for (const post of postsToReformat) {
         try {
-          const formattedContent = formatUtils.convertMarkdownToHtml(post.blog_post)
+          const formattedContent = formatUtils.convertMarkdownToHtml(post.blog_post);
 
           const { error: updateError } = await supabase
             .from("blogs")
             .update({ blog_post: formattedContent, needs_reformatting: false })
-            .eq("id", post.id)
+            .eq("id", post.id);
 
           if (updateError) {
-            console.error(`Error updating post ${post.id}:`, updateError.message)
+            console.error(`Error updating post ${post.id}:`, updateError.message);
           } else {
-            console.log(`Successfully reformatted post ${post.id}`)
+            console.log(`Successfully reformatted post ${post.id}`);
           }
         } catch (reformatError: any) {
-          console.error(`Error reformatting post ${post.id}:`, reformatError.message)
+          console.error(`Error reformatting post ${post.id}:`, reformatError.message);
         }
       }
     } catch (error: any) {
-      console.error("Error in reformatExistingPosts:", error.message)
+      console.error("Error in reformatExistingPosts:", error.message);
     }
-  }
+  };
 
   try {
-    // Only reformat posts that need it, not all posts
-    console.log(`Checking for posts that need reformatting for user ${userId}`)
-    await reformatExistingPosts(supabase, userId)
+    // Reformat existing posts if needed
+    console.log(`Checking for posts that need reformatting for user ${userId}`);
+    await reformatExistingPosts(supabase, userId);
 
     // Get existing posts to check for content similarity
     const { data: existingPosts } = await supabase
       .from("blogs")
-      .select("title, blog_post")
+      .select("title, blog_post, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(20);
 
     if (existingPosts && existingPosts.length > 0) {
       existingPosts.forEach((post: any) => {
-        existingTitles.push(post.title)
-        // Extract text content from HTML for comparison
+        existingTitles.push(post.title);
         const textContent = post.blog_post
           .replace(/<[^>]+>/g, " ")
           .replace(/\s+/g, " ")
-          .trim()
-        existingContent.push(textContent)
-      })
+          .trim();
+        existingContent.push(textContent);
+      });
     }
 
-    // Continue with normal blog generation
+    // Fetch subscription details
     const { data: subscription, error: subscriptionError } = await supabase
       .from("subscriptions")
-      .select("plan_id, credits")
+      .select("plan_id, credits, last_renewed")
       .eq("user_id", userId)
-      .single()
+      .single();
 
     if (subscriptionError || !subscription) {
-      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`)
+      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`);
     }
 
     if (!subscription.plan_id) {
-      throw new Error("No active subscription plan found for this user")
+      throw new Error("No active subscription plan found for this user");
     }
 
     // Define plan limits
     const planCreditsMap: { [key: string]: number } = {
       trial: 2,
-      starter: 10,
+      starter: 30,
       pro: 30,
-      professional: 30,
-    }
+      professional: 60,
+    };
 
-    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0
+    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0;
     if (!maxPosts) {
-      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`)
+      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`);
     }
 
-    // Check available credits
-    const availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts
+    // Check and renew credits if it's a new month
+    const currentDate = new Date();
+    const lastRenewed = subscription.last_renewed ? new Date(subscription.last_renewed) : new Date(0); // Default to epoch if null
+    const isNewMonth =
+      currentDate.getMonth() !== lastRenewed.getMonth() ||
+      currentDate.getFullYear() !== lastRenewed.getFullYear();
+    const isPastFirst = currentDate.getDate() >= 1 && currentDate > lastRenewed;
+
+    let availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts;
+
+    if (isNewMonth && isPastFirst) {
+      console.log(`Renewing credits for ${subscription.plan_id} on ${currentDate.toISOString().split('T')[0]}`);
+      availableCredits = maxPosts; // Reset to max credits
+      const { error: renewError } = await supabase
+        .from("subscriptions")
+        .update({
+          credits: maxPosts,
+          last_renewed: currentDate.toISOString()
+        })
+        .eq("user_id", userId);
+
+      if (renewError) {
+        console.error(`Failed to renew credits: ${renewError.message}`);
+      } else {
+        console.log(`Credits renewed to ${maxPosts} for ${subscription.plan_id}`);
+      }
+    }
+
     if (availableCredits <= 0) {
-      throw new Error("No credits remaining to generate blog posts!")
+      throw new Error("No credits remaining to generate blog posts!");
     }
 
-    // Calculate how many posts we can generate
-    const postsToGenerate = Math.min(maxPosts, availableCredits)
-    console.log(`Generating ${postsToGenerate} posts for user ${userId} - ONE AT A TIME, VERY SLOWLY`)
+    // Count blogs generated since last renewal
+    const renewalDateStart = new Date(lastRenewed);
+    renewalDateStart.setDate(1); // Start of the renewal month
+    renewalDateStart.setHours(0, 0, 0, 0);
 
-    // IMPORTANT CHANGE: Generate posts SEQUENTIALLY (one by one) instead of in parallel
+    const { data: blogsThisMonth, error: blogsError } = await supabase
+      .from("blogs")
+      .select("id")
+      .eq("user_id", userId)
+      .gte("created_at", renewalDateStart.toISOString())
+      .lte("created_at", currentDate.toISOString());
+
+    if (blogsError) {
+      console.error(`Error fetching blogs this month: ${blogsError.message}`);
+    }
+
+    const blogsGeneratedThisMonth = blogsThisMonth ? blogsThisMonth.length : 0;
+    console.log(`User has generated ${blogsGeneratedThisMonth} blogs since last renewal`);
+
+    // Calculate remaining posts to generate this month
+    const remainingCredits = Math.max(0, maxPosts - blogsGeneratedThisMonth);
+    const postsToGenerate = Math.min(remainingCredits, availableCredits);
+    console.log(`Can generate ${postsToGenerate} more posts this month with ${availableCredits} credits available`);
+
+    if (postsToGenerate <= 0) {
+      console.log("No more posts can be generated this month based on remaining credits.");
+      return blogPosts; // Return empty array if no posts can be generated
+    }
+
+    console.log(`Generating ${postsToGenerate} posts for user ${userId} - ONE AT A TIME, VERY SLOWLY`);
+
+    // Generate posts sequentially
     for (let i = 0; i < postsToGenerate; i++) {
       try {
-        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`)
+        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`);
 
-        // Add a significant delay before starting each blog post
-        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`)
-        await new Promise((resolve) => setTimeout(resolve, 10000))
+        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 10000));
 
         console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`);
         const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
@@ -2122,15 +2114,12 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         }
         console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`);
 
-        // Add a delay after scraping
-        console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`)
-        await new Promise((resolve) => setTimeout(resolve, 8000))
+        console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 8000));
 
-        // Pass the scraped data to the article generation function
-        console.log(`Starting content generation for blog post ${i + 1}...`)
-        let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel)
+        console.log(`Starting content generation for blog post ${i + 1}...`);
+        let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
 
-        // Check for content similarity with existing posts
         const contentSimilarityCheck = await checkContentSimilarity(
           result.blogPost
             .replace(/<[^>]+>/g, " ")
@@ -2138,106 +2127,94 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
             .trim(),
           existingContent,
           existingTitles,
-        )
+        );
 
-        // If content is too similar, regenerate with more diversity
         if (contentSimilarityCheck.isTooSimilar) {
           console.log(
             `⚠️ Generated content too similar to existing post "${contentSimilarityCheck.similarToTitle}". Regenerating with more diversity...`,
-          )
-
-          // Update the prompt to force more unique content
-          scrapedData.nudge = `IMPORTANT: Make this content COMPLETELY DIFFERENT from your previous post about "${contentSimilarityCheck.similarToTitle}". Use different examples, structure, and approach.`
-
-          // Regenerate the article
-          result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel)
+          );
+          scrapedData.nudge = `IMPORTANT: Make this content COMPLETELY DIFFERENT from your previous post about "${contentSimilarityCheck.similarToTitle}". Use different examples, structure, and approach.`;
+          result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
         }
 
-        // Extract the core topic from the blog post
-        const coreTopic = result.title || "blog topic"
+        const coreTopic = result.title || "blog topic";
 
-        // Add a delay before enhancing with images
-        console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`)
-        await new Promise((resolve) => setTimeout(resolve, 5000))
+        console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
-        // Enhance the blog post with images
-        console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`)
-        const enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2)
+        console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`);
+        const enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2);
 
-        const blogId = uuidv4()
-        const revealDate = new Date(firstRevealDate)
-        revealDate.setDate(revealDate.getDate() + i)
+        const blogId = uuidv4();
+        const revealDate = new Date(firstRevealDate);
+        revealDate.setDate(revealDate.getDate() + i);
 
-        // Add a delay before saving to database
-        console.log(`Waiting 3 seconds before saving blog post ${i + 1} to database...`)
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        console.log(`Waiting 3 seconds before saving blog post ${i + 1} to database...`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        // Use the enhanced blog post with images
         const blogData: BlogPost = {
           id: blogId,
           user_id: userId,
-          blog_post: enhancedBlogPost, // This now includes the images
+          blog_post: enhancedBlogPost,
           citations: result.citations,
           created_at: new Date().toISOString(),
           title: result.title,
           timestamp: result.timestamp,
           reveal_date: revealDate.toISOString(),
           url: url,
-        }
+        };
 
-        const { error: insertError } = await supabase.from("blogs").insert(blogData)
+        const { error: insertError } = await supabase.from("blogs").insert(blogData);
 
         if (insertError) {
-          throw new Error(`Failed to save blog ${i + 1} to Supabase: ${insertError.message}`)
+          throw new Error(`Failed to save blog ${i + 1} to Supabase: ${insertError.message}`);
         }
 
-        // Add this post to our tracking arrays to avoid repetition in future posts
-        existingTitles.push(result.title)
+        existingTitles.push(result.title);
         existingContent.push(
           enhancedBlogPost
             .replace(/<[^>]+>/g, " ")
             .replace(/\s+/g, " ")
             .trim(),
-        )
+        );
 
-        console.log(`\n\n✅ COMPLETED BLOG POST ${i + 1} OF ${postsToGenerate}\n\n`)
-        blogPosts.push(blogData)
+        console.log(`\n\n✅ COMPLETED BLOG POST ${i + 1} OF ${postsToGenerate}\n\n`);
+        blogPosts.push(blogData);
 
-        // Add a significant delay between blog posts
         if (i < postsToGenerate - 1) {
-          const delaySeconds = 20
-          console.log(`Waiting ${delaySeconds} seconds before starting the next blog post...`)
-          await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000))
+          const delaySeconds = 20;
+          console.log(`Waiting ${delaySeconds} seconds before starting the next blog post...`);
+          await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
         }
       } catch (error: any) {
-        console.error(`Error generating post ${i + 1}:`, error)
-        console.log(`Continuing to next blog post despite error...`)
-        // Continue to next post even if this one fails
+        console.error(`Error generating post ${i + 1}:`, error);
+        console.log(`Stopping generation due to error, ${blogPosts.length} posts completed...`);
+        break; // Stop generation on error, keep successful posts
       }
     }
 
     // Deduct credits for successful posts only
-    const successfulPosts = blogPosts.length
-    const newCredits = availableCredits - successfulPosts
+    const successfulPosts = blogPosts.length;
+    const newCredits = availableCredits - successfulPosts;
 
     if (successfulPosts > 0) {
       const { error: updateError } = await supabase
         .from("subscriptions")
         .update({ credits: newCredits })
-        .eq("user_id", userId)
+        .eq("user_id", userId);
 
       if (updateError) {
-        console.error(`Failed to deduct credits: ${updateError.message}`)
+        console.error(`Failed to deduct credits: ${updateError.message}`);
       } else {
-        console.log(`Deducted ${successfulPosts} credits. New balance: ${newCredits}`)
+        console.log(`Deducted ${successfulPosts} credits. New balance: ${newCredits}`);
       }
     }
 
-    console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`)
-    return blogPosts
+    console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`);
+    return blogPosts;
   } catch (error: any) {
-    console.error(`Failed to generate blogs: ${error.message}`)
-    throw new Error(`Blog generation failed: ${error.message}`)
+    console.error(`Failed to generate blogs: ${error.message}`);
+    throw new Error(`Blog generation failed: ${error.message}`);
   }
 }
 
@@ -2351,7 +2328,7 @@ async function extractDataPointsFromResearch(
 
   try {
     const response = await callAzureOpenAI(prompt, 2000)
-    const cleanedResponse = response.replace(/```json\n?|```/g, "").trim()
+    const cleanedResponse = response.replace(/\`\`\`json\n?|\`\`\`/g, "").trim()
 
     try {
       const dataPoints = JSON.parse(cleanedResponse) as DataPoint[]
@@ -2825,21 +2802,328 @@ function fixMarkdownLinks(content: string): string {
 
 // Dummy implementations for the missing functions and variables
 async function findAuthorityExternalLinks(topic: string, count: number): Promise<string[]> {
-  // Replace with actual implementation to find authoritative external links
-  console.log(`Dummy function: findAuthorityExternalLinks called with topic: ${topic}, count: ${count}`)
-  return [`https://example.com/${topic}-1`, `https://example.org/${topic}-2`]
+  console.log(`Finding authoritative external links for topic: ${topic}, count: ${count}`)
+
+  try {
+    // First, let's convert the blog topic into more specific search terms using OpenAI
+    const extractTermsPrompt = `
+      Extract 5-7 specific search terms or key phrases from this topic that would help find authoritative
+      external resources: "${topic}"
+      
+      Focus on extracting terms that:
+      1. Are highly specific to this topic
+      2. Likely to return authoritative sources when searched
+      3. Include technical terms, industry terminology, and concept names
+      4. Are diverse enough to find different types of resources
+      
+      Return these terms as a simple comma-separated list with no extra text.
+      Example: "term1, term2, term3, term4, term5"
+    `
+
+    const termsResponse = await callAzureOpenAI(extractTermsPrompt, 200)
+    const searchTerms = termsResponse
+      .replace(/\n/g, '')
+      .split(',')
+      .map(term => term.trim())
+      .filter(term => term.length > 0)
+      .slice(0, 6) // Limit to 6 terms max
+
+    console.log(`Extracted search terms for external links: ${searchTerms.join(', ')}`)
+
+    // Now use these search terms to find external links with Tavily
+    const allLinks: string[] = []
+
+    // Process each search term in parallel
+    const searchPromises = searchTerms.map(async searchTerm => {
+      try {
+        const fullSearchTerm = `${searchTerm} ${topic} authoritative resource`
+        console.log(`Searching Tavily for: "${fullSearchTerm}"`)
+
+        const tavilyResponse = await tavilyClient.search(fullSearchTerm, {
+          searchDepth: "advanced",
+          max_results: 3, // Get 3 results per term
+          include_raw_content: false,
+          search_mode: "comprehensive",
+        })
+
+        // Filter for high-quality results
+        return tavilyResponse.results
+          .filter((result: any) => {
+            const url = result.url || ""
+
+            // Exclude common low-quality or social media sites
+            const excludedDomains = [
+              'pinterest', 'facebook', 'instagram', 'twitter', 'tiktok',
+              'youtube', 'reddit', 'quora', 'medium.com', 'blogspot',
+              'wordpress.com', 'tumblr'
+            ]
+
+            const hasGoodDomain = !excludedDomains.some(domain => url.includes(domain))
+
+            // Prefer .edu, .gov, .org domains or well-known industry sites
+            const isAuthoritative = url.endsWith('.edu') ||
+              url.endsWith('.gov') ||
+              url.endsWith('.org') ||
+              url.includes('harvard') ||
+              url.includes('stanford') ||
+              url.includes('mit.edu') ||
+              url.includes('ieee') ||
+              url.includes('nature.com') ||
+              url.includes('sciencedirect') ||
+              url.includes('ncbi.nlm.nih.gov') ||
+              url.includes('springer') ||
+              url.includes('academic')
+
+            return url.match(/^https?:\/\/.+/) && (hasGoodDomain || isAuthoritative)
+          })
+          .map((result: any) => result.url)
+      } catch (error) {
+        console.error(`Error searching Tavily for "${searchTerm}":`, error)
+        return [] // Return empty array if search fails
+      }
+    })
+
+    // Wait for all searches to complete
+    const searchResults = await Promise.all(searchPromises)
+
+    // Flatten the arrays and remove duplicates
+    const uniqueLinks = Array.from(new Set(searchResults.flat()))
+    console.log(`Found ${uniqueLinks.length} unique authoritative links`)
+
+    // If we don't have enough links, expand the search
+    if (uniqueLinks.length < count) {
+      // Try a broader search with just the topic
+      try {
+        console.log(`Not enough links found, performing broader search for: "${topic} resources"`)
+        const broadResponse = await tavilyClient.search(`${topic} authoritative resources guide`, {
+          searchDepth: "advanced",
+          max_results: count,
+          include_raw_content: false,
+          search_mode: "comprehensive",
+        })
+
+        // Add these URLs to our collection
+        const broadUrls = broadResponse.results
+          .filter((result: any) => {
+            const url = result.url || ""
+            return url.match(/^https?:\/\/.+/) &&
+              !url.includes('pinterest') &&
+              !url.includes('facebook') &&
+              !url.includes('instagram') &&
+              !url.includes('twitter')
+          })
+          .map((result: any) => result.url)
+
+        // Add these to our unique links
+        broadUrls.forEach(url => {
+          if (!uniqueLinks.includes(url)) {
+            uniqueLinks.push(url)
+          }
+        })
+      } catch (error) {
+        console.error(`Error in broader Tavily search:`, error)
+      }
+    }
+
+    // Return the requested number of links, or all if we don't have enough
+    const result = uniqueLinks.slice(0, count)
+    console.log(`Returning ${result.length} authoritative external links`)
+
+    if (result.length === 0) {
+      // If we still have no links, provide some generic fallbacks
+      return [
+        `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/\s+/g, '_'))}`,
+        'https://www.sciencedirect.com/',
+        'https://scholar.google.com/',
+        'https://www.researchgate.net/',
+        'https://www.ncbi.nlm.nih.gov/pmc/'
+      ].slice(0, count)
+    }
+
+    return result
+  } catch (error) {
+    console.error(`Error finding authority external links:`, error)
+
+    // Return fallback links if everything fails
+    return [
+      `https://example.com/${topic.replace(/\s+/g, '-')}-guide`,
+      `https://example.org/${topic.replace(/\s+/g, '-')}-resources`
+    ].slice(0, count)
+  }
 }
 
+// Update the styleExternalLinks function with proper implementation
 async function styleExternalLinks(htmlContent: string): Promise<string> {
-  // Replace with actual implementation to style external links
-  console.log("Dummy function: styleExternalLinks called")
-  return htmlContent
+  // Style external links with orange color, underline, and hover effect
+  return htmlContent.replace(
+    /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
+    (match, url, text) => {
+      return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
+    }
+  )
 }
 
+// Update the ensureExternalLinks function to use contextual links
 async function ensureExternalLinks(content: string, topic: string, count: number): Promise<string> {
-  // Replace with actual implementation to ensure external links
-  console.log(`Dummy function: ensureExternalLinks called with topic: ${topic}, count: ${count}`)
-  return content
+  console.log(`Ensuring content has at least ${count} external links`)
+
+  // Get paragraph-level content sections for adding links
+  const paragraphs = content.split(/(<p[^>]*>.*?<\/p>)/g).filter(part => part.startsWith('<p'))
+  if (paragraphs.length < 3) {
+    return content // Not enough paragraphs to add links
+  }
+
+  // Find existing external links
+  const existingLinkMatch = content.match(/<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>.*?<\/a>/gi)
+  const existingLinks = existingLinkMatch ? existingLinkMatch.length : 0
+
+  // If we have enough links already, return the content as-is
+  if (existingLinks >= count) {
+    console.log(`Content already has ${existingLinks} external links, no need to add more`)
+    return content
+  }
+
+  // Get authoritative links
+  const externalLinks = await findAuthorityExternalLinks(topic, count - existingLinks)
+  if (externalLinks.length === 0) {
+    return content // No links to add
+  }
+
+  // Now add links to paragraphs that don't have links already
+  let modifiedContent = content
+  let linkIndex = 0
+
+  // First, analyze the content with OpenAI to find appropriate places for links
+  const linkPlacementPrompt = `
+    I have a blog post about "${topic}" and need to add ${externalLinks.length} external links to it.
+    These are the external links to add:
+    ${externalLinks.map((url, i) => `${i + 1}. ${url}`).join('\n')}
+    
+    For each link, identify an appropriate paragraph and a specific phrase that would make sense to use as 
+    anchor text for that link. Choose phrases that are naturally related to the link's domain or topic.
+    Don't suggest adding links to paragraphs that already have links.
+    
+    Return JSON in the following format:
+    [
+      {
+        "linkIndex": 0,
+        "paragraphIndicator": "first few words of the paragraph",
+        "anchorText": "text to turn into a link",
+        "linkUrl": "${externalLinks[0]}"
+      },
+      ...
+    ]
+    
+    Content excerpt:
+    ${content.substring(0, 5000)}
+  `
+
+  try {
+    const linkPlacementResponse = await callAzureOpenAI(linkPlacementPrompt, 800)
+    const cleanedResponse = linkPlacementResponse.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim()
+    let linkPlacements = []
+
+    try {
+      linkPlacements = JSON.parse(cleanedResponse)
+    } catch (error) {
+      console.error("Error parsing link placement JSON:", error)
+      // If parsing fails, use more basic approach
+      return await addLinksBasic(content, externalLinks)
+    }
+
+    // Apply the placements
+    if (linkPlacements && linkPlacements.length > 0) {
+      for (const placement of linkPlacements) {
+        const paragraphIndicator = placement.paragraphIndicator
+        const anchorText = placement.anchorText
+        const linkUrl = placement.linkUrl || externalLinks[placement.linkIndex]
+
+        if (!paragraphIndicator || !anchorText || !linkUrl) continue
+
+        // Find the paragraph that contains the indicator text
+        const paragraphRegex = new RegExp(`(<p[^>]*>.*?${escapeRegExp(paragraphIndicator)}.*?<\/p>)`, 'i')
+        const paragraphMatch = modifiedContent.match(paragraphRegex)
+
+        if (paragraphMatch && paragraphMatch[1]) {
+          const paragraph = paragraphMatch[1]
+
+          // Make sure the paragraph contains the anchor text
+          if (paragraph.includes(anchorText)) {
+            // Replace the anchor text with a link
+            const linkHtml = `<a href="${linkUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${anchorText}</a>`
+            const updatedParagraph = paragraph.replace(anchorText, linkHtml)
+
+            // Replace the paragraph in the content
+            modifiedContent = modifiedContent.replace(paragraph, updatedParagraph)
+          }
+        }
+      }
+    } else {
+      // Fall back to basic approach if no placements were returned
+      return await addLinksBasic(content, externalLinks)
+    }
+
+    return modifiedContent
+  } catch (error) {
+    console.error("Error in link placement:", error)
+    // Fall back to basic approach on error
+    return await addLinksBasic(content, externalLinks)
+  }
+}
+
+// Helper function for escaping special characters in RegExp
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Basic function to add links to paragraphs
+async function addLinksBasic(content: string, externalLinks: string[]): Promise<string> {
+  if (externalLinks.length === 0) return content
+
+  // Get paragraphs
+  const parts = content.split(/(<p[^>]*>.*?<\/p>)/g)
+  const paragraphs = parts.filter(part => part.startsWith('<p'))
+
+  // If we have no paragraphs, return the original content
+  if (paragraphs.length === 0) return content
+
+  // Choose paragraphs evenly distributed throughout the content
+  const interval = Math.max(1, Math.floor(paragraphs.length / (externalLinks.length + 1)))
+  let modifiedContent = content
+
+  for (let i = 0; i < externalLinks.length && i * interval < paragraphs.length; i++) {
+    const paragraph = paragraphs[i * interval]
+
+    // Don't add a link if paragraph already has one
+    if (paragraph.includes('<a href="http')) continue
+
+    // Extract text content from the paragraph
+    const textMatch = paragraph.match(/>([^]+?)<\/p>/);
+    if (!textMatch || !textMatch[1]) continue
+
+    const text = textMatch[1]
+
+    // Find a suitable anchor text (at least 3 words, not too long)
+    const words = text.split(/\s+/)
+    if (words.length < 5) continue
+
+    // Choose a random position in the paragraph
+    const startPos = Math.floor(words.length / 2)
+    const length = Math.min(3, words.length - startPos)
+    const anchorText = words.slice(startPos, startPos + length).join(' ')
+
+    // Create the link
+    const linkUrl = externalLinks[i]
+    const linkHtml = `<a href="${linkUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${anchorText}</a>`
+
+    // Replace the anchor text in the paragraph
+    const updatedParagraph = paragraph.replace(anchorText, linkHtml)
+
+    // Replace the paragraph in the content
+    modifiedContent = modifiedContent.replace(paragraph, updatedParagraph)
+  }
+
+  return modifiedContent
 }
 
 async function extractKeywords(
@@ -2867,53 +3151,52 @@ function removeDuplicateContentAfterConclusion(content: string): string {
 }
 
 async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<ScrapedData | null> {
-  console.log(`Scraping ${url} and digging deeper with Tavily for user ${userId}`);
-  const supabase = await createClient();
+  console.log(`Scraping ${url} and digging deeper with Tavily for user ${userId}`)
+  const supabase = await createClient()
 
   try {
     // Step 1: Scrape the initial URL with scrapeWithTavily (already in your code)
-    const initialContent = await scrapeWithTavily(url);
+    const initialContent = await scrapeWithTavily(url)
     if (!initialContent || initialContent === "No content available") {
-      console.error(`Failed to scrape ${url}`);
-      return null;
+      console.error(`Failed to scrape ${url}`)
+      return null
     }
-    const initialResearchSummary = await scrapeInitialUrlWithTavily(url);
+    const initialResearchSummary = await scrapeInitialUrlWithTavily(url)
 
     // Step 2: Get the meta description and core topic (using existing functions)
-    const metaDescription = await generateMetaDescription(url, initialContent);
-    const coreTopic = metaDescription.split(" ").slice(0, 5).join(" "); // Quick topic extraction
+    const metaDescription = await generateMetaDescription(url, initialContent)
+    const coreTopic = metaDescription.split(" ").slice(0, 5).join(" ") // Quick topic extraction
 
     // Step 3: Use performTavilySearch to get more URLs (already defined in your code)
-    const moreUrls = await performTavilySearch(coreTopic);
-    console.log(`Got ${moreUrls.length} URLs from Tavily search for ${coreTopic}`);
+    const moreUrls = await performTavilySearch(coreTopic)
+    console.log(`Got ${moreUrls.length} URLs from Tavily search for ${coreTopic}`)
 
     // Step 4: Scrape those URLs with scrapeWithTavily
     const researchResults = await Promise.all(
-      moreUrls.slice(0, 5).map(async (researchUrl) => { // Limit to 5 for sanity
-        const content = await scrapeWithTavily(researchUrl);
+      moreUrls.slice(0, 5).map(async (researchUrl) => {
+        // Limit to 5 for sanity
+        const content = await scrapeWithTavily(researchUrl)
         return {
           url: researchUrl,
           content,
           title: researchUrl.split("/").pop() || researchUrl,
-        };
-      })
-    );
+        }
+      }),
+    )
 
     // Filter out failed scrapes
     const validResearchResults = researchResults.filter(
-      (result) => result.content && result.content !== "No content available"
-    );
-    console.log(`Scraped ${validResearchResults.length} extra sources`);
+      (result) => result.content && result.content !== "No content available",
+    )
+    console.log(`Scraped ${validResearchResults.length} extra sources`)
 
-    // Step 5: Generate a summary from all content (using existing callAzureOpenAI)
-    const allContent = `${initialContent}\n\n${validResearchResults
-      .map((r) => r.content)
-      .join("\n\n")}`.slice(0, 10000); // Cap to avoid overload
+    // Step 5: Generate a summary from all content (using existing functions)
+    const allContent = `${initialContent}\n\n${validResearchResults.map((r) => r.content).join("\n\n")}`.slice(0, 10000) // Cap to avoid overload
     const researchSummaryPrompt = `
       Summarize this "${coreTopic}" research in a chill, human way (300-500 words).
       Content: "${allContent}"
-    `;
-    const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 500);
+    `
+    const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 500)
 
     const scrapedData: ScrapedData = {
       initialUrl: "example.com",
@@ -2929,8 +3212,8 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
       targetKeywords: ["keyword"],
       timestamp: "2025-03-22",
       nudge: "nudge",
-      extractedKeywords: [{ keyword: "topic", relevance: 8 }]
-    };
+      extractedKeywords: [{ keyword: "topic", relevance: 8 }],
+    }
     // Optional: Save to Supabase (uncomment if you want it)
     /*
     const { error } = await supabase
@@ -2939,11 +3222,10 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
     if (error) console.error(`Supabase save failed: ${error.message}`);
     */
 
-    console.log(`Scraped and ready: ${coreTopic}`);
-    return scrapedData;
+    console.log(`Scraped and ready: ${coreTopic}`)
+    return scrapedData
   } catch (error: any) {
-    console.error(`Scraping ${url} failed: ${error.message}`);
-    return null;
+    console.error(`Scraping ${url} failed: ${error.message}`)
+    return null
   }
 }
-

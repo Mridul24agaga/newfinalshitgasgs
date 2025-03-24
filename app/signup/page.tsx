@@ -9,7 +9,6 @@ import { createClient } from "@/utitls/supabase/client"
 import { ArrowLeft, Star, Users, Zap, Eye, EyeOff, AlertCircle, BarChart3 } from "lucide-react"
 import { Saira } from "next/font/google"
 
-// Initialize the Saira font
 const saira = Saira({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -39,59 +38,93 @@ export default function SignUpPage() {
     setError(null)
 
     const formData = new FormData(event.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const username = formData.get("username") as string
+    const email = (formData.get("email") as string)?.trim().toLowerCase()
+    const password = (formData.get("password") as string)?.trim()
+    const username = (formData.get("username") as string)?.trim()
+
+    // Input validation
+    if (!email || !password || !username) {
+      setError("Please fill in all fields")
+      setIsLoading(false)
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address")
+      setIsLoading(false)
+      return
+    }
 
     if (passwordStrength(password) < 3) {
-      setError("Password is too weak. Please include uppercase, lowercase, numbers, and special characters.")
+      setError("Password must include uppercase, lowercase, numbers, and special characters")
       setIsLoading(false)
       return
     }
 
     try {
-      // Sign up the user
-      const { data, error } = await supabase.auth.signUp({
+      // Step 1: Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            username,
-          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
-      if (error) {
-        throw error
+      if (authError) {
+        console.error("Supabase auth error:", authError.code, authError.message)
+        switch (authError.code) {
+          case "user_already_exists":
+            throw new Error("This email is already registered. Please try logging in.")
+          case "weak_password":
+            throw new Error("Password is too weak. Please use a stronger password.")
+          case "invalid_email":
+            throw new Error("Please enter a valid email address.")
+          default:
+            throw new Error(authError.message || "Failed to create account. Please try again.")
+        }
       }
 
-      // If sign-up is successful, directly sign in the user
-      if (data.user) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+      if (!authData.user) {
+        throw new Error("No user data returned from signup")
+      }
+
+      const userId = authData.user.id
+
+      // Step 2: Insert user data into userssignuped table
+      const { error: profileError } = await supabase
+        .from("userssignuped")
+        .insert({
+          id: userId,
+          username,
           email,
-          password,
+          created_at: new Date().toISOString(),
         })
 
-        if (signInError) {
-          throw signInError
-        }
+      if (profileError) {
+        console.error("Error inserting into userssignuped:", profileError)
+        // Optionally rollback the signup if profile creation fails
+        await supabase.auth.signOut()
+        throw new Error("Failed to save user data: " + profileError.message)
+      }
 
-        // Redirect to dashboard or home page after successful sign-in
+      // Step 3: Handle redirect based on email confirmation
+      if (authData.session === null) {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+      } else {
         router.push("/dashboard")
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during sign up")
+      console.error("Signup error:", err)
+      setError(err.message || "An unexpected error occurred during signup. Please try again.")
       setIsLoading(false)
     }
   }
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
-  }
+  const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
   return (
     <div className={`${saira.className} h-screen flex bg-gray-50 overflow-hidden`}>
-      {/* Left Section */}
       <div className="flex-1 flex flex-col p-6 md:p-8 lg:p-10">
         <button
           onClick={() => router.back()}
@@ -241,14 +274,10 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Right Section - Enhanced */}
       <div className="hidden lg:block lg:flex-1">
         <div className="h-full bg-gradient-to-br from-orange-600 via-orange-500 to-orange-700 p-8 flex flex-col justify-center text-white relative overflow-hidden">
-          {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-radial from-orange-400/30 to-transparent rounded-full -translate-y-1/3 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-radial from-orange-800/40 to-transparent rounded-full translate-y-1/3 -translate-x-1/3"></div>
-
-          {/* Black accent line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-black"></div>
 
           <div className="relative z-10">
@@ -345,4 +374,3 @@ export default function SignUpPage() {
     </div>
   )
 }
-

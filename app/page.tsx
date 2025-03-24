@@ -12,7 +12,7 @@ import LanguageScroll from "./components/language"
 import EarlyBirdOffer from "./components/offer"
 import BlogSection from "./components/blogpost"
 import CTASection from "./components/cta"
-import Footer from "./components/foot"
+import Footer from "./components/footer"
 import AnnouncementBanner from "./components/navit"
 import StructuredData from "./components/structured-data"
 import type { Metadata } from "next"
@@ -81,7 +81,7 @@ export default function Page() {
       <AIWritingSection/>
 
 
-      <div className="my-24">
+      <div>
       </div>
       <OurProcessSection/>
       <div>
@@ -94,7 +94,7 @@ export default function Page() {
       </div>
 
        {/* Blog Section */}
-       <div className="my-24">
+       <div>
         <BlogSection />
       </div>
 
@@ -120,29 +120,29 @@ export default function Page() {
 
      
       {/* Pricing Section */}
-      <div className="my-24">
+      <div>
         <PricingSection />
       </div>
 
       {/* Flow Section */}
      
       {/* Integrations Section */}
-      <div className="my-24">
+      <div>
         <IntegrationsSection />
       </div>
 
       {/* Language Scroll Section */}
-      <div className="my-24">
+      <div>
         <LanguageScroll />
       </div>
 
       {/* Early Bird Offer Section */}
-      <div className="my-24">
+      <div>
         <EarlyBirdOffer />
       </div>
 
       {/* FAQ Section */}
-      <div className="my-24">
+      <div>
         <FAQ />
       </div>
 

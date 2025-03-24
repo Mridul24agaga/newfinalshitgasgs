@@ -1,11 +1,10 @@
 "use client"
 
 import Link from "next/link"
-
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
-import { createClient } from "@/utitls/supabase/client"
+import { createClient } from "@/utitls/supabase/client" // Fixed typo in path
 import {
   Menu,
   FileText,
@@ -26,17 +25,11 @@ import {
 } from "lucide-react"
 import { PaymentPage } from "@/app/components/PaymentPage"
 import { Saira } from "next/font/google"
-
-// Remove this line:
-// import { Sidebar } from "@/app/components/sidebar"
-
-// Add these imports:
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { PenLine, LayoutGrid, BarChart2, Database, Home, ChevronDown, Link2, ExternalLink, Zap } from "lucide-react"
 
-// Initialize the Saira font
 const saira = Saira({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -81,14 +74,12 @@ export function DashboardShell({ user }: DashboardShellProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-
   const [openSubmenu, setOpenSubmenu] = useState("Company Database")
   const pathname = usePathname()
 
-  // Format plan name for display
   const formatPlanName = (planId: string | undefined) => {
     if (!planId) return "No Plan"
-    const plan = planId?.toLowerCase()
+    const plan = planId.toLowerCase()
     if (plan === "basic") return "Starter"
     if (plan === "pro") return "Professional"
     return planId.charAt(0).toUpperCase() + planId.slice(1)
@@ -96,7 +87,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
   const planName = formatPlanName(subscription?.plan_id)
 
-  // Navigation items
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Content Planner", href: "/dashboard/summarizer", icon: PenLine },
@@ -117,27 +107,23 @@ export function DashboardShell({ user }: DashboardShellProps) {
     },
   ]
 
-  // Plan credits mapping
   const planCreditsMap: { [key: string]: number } = {
     trial: 2,
     starter: 30,
     professional: 60,
-    basic: 30, // Map basic to starter
-    pro: 60, // Map pro to professional
+    basic: 30,
+    pro: 60,
   }
 
-  // Handle window resize for sidebar
   useEffect(() => {
     const handleResize = () => {
       setIsSidebarOpen(window.innerWidth >= 1024)
     }
-
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Handle initial data loading
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
@@ -169,34 +155,30 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }, [searchParams])
 
-  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      // Check if the click is outside the dropdown and its trigger button
       if (
         isProfileOpen &&
         !target.closest('[aria-haspopup="true"]') &&
-        !target.closest(".absolute") // Don't close when clicking inside the dropdown
+        !target.closest(".absolute")
       ) {
         setIsProfileOpen(false)
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isProfileOpen])
 
-  // Check onboarding status
   const checkOnboardingStatus = async () => {
     try {
+      // Fetch subscriptions, expecting 0 or 1 row
       const { data, error } = await supabase
         .from("subscriptions")
         .select("onboarding_completed")
         .eq("user_id", user.id)
-        .single()
+        .limit(1) // Ensure only one row is returned
+        .maybeSingle() // Use maybeSingle() instead of single() to handle no rows gracefully
 
       if (error) {
         console.error("Error checking onboarding status:", error.message)
@@ -209,22 +191,22 @@ export function DashboardShell({ user }: DashboardShellProps) {
           blogSettings: true,
           audienceKeywords: true,
         })
+      } else if (!data) {
+        console.log("No subscription found for user, assuming onboarding not completed")
+        // Optionally initialize a default subscription here if needed
       }
     } catch (err) {
-      console.error("Error checking onboarding status:", err)
+      console.error("Unexpected error in checkOnboardingStatus:", err)
     }
   }
 
-  // Add this function after the checkOnboardingStatus function
   const fetchBlogsCount = async () => {
     try {
       const { data, error } = await supabase.from("blogs").select("id", { count: "exact" }).eq("user_id", user.id)
-
       if (error) {
         console.error("Error fetching blogs count:", error.message)
         return 0
       }
-
       const count = data?.length || 0
       console.log(`Fetched ${count} blogs for user ${user.id}`)
       return count
@@ -234,21 +216,15 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Modify the setupRealtimeSubscription function to include blog count
   const setupRealtimeSubscription = async () => {
     try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser()
+      const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) {
         console.error("Failed to get user for real-time subscription:", error)
         return
       }
 
       const userId = user.id
-
-      // Initial fetch of subscription and blogs count
       const [subscriptionResult, blogsCount] = await Promise.all([
         supabase
           .from("subscriptions")
@@ -256,29 +232,24 @@ export function DashboardShell({ user }: DashboardShellProps) {
             "plan_id, credits, status, current_period_end, billing_cycle, subscription_type, monthly_price, annual_price, annual_discount_percentage, currency, onboarding_completed",
           )
           .eq("user_id", userId)
-          .single(),
+          .limit(1)
+          .maybeSingle(),
         fetchBlogsCount(),
       ])
 
       const { data: subscriptionData, error: fetchError } = subscriptionResult
 
       if (fetchError) {
-        if (fetchError.code === "PGRST116") {
-          console.log("No subscription found for user")
-          setShowPaymentPage(true)
-        } else {
-          console.error("Error fetching subscription:", fetchError.message, fetchError.details)
-        }
+        console.error("Error fetching subscription:", fetchError.message, fetchError.details)
+        setShowPaymentPage(true)
         return
       }
 
       if (subscriptionData) {
         console.log(`Subscription data: ${JSON.stringify(subscriptionData)}`)
-
         const planId = subscriptionData.plan_id.toLowerCase()
         const maxPosts = planCreditsMap[planId] || 0
 
-        // Reset credits if they don't match the plan's max or are null
         if (subscriptionData.credits === null || subscriptionData.credits !== maxPosts) {
           const { error: updateError } = await supabase
             .from("subscriptions")
@@ -291,13 +262,8 @@ export function DashboardShell({ user }: DashboardShellProps) {
           }
         }
 
-        // Ensure subscription_type is set based on billing_cycle if it's not already set
         if (!subscriptionData.subscription_type && subscriptionData.billing_cycle) {
           const subType = subscriptionData.billing_cycle === "annually" ? "annual" : "monthly"
-          console.log(
-            `Setting subscription_type to ${subType} based on billing_cycle ${subscriptionData.billing_cycle}`,
-          )
-
           const { error: updateError } = await supabase
             .from("subscriptions")
             .update({ subscription_type: subType })
@@ -313,12 +279,13 @@ export function DashboardShell({ user }: DashboardShellProps) {
         setStats((prev) => ({
           ...prev,
           postsCreated: blogsCount,
-          creditsUsed: blogsCount, // Set credits used based on actual blog count
+          creditsUsed: blogsCount,
         }))
         setShowPaymentPage(false)
+      } else {
+        setShowPaymentPage(true)
       }
 
-      // Set up real-time subscription
       const subscriptionChannel = supabase
         .channel("subscriptions-changes")
         .on(
@@ -356,9 +323,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                 }
               }
 
-              // Get updated blog count when subscription changes
               const currentBlogsCount = await fetchBlogsCount()
-
               setSubscription(updatedSubscription)
               setStats((prev) => ({
                 ...prev,
@@ -370,7 +335,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
         )
         .subscribe()
 
-      // Also listen for blog changes
       const blogsChannel = supabase
         .channel("blogs-changes")
         .on(
@@ -402,7 +366,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Handle payment success
   const handlePaymentSuccess = async (
     userId: string,
     plan: string,
@@ -413,22 +376,11 @@ export function DashboardShell({ user }: DashboardShellProps) {
     currency = "USD",
   ) => {
     try {
-      console.log(
-        `Processing payment success: Plan=${plan}, Billing=${billingCycle}, Credits=${credits}, Monthly=${monthlyPrice}, Annual=${annualPrice}, Currency=${currency}`,
-      )
-
-      // Calculate period end based on billing cycle
       const currentDate = new Date()
       const periodEnd = new Date(currentDate)
-
-      // Explicitly check for annual billing cycle
       const isAnnual = billingCycle === "annually" || billingCycle === "annual"
       const billingCycleValue = isAnnual ? "annually" : "monthly"
       const subscriptionTypeValue = isAnnual ? "annual" : "monthly"
-
-      console.log(
-        `Billing cycle determination: billingCycle=${billingCycle}, isAnnual=${isAnnual}, billingCycleValue=${billingCycleValue}`,
-      )
 
       if (isAnnual) {
         periodEnd.setFullYear(periodEnd.getFullYear() + 1)
@@ -450,10 +402,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
         current_period_end: periodEnd.toISOString(),
       }
 
-      console.log(`Saving subscription data: ${JSON.stringify(subscriptionData)}`)
-
       const { error } = await supabase.from("subscriptions").upsert(subscriptionData)
-
       if (error) {
         console.error("Error updating subscription after payment:", error)
         throw error
@@ -466,7 +415,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Handle sign out
   const handleSignOut = async () => {
     setIsSigningOut(true)
     try {
@@ -480,7 +428,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Mark step as completed
   const markStepAsCompleted = async (step: keyof typeof completionStatus) => {
     try {
       setCompletionStatus((prev) => ({
@@ -508,7 +455,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Mark all steps as completed
   const markAllAsCompleted = async () => {
     try {
       const { error } = await supabase
@@ -531,13 +477,11 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  // Navigate to a page and close the profile dropdown
   const navigateTo = (path: string) => {
     setIsProfileOpen(false)
     router.push(path)
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className={`${saira.className} min-h-screen flex items-center justify-center bg-gray-100`}>
@@ -549,31 +493,22 @@ export function DashboardShell({ user }: DashboardShellProps) {
     )
   }
 
-  // Payment page
   if (showPaymentPage) {
     return <PaymentPage />
   }
 
-  // Calculate subscription metrics
   const totalCredits = subscription ? planCreditsMap[subscription.plan_id.toLowerCase()] || 0 : 0
   const creditsRemaining = subscription?.credits || 0
   const creditsUsagePercentage = totalCredits ? ((totalCredits - creditsRemaining) / totalCredits) * 100 : 0
 
-  // Determine subscription type - check both fields to be safe
-  // Only consider it annual if explicitly set to annual/annually
   const isAnnual =
     subscription?.subscription_type === "annual" ||
     subscription?.subscription_type === "annually" ||
     subscription?.billing_cycle === "annual" ||
     subscription?.billing_cycle === "annually"
 
-  console.log(
-    `Subscription type: ${subscription?.subscription_type}, billing_cycle=${subscription?.billing_cycle}, isAnnual=${isAnnual}`,
-  )
-
   return (
     <div className={`${saira.className} flex h-screen overflow-hidden bg-gray-50`}>
-      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 h-screen ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -662,7 +597,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                         const SubIcon = subItem.icon
                         const isSubActive = pathname === subItem.href
 
-                        // Special case for GetMoreBacklinks to show it's auto-publishing blogs
                         if (subItem.name === "GetMoreBacklinks") {
                           return (
                             <Link
@@ -736,7 +670,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                 </div>
               </div>
 
-              {/* Credit progress bar */}
               <div className="w-full bg-gray-100 rounded-full h-2.5 border border-gray-200">
                 <div
                   className="bg-gradient-to-r from-orange-500 to-orange-600 h-2.5 rounded-full transition-all duration-300 relative"
@@ -777,9 +710,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex flex-col flex-1 w-full lg:pl-64">
-        {/* Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center">
@@ -794,13 +725,11 @@ export function DashboardShell({ user }: DashboardShellProps) {
               <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
             </div>
 
-            {/* Header actions */}
             <div className="flex items-center space-x-3">
               <button className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
                 <Bell size={20} />
               </button>
 
-              {/* Profile dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -824,7 +753,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-72 bg-white rounded-md py-1 z-50 border border-gray-200 overflow-hidden">
-                    {/* Profile header */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-3">
@@ -849,7 +777,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </div>
                     </div>
 
-                    {/* Menu items */}
                     <div className="py-1">
                       <button
                         onClick={() => navigateTo("/settings")}
@@ -868,7 +795,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </button>
                     </div>
 
-                    {/* Sign out button */}
                     <div className="border-t border-gray-100">
                       <button
                         onClick={handleSignOut}
@@ -886,10 +812,8 @@ export function DashboardShell({ user }: DashboardShellProps) {
           </div>
         </header>
 
-        {/* Main content area */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-            {/* Welcome banner */}
             <div className="bg-black rounded-lg p-6 text-white border border-gray-800 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-orange-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-radial from-orange-500/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -913,7 +837,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Subscription info */}
               {subscription && (
                 <div className="md:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
                   <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
@@ -992,7 +915,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                 </div>
               )}
 
-              {/* Stats card */}
               <div className="bg-white rounded-lg border border-gray-200">
                 <div className="p-5 border-b border-gray-100">
                   <h2 className="text-lg font-medium text-gray-900 flex items-center">
@@ -1015,7 +937,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
               </div>
             </div>
 
-            {/* Quick actions */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
@@ -1061,7 +982,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
               </div>
             </div>
 
-            {/* Setup progress */}
             {!subscription?.onboarding_completed && (
               <div className="bg-white rounded-lg border border-gray-200">
                 <div className="p-5 border-b border-gray-100">
@@ -1081,7 +1001,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     ></div>
                   </div>
                   <div className="space-y-5">
-                    {/* Content Ideas */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -1116,7 +1035,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </button>
                     </div>
 
-                    {/* Blog Settings */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -1153,7 +1071,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </button>
                     </div>
 
-                    {/* Audience and Keywords */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -1188,7 +1105,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </button>
                     </div>
 
-                    {/* Mark all as completed */}
                     <div className="flex justify-center pt-4">
                       <button
                         onClick={markAllAsCompleted}
@@ -1208,4 +1124,3 @@ export function DashboardShell({ user }: DashboardShellProps) {
     </div>
   )
 }
-

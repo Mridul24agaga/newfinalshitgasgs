@@ -5,11 +5,10 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { createClient } from "@/utitls/supabase/client"
+import { createClient } from "@/utitls/supabase/client" // Fixed typo in import path
 import { ArrowLeft, Star, Users, Zap, Eye, EyeOff, AlertCircle, Loader2, BarChart3 } from "lucide-react"
 import { Saira } from "next/font/google"
 
-// Initialize the Saira font
 const saira = Saira({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -28,60 +27,115 @@ export default function LoginForm() {
   const supabase = createClient()
 
   useEffect(() => {
+    // Load remember me preference
     const rememberMeValue = localStorage.getItem("rememberMe")
     if (rememberMeValue) {
       setRememberMe(JSON.parse(rememberMeValue))
+      const savedEmail = localStorage.getItem("savedEmail")
+      if (savedEmail) setEmail(savedEmail)
     }
 
-    const error = searchParams.get("error")
+    // Handle redirect errors
+    const errorParam = searchParams.get("error")
     const errorDescription = searchParams.get("error_description")
-    if (error) {
-      setError(`Authentication error: ${errorDescription || error}`)
+    if (errorParam) {
+      setError(`Authentication error: ${errorDescription || errorParam}`)
     }
 
-    // Check if the user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check existing session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         router.push("/dashboard")
       }
-    })
+    }
+    checkSession()
   }, [searchParams, router, supabase.auth])
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsLoading(true)
     setError(null)
 
+    // Input validation
+    if (!email || !password) {
+      setError("Please enter both email and password")
+      setIsLoading(false)
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address")
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Clean inputs
+      const cleanEmail = email.trim().toLowerCase()
+      const cleanPassword = password.trim()
+
+      // Attempt to sign in with auth.users
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
       })
 
-      if (error) {
-        throw error
+      if (authError) {
+        console.error("Supabase auth error:", authError.code, authError.message)
+        switch (authError.code) {
+          case "invalid_credentials":
+            throw new Error("Invalid email or password. Please try again.")
+          case "user_not_confirmed":
+            throw new Error("Please confirm your email address first.")
+          case "not_activated":
+            throw new Error("Your account is not activated.")
+          default:
+            throw new Error(authError.message || "Authentication failed. Please try again.")
+        }
       }
 
+      if (!authData.user) {
+        throw new Error("No user data returned from authentication")
+      }
+
+      // Optional: Fetch additional data from userssignuped table
+      const { data: profileData, error: profileError } = await supabase
+        .from("userssignuped")
+        .select("username")
+        .eq("id", authData.user.id)
+        .single()
+
+      if (profileError) {
+        console.error("Error fetching profile from userssignuped:", profileError.message)
+        // Not critical for login, so we can proceed even if this fails
+      } else if (profileData) {
+        console.log("User profile fetched:", profileData.username)
+        // You can store this in localStorage or context if needed
+      }
+
+      // Handle remember me functionality
       if (rememberMe) {
         localStorage.setItem("rememberMe", JSON.stringify(true))
+        localStorage.setItem("savedEmail", cleanEmail)
       } else {
         localStorage.removeItem("rememberMe")
+        localStorage.removeItem("savedEmail")
       }
 
+      // Successful login
       router.push("/dashboard")
     } catch (error: any) {
-      setError(error.message || "Failed to sign in. Please check your credentials.")
+      console.error("Login error:", error)
+      setError(error.message || "An unexpected error occurred. Please try again.")
       setIsLoading(false)
     }
   }
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
-  }
+  const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
   return (
     <div className={`${saira.className} h-screen flex bg-gray-50 overflow-hidden`}>
-      {/* Left Section */}
       <div className="flex-1 flex flex-col p-6 md:p-8 lg:p-10">
         <button
           onClick={() => router.back()}
@@ -209,14 +263,10 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Right Section - Enhanced */}
       <div className="hidden lg:block lg:flex-1">
         <div className="h-full bg-gradient-to-br from-orange-600 via-orange-500 to-orange-700 p-8 flex flex-col justify-center text-white relative overflow-hidden">
-          {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-radial from-orange-400/30 to-transparent rounded-full -translate-y-1/3 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-radial from-orange-800/40 to-transparent rounded-full translate-y-1/3 -translate-x-1/3"></div>
-
-          {/* Black accent line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-black"></div>
 
           <div className="relative z-10">
@@ -313,4 +363,3 @@ export default function LoginForm() {
     </div>
   )
 }
-

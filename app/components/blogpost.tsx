@@ -66,7 +66,7 @@ export default function BlogSection() {
   ]
 
   return (
-    <section className={`${saira.className} py-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto`}>
+    <section id="blogs" className={`${saira.className} py-16 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto`}>
       <div className="text-center mb-12">
         {/* Pill Label */}
         <motion.div
