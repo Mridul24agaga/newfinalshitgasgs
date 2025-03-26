@@ -66,8 +66,8 @@ export default function PricingSection() {
   // Add this mapping object after the prices object and before the getPriceDisplay function
   const checkoutLinks = {
     trial: {
-      $: "https://checkout.dodopayments.com/buy/pdt_trial123?quantity=1",
-      "₹": "https://checkout.dodopayments.com/buy/pdt_trial123?quantity=1",
+      $: "https://checkout.dodopayments.com/buy/pdt_Z1cQW9BGMCr1WdrHkibAq?quantity=1&redirect_url=https://blogosocial.com%2Fafter-payment",
+      "₹": "https://checkout.dodopayments.com/buy/pdt_Z1cQW9BGMCr1WdrHkibAq?quantity=1&redirect_url=https://blogosocial.com%2Fafter-payment",
     },
     starter: {
       monthly: {
