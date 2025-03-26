@@ -19,6 +19,7 @@ interface PriceData {
 }
 
 interface Prices {
+  trial: Record<string, string>
   starter: PriceData
   professional: PriceData
 }
@@ -28,6 +29,10 @@ export default function PricingSection() {
   const [currency, setCurrency] = useState<"$" | "₹">("$")
 
   const prices: Prices = {
+    trial: {
+      $: "17",
+      "₹": "1.2K",
+    },
     starter: {
       monthly: {
         $: "147",
@@ -60,6 +65,10 @@ export default function PricingSection() {
 
   // Add this mapping object after the prices object and before the getPriceDisplay function
   const checkoutLinks = {
+    trial: {
+      $: "https://checkout.dodopayments.com/buy/pdt_trial123?quantity=1",
+      "₹": "https://checkout.dodopayments.com/buy/pdt_trial123?quantity=1",
+    },
     starter: {
       monthly: {
         $: "https://checkout.dodopayments.com/buy/pdt_I9yAEB0jgVzOYo8uDiSX3?quantity=1",
@@ -86,6 +95,11 @@ export default function PricingSection() {
     },
   }
 
+  // Get trial checkout link
+  const getTrialCheckoutLink = () => {
+    return checkoutLinks.trial[currency]
+  }
+
   // Add this function to get the checkout link
   const getCheckoutLink = (plan: "starter" | "professional") => {
     return checkoutLinks[plan][billingPeriod][currency]
@@ -96,13 +110,103 @@ export default function PricingSection() {
     return checkoutLinks.enterprise[currency]
   }
 
-  const getPriceDisplay = (plan: keyof Prices) => {
+  const getPriceDisplay = (plan: keyof Omit<Prices, "trial">) => {
     const period = billingPeriod === "monthly" ? "monthly" : "annually"
     return prices[plan][period][currency]
   }
 
-  const getYearlyTotal = (plan: keyof Prices) => {
+  const getYearlyTotal = (plan: keyof Omit<Prices, "trial">) => {
     return prices[plan].yearlyTotal[currency]
+  }
+
+  // Features for the starter plan
+  const starterFeatures = {
+    monthly: [
+      "30 Blog posts a month",
+      "Up to 8 images per blog",
+      "Branded blogs",
+      "Company and idea database",
+      "Performance analytics",
+      "Blog settings",
+      "Dedicated SEO expert",
+      "Account manager",
+      "Engagement centric blog",
+      "ICP research updated monthly",
+      "Latest News and trends tracker",
+      "30-Day content planner",
+      "Internal and external linking",
+      "Upto 3000 words",
+      "Human & AI Fact checking",
+      "Low KD keywords targeting",
+      "Tables, Youtube videos and source additions",
+      "Priority support",
+    ],
+    annually: [
+      "30 Blog posts a month",
+      "Up to 8 images per blog",
+      "Branded blogs",
+      "Company and idea database",
+      "Performance analytics",
+      "Blog settings",
+      "Dedicated SEO expert",
+      "Account manager",
+      "Engagement centric blog",
+      "ICP research updated monthly",
+      "Latest News and trends tracker",
+      "30-Day content planner",
+      "Internal and external linking",
+      "Upto 3000 words",
+      "Human & AI Fact checking",
+      "Low KD keywords targeting",
+      "Tables, Youtube videos and source additions",
+      "Priority support",
+    ],
+  }
+
+  // Features for the professional plan
+  const professionalFeatures = {
+    monthly: [
+      "60 Blog posts a month",
+      "Up to 8 images per blog",
+      "Branded blogs",
+      "Company and idea database",
+      "Performance analytics",
+      "Blog settings",
+      "Dedicated SEO expert",
+      "Account manager",
+      "Engagement centric blog",
+      "ICP research updated monthly",
+      "Latest News and trends tracker",
+      "30-Day content planner",
+      "Internal and external linking",
+      "Upto 4000 words",
+      "Human & AI Fact checking",
+      "Low KD keywords targeting",
+      "Central keyword strategy",
+      "Tables, Youtube videos and source additions",
+      "Priority support",
+    ],
+    annually: [
+      "60 Blog posts a month",
+      "Up to 8 images per blog",
+      "Branded blogs",
+      "Company and idea database",
+      "Performance analytics",
+      "Blog settings",
+      "Dedicated SEO expert",
+      "Account manager",
+      "Engagement centric blog",
+      "ICP research updated monthly",
+      "Latest News and trends tracker",
+      "30-Day content planner",
+      "Internal and external linking",
+      "Upto 4000 words",
+      "Human & AI Fact checking",
+      "Low KD keywords targeting",
+      "Central keyword strategy",
+      "Tables, Youtube videos and source additions",
+      "Priority support",
+    ],
   }
 
   return (
@@ -177,7 +281,57 @@ export default function PricingSection() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {/* Trial Plan */}
+        <div className="border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-[#FF9626] p-6 text-center">
+            <h3 className="text-2xl font-bold text-white">Trial</h3>
+            <p className="text-white/90 text-sm mt-1">Try our service with minimal investment</p>
+          </div>
+
+          <div className="p-6">
+            <div className="text-center mb-6">
+              <div className="text-[#FF9626] font-medium mb-1">QUICK START</div>
+              <div className="flex items-end justify-center">
+                <span className="text-4xl font-bold">
+                  {currency}
+                  {prices.trial[currency]}
+                </span>
+                <span className="text-gray-600 ml-1">/One-time</span>
+              </div>
+              <a
+                href={getTrialCheckoutLink()}
+                className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors inline-block"
+              >
+                Start Trial
+              </a>
+              <div className="text-sm text-gray-500 mt-2">One-time payment, delivered in 24 hours</div>
+            </div>
+
+            <div>
+              <div className="font-semibold mb-4">Includes:</div>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>7 professionally written blog posts</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>24-hour delivery</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Basic SEO optimization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Sample of our quality work</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Starter Plan */}
         <div className="border border-gray-200 rounded-2xl overflow-hidden">
           <div className="bg-[#FF9626] p-6 text-center">
@@ -195,7 +349,6 @@ export default function PricingSection() {
                 </span>
                 <span className="text-gray-600 ml-1">/Month</span>
               </div>
-              {/* Replace the "Choose Starter" button with this */}
               <a
                 href={getCheckoutLink("starter")}
                 className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors inline-block"
@@ -211,27 +364,15 @@ export default function PricingSection() {
 
             <div>
               <div className="font-semibold mb-4">Includes:</div>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>30 professionally written blog posts per month</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Comprehensive content strategy</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Advanced SEO optimization</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Social media integration</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Monthly performance reports</span>
-                </li>
+              <ul className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+                {(billingPeriod === "monthly" ? starterFeatures.monthly : starterFeatures.annually).map(
+                  (feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-[#FF9626] mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           </div>
@@ -254,7 +395,6 @@ export default function PricingSection() {
                 </span>
                 <span className="text-gray-600 ml-1">/Month</span>
               </div>
-              {/* Replace the "Choose Professional" button with this */}
               <a
                 href={getCheckoutLink("professional")}
                 className="mt-4 px-8 py-2 rounded-full border-2 border-[#FF9626] text-[#FF9626] font-semibold hover:bg-[#FF9626] hover:text-white transition-colors inline-block"
@@ -270,123 +410,76 @@ export default function PricingSection() {
 
             <div>
               <div className="font-semibold mb-4">Includes:</div>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>60 professionally written blog posts per month</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Advanced content strategy and planning</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Premium SEO tools and optimization</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Full suite of social media integrations</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Content performance analytics</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Dedicated account manager</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
-                  <span>Priority support</span>
-                </li>
+              <ul className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+                {(billingPeriod === "monthly" ? professionalFeatures.monthly : professionalFeatures.annually).map(
+                  (feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <Check className="w-5 h-5 text-[#FF9626] mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Custom Solution Section */}
+      {/* Solo-Founder Plan Section */}
       <div className="mt-16 max-w-4xl mx-auto">
         <div className="bg-[#FFF6F0] border border-[#E5E7EB] rounded-[24px] flex flex-col md:flex-row">
-          <div className="flex-1 p-8 md:border-r border-[#E5E7EB]">
+          <div className="flex-1 p-8">
             <div className="inline-block px-4 py-1.5 bg-[#FF9626] rounded-full text-white text-sm font-medium">
-              Enterprise Solutions
+              Special Offer
             </div>
 
             <h2 className="text-[32px] font-bold mt-4 mb-3" style={{ letterSpacing: "-0.02em" }}>
-              Need a custom solution?
+              Solo-Founder Plan
             </h2>
-            <p className="text-[#4B5563] text-lg mb-8">
-              My enterprise plans are tailored to your specific needs with dedicated support and custom content
-              strategies.
-            </p>
 
-            <div className="space-y-6 mb-8">
-              <div className="flex items-start gap-4">
-                <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
-                    <path
-                      d="M8 2V5M16 2V5M3.5 9.09H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeMiterlimit="10"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-[#111827] font-semibold text-lg mb-1">Custom Publishing Schedule</h3>
-                  <p className="text-[#4B5563]">Tailored content calendar based on your industry and goals</p>
-                </div>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-gray-500 line-through text-lg">$3996</span>
+                <span className="bg-[#FF9626] text-white text-xs px-2 py-1 rounded-full">SAVE $2497</span>
               </div>
-
-              <div className="flex items-start gap-4">
-                <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
-                    <path
-                      d="M9.16 10.87C9.06 10.86 8.94 10.86 8.83 10.87C6.45 10.79 4.56 8.84 4.56 6.44C4.56 3.99 6.54 2 9 2C11.45 2 13.44 3.99 13.44 6.44C13.43 8.84 11.54 10.79 9.16 10.87Z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M16.41 4C18.35 4 19.91 5.57 19.91 7.5C19.91 9.39 18.41 10.93 16.54 11C16.46 10.99 16.37 10.99 16.28 11"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M4.16 14.56C1.74 16.18 1.74 18.82 4.16 20.43C6.91 22.27 11.42 22.27 14.17 20.43C16.59 18.81 16.59 16.17 14.17 14.56C11.43 12.73 6.92 12.73 4.16 14.56Z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M18.34 20C19.06 19.85 19.74 19.56 20.3 19.13C21.86 17.96 21.86 16.03 20.3 14.86C19.75 14.44 19.08 14.16 18.37 14"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-[#111827] font-semibold text-lg mb-1">Dedicated Strategy Team</h3>
-                  <p className="text-[#4B5563]">Work with experts who understand your business needs</p>
-                </div>
-              </div>
+              <div className="text-3xl font-bold text-[#FF9626]">$1499</div>
+              <div className="text-sm text-gray-500 mt-1">Original price: $2197 + $799 = $3996</div>
             </div>
 
-            {/* Replace the "Contact Sales" button with this */}
+            <div className="space-y-4 mb-8">
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>200+ only high DA directory submissions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>X engagement from founders</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>30+ Paid directory list</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>SEO and landing page basic audit</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>60 blogs every month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-[#FF9626] mt-0.5" />
+                  <span>Dedicated manager support</span>
+                </li>
+              </ul>
+            </div>
+
             <a
-              href="mailto:info@blogosocial.com"
+              href="https://checkout.dodopayments.com/buy/pdt_solo_founder_plan?quantity=1"
               className="bg-[#FF9626] text-white px-6 py-3 rounded-full font-medium inline-flex items-center group hover:bg-[#e08520] transition-colors"
             >
-              Contact Sales
+              Get Solo-Founder Plan
               <svg
                 width="20"
                 height="20"
@@ -403,13 +496,100 @@ export default function PricingSection() {
                 />
               </svg>
             </a>
+
+            <div className="mt-4 text-sm text-gray-500">
+              Limited time offer. Perfect for solopreneurs and founders looking to scale quickly.
+            </div>
           </div>
 
-          <div className="md:w-80 p-8">
-            <h3 className="text-[#111827] text-xl font-semibold mb-6">Get in Touch with Me:</h3>
-            <div className="flex items-start gap-4">
-              <div className="bg-[#FF9626] rounded-full p-3.5 shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+          <div className="md:w-80 p-8 bg-white/50 rounded-r-[24px]">
+            <h3 className="text-[#111827] text-xl font-semibold mb-6">Why Choose This Plan?</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-[#FF9626] rounded-full p-2 shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path
+                      d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7.75 12L10.58 14.83L16.25 9.17"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[#4B5563]">Complete solution for solo founders</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-[#FF9626] rounded-full p-2 shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path
+                      d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7.75 12L10.58 14.83L16.25 9.17"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[#4B5563]">62% discount on combined services</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-[#FF9626] rounded-full p-2 shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path
+                      d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7.75 12L10.58 14.83L16.25 9.17"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[#4B5563]">Combines content and directory services</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#FF9626]">
+                  <path
+                    d="M21.97 18.33C21.97 18.69 21.89 19.06 21.72 19.42C21.55 19.78 21.33 20.12 21.04 20.44C20.55 20.98 20.01 21.37 19.4 21.62C18.8 21.87 18.15 22 17.45 22C16.43 22 15.34 21.76 14.19 21.27C13.04 20.78 11.89 20.12 10.75 19.29C9.6 18.45 8.51 17.52 7.47 16.49C6.44 15.45 5.51 14.36 4.68 13.22C3.86 12.08 3.2 10.94 2.72 9.81C2.24 8.67 2 7.58 2 6.54C2 5.86 2.12 5.21 2.36 4.61C2.6 4 2.98 3.44 3.51 2.94C4.15 2.31 4.85 2 5.59 2C5.87 2 6.15 2.06 6.4 2.18C6.66 2.3 6.89 2.48 7.07 2.74L9.39 6.01C9.57 6.26 9.7 6.49 9.79 6.71C9.88 6.92 9.93 7.13 9.93 7.32C9.93 7.56 9.86 7.8 9.72 8.03C9.59 8.26 9.4 8.5 9.16 8.74L8.4 9.53C8.29 9.64 8.24 9.77 8.24 9.93C8.24 10.01 8.25 10.08 8.27 10.16C8.3 10.24 8.33 10.3 8.35 10.36C8.53 10.69 8.84 11.12 9.28 11.64C9.73 12.16 10.21 12.69 10.73 13.22C11.27 13.75 11.79 14.24 12.32 14.69C12.84 15.13 13.27 15.43 13.61 15.61C13.66 15.63 13.72 15.66 13.79 15.69C13.87 15.72 13.95 15.73 14.04 15.73C14.21 15.73 14.34 15.67 14.45 15.56L15.21 14.81C15.46 14.56 15.7 14.37 15.93 14.25C16.16 14.11 16.39 14.04 16.64 14.04C16.83 14.04 17.03 14.08 17.25 14.17C17.47 14.26 17.7 14.39 17.95 14.56L21.26 16.91C21.52 17.09 21.7 17.31 21.81 17.55C21.91 17.8 21.97 18.05 21.97 18.33Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeMiterlimit="10"
+                  />
+                </svg>
+               
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#FF9626]">
                   <path
                     d="M17 21H7C4 21 2 19 2 16V8C2 5 4 3 7 3H17C20 3 22 5 22 8V16C22 19 20 21 17 21Z"
                     stroke="currentColor"
@@ -427,12 +607,9 @@ export default function PricingSection() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </div>
-              <div>
                 <a href="mailto:info@blogosocial.com" className="text-[#FF9626] font-medium hover:underline">
                   info@blogosocial.com
                 </a>
-                <p className="text-sm text-[#6B7280] mt-2">Typically responds within 24 hours during business days</p>
               </div>
             </div>
           </div>

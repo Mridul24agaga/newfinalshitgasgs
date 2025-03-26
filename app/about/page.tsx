@@ -390,7 +390,7 @@ export default function AboutClient() {
             >
               <div className="aspect-square rounded-2xl overflow-hidden shadow-lg">
                 <Image
-                  src="/placeholder.svg?height=600&width=600"
+                  src="/casestudy.webp"
                   alt="Case study results visualization"
                   width={600}
                   height={600}
@@ -429,7 +429,7 @@ export default function AboutClient() {
                 name: "Mridul Thareja",
                 role: "2x SaaS Builder",
                 bio: "Scaled 2 SaaS ventures to 1M MAU via organic content",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/mridull.jpg",
               },
               {
                 name: "Anjali Singh",
@@ -595,7 +595,7 @@ export default function AboutClient() {
             >
               <div className="aspect-video rounded-2xl overflow-hidden shadow-lg">
                 <Image
-                  src="/placeholder.svg?height=500&width=800"
+                  src="/mission.jpg"
                   alt="Blogosocial mission visualization"
                   width={800}
                   height={500}
@@ -607,7 +607,6 @@ export default function AboutClient() {
         </div>
       </section>
       <IntegrationsSection />
-      <LanguageScroll  />
 
       <UniversalBlogCTA/>
 

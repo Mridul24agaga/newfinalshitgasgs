@@ -5,7 +5,7 @@ import { Users, Briefcase, Mail, Check } from "lucide-react"
 import { Saira } from "next/font/google"
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "../components/foot"
+import Footer from "../components/footer"
 import TrustedBySection from "../components/trusted"
 // Initialize the Saira font with the weights we need
 const saira = Saira({
@@ -49,34 +49,13 @@ export default function TeamPage() {
             </nav>
 
             <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center h-8 w-8">
-                <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-                  <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
-                    <path
-                      fill="#4285F4"
-                      d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"
-                    />
-                  </g>
-                </svg>
-              </div>
+              
 
               <Link
                 href="/start"
                 className="bg-[#FF9626] text-white px-5 py-2 rounded-full font-medium hover:bg-[#e88620] transition-colors"
               >
-                Start for free
+                Try Now
               </Link>
             </div>
           </div>
@@ -132,7 +111,7 @@ export default function TeamPage() {
                 title: "The Brainchild",
                 description:
                   "Krissmann is the creative force behind Blogosocial. With a deep understanding of SaaS ecosystems and content marketing, he envisioned a platform where human insight meets AI innovation. His leadership ensures that Blogosocial stays ahead of the curve in delivering unparalleled blogging solutions.",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/krissman.jpg",
               },
               {
                 name: "Mridul Thareja",
@@ -140,7 +119,7 @@ export default function TeamPage() {
                 title: "The Builder",
                 description:
                   "Mridul is the technical mastermind who transformed vision into reality. As the chief builder of our proprietary technologies, he has designed the systems that make Blogosocial a seamless, efficient, and powerful platform for startups and brands.",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/mridull.jpg",
               },
               {
                 name: "Aryan Chittora",
@@ -148,7 +127,7 @@ export default function TeamPage() {
                 title: "The Operator",
                 description:
                   "Aryan is the operational backbone of Blogosocial. From managing workflows to ensuring every project is delivered on time and with precision, Aryan's meticulous approach ensures our clients receive nothing but the best.",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/abc44.jpg",
               },
               {
                 name: "Anjali Singh",
@@ -156,7 +135,7 @@ export default function TeamPage() {
                 title: "The Ghost",
                 description:
                   "Anjali is our unseen force behind impactful storytelling. As a master of words and ideas, she ensures that every blog we produce resonates deeply with readers while meeting the highest standards of quality.",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/abc5.jpg",
               },
               {
                 name: "Kaivan Parekh",
@@ -164,7 +143,7 @@ export default function TeamPage() {
                 title: "The Dealer",
                 description:
                   "Kaivan bridges the gap between Blogosocial and its clients. With an innate ability to understand client needs and align them with our capabilities, he ensures every partnership thrives and every client feels valued.",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/abc2.jpg",
               },
             ].map((member, index) => (
               <motion.div
@@ -370,7 +349,7 @@ export default function TeamPage() {
             >
               <div className="aspect-square max-w-md mx-auto bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
                 <Image
-                  src="/placeholder.svg?height=600&width=600"
+                  src="/icp.jpg"
                   alt="Technology Partners"
                   width={600}
                   height={600}

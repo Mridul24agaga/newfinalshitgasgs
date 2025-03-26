@@ -192,7 +192,7 @@ export default function MissionPage() {
             >
               <div className="aspect-video rounded-2xl overflow-hidden shadow-xl">
                 <Image
-                  src="/placeholder.svg?height=500&width=800"
+                  src="/human.jpg"
                   alt="Human-centric blogging approach"
                   width={800}
                   height={500}
@@ -660,7 +660,7 @@ export default function MissionPage() {
             >
               <div className="aspect-video rounded-2xl overflow-hidden shadow-lg">
                 <Image
-                  src="/placeholder.svg?height=500&width=800"
+                  src="/content.jpg"
                   alt="Content revolution visualization"
                   width={800}
                   height={500}
