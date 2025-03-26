@@ -16,12 +16,16 @@ function aggressivelyFixMarkdownLinks(content: string): string {
 
   // Replace them with actual HTML <a> tags
   processedContent = processedContent.replace(markdownLinkRegex, (match, text, url) => {
+    // Ensure text and url are defined and convert to string if needed
+    const textStr = text ? String(text) : ""
+    const urlStr = url ? String(url) : ""
+
     // Clean up any extra whitespace
-    const cleanText = text.trim() // Error 2: Object is possibly 'undefined'
-    const cleanUrl = url.trim()
+    const cleanText = textStr.trim()
+    const cleanUrl = urlStr.trim()
 
     if (cleanUrl.startsWith("http") || cleanUrl.startsWith("https")) {
-      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>` // Error 1: Argument of type 'string | undefined' is not assignable to parameter of type 'string'
+      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`
     } else if (cleanUrl.startsWith("/")) {
       return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
     } else {
@@ -277,8 +281,8 @@ interface DataPoint {
 }
 
 // Tavily and OpenAI setup
-const TAVILY_API_KEY: string = process.env.TAVILY_API_KEY || "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"
-console.log(`Tavily API Key in use: ${TAVILY_API_KEY || "Not set! Check your env or hardcoded fallback."}`)
+const TAVILY_API_KEY: string = process.env.TAVILY_API_KEY || "***API_KEY_HIDDEN***"
+console.log(`Starting blog generation process with Tavily...`)
 const tavilyClient = tavily({ apiKey: TAVILY_API_KEY })
 
 const configuration = {
@@ -286,14 +290,13 @@ const configuration = {
   basePathGPT4oMini: process.env.AZURE_OPENAI_API_BASE_PATH_GPT4O_MINI || "",
 }
 
-console.log("AZURE_OPENAI_API_KEY:", configuration.apiKey || "Not set!")
-console.log("AZURE_OPENAI_API_BASE_PATH_GPT4O_MINI:", configuration.basePathGPT4oMini || "Not set!")
+console.log("Initializing Azure OpenAI client...")
 
 const openai = new OpenAI({
   apiKey: process.env.AZURE_OPENAI_API_KEY as string,
   baseURL: configuration.basePathGPT4oMini,
   defaultQuery: { "api-version": "2024-02-15-preview" },
-  defaultHeaders: { "api-key": process.env.AZURE_OPENAI_API_KEY as string },
+  defaultHeaders: { "api-key": "***API_KEY_HIDDEN***" },
 })
 
 // Helper Functions
@@ -457,63 +460,67 @@ async function generateMetaDescription(url: string, content: string): Promise<st
   return metaDescription.trim().slice(0, 160)
 }
 
-// Update the generateSearchQueries function to create more topic-focused queries
+// Find the generateSearchQueries function and replace it with this improved version that focuses more on the specific website content:
+
 async function generateSearchQueries(metaDescription: string, topic: string): Promise<string[]> {
   const prompt = `
-    Using this meta description and topic, come up with 8 unique, natural search queries for deep research on a 3000-word blog post about "${topic}". 
+    I need to generate search queries for researching content about a website focused on "${topic}".
     
-    IMPORTANT: These queries should focus on the BROADER TOPIC, not just the specific website. Create diverse queries that will find different perspectives and information sources across the web.
+    IMPORTANT: These queries MUST be specifically tailored to this exact website and what it's about.
     
-    Mix different query types:
-    - Some specific questions people would ask about ${topic}
-    - Some comparison queries (${topic} vs alternatives)
-    - Some "how to" queries related to the topic
-    - Some industry-specific jargon queries
-    - Some queries about recent trends or developments in ${topic}
-    - Some queries about problems or challenges related to ${topic}
+    Website description: "${metaDescription}"
     
-    Keep 'em fun and conversational—like you're asking a friend to dig in. No repeats from past topics, no AI buzzwords.
-    Meta Description: "${metaDescription}"
-    Topic: "${topic}"
-    Return a JSON array, e.g., ["query1", "query2"].
+    Based on this specific website's content and purpose:
+    
+    1. What are the MAIN TOPICS this specific website focuses on?
+    2. What UNIQUE SERVICES or PRODUCTS does this specific website offer?
+    3. What SPECIFIC INDUSTRY PROBLEMS does this website address?
+    4. What UNIQUE SELLING POINTS or DIFFERENTIATORS does this website have?
+    5. What SPECIFIC AUDIENCE or CUSTOMER SEGMENTS does this website target?
+    
+    Generate 8 highly specific search queries that will find information directly relevant to THIS SPECIFIC WEBSITE'S content, not generic industry topics.
+    
+    Each query should target a different aspect of what makes THIS SPECIFIC WEBSITE unique in its space.
+    
+    Return a JSON array of search queries, e.g., ["query1", "query2"].
   `
   const response = await callAzureOpenAI(prompt, 300)
-  const cleanedResponse = response.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim()
+  const cleanedResponse = response.replace(/```json\n?|\n?```/g, "").trim()
   try {
     const queries = (JSON.parse(cleanedResponse) as string[]) || []
-    console.log(`Generated TOPIC-FOCUSED search queries: ${JSON.stringify(queries)}`)
+    console.log(`Generated WEBSITE-SPECIFIC search queries: ${JSON.stringify(queries)}`)
     return queries
   } catch (error) {
     console.error("Error parsing queries:", error)
     return [
-      `${topic} comprehensive guide`,
-      `${topic} best practices`,
-      `${topic} vs competitors`,
-      `how to use ${topic} effectively`,
-      `${topic} industry trends`,
-      `common problems with ${topic}`,
-      `${topic} expert tips`,
-      `${topic} case studies`,
+      `${topic} specific website analysis`,
+      `${topic} unique features and offerings`,
+      `${topic} website competitive advantages`,
+      `${topic} target audience needs`,
+      `${topic} website specific solutions`,
+      `${topic} specialized services`,
+      `${topic} website differentiation`,
+      `${topic} customer pain points addressed`,
     ]
   }
 }
 
-// Update the performTavilySearch function to focus on topics rather than just URLs
+// Also update the performTavilySearch function to be more website-specific:
+
 async function performTavilySearch(query: string): Promise<string[]> {
-  console.log(`\nPerforming advanced Tavily search for TOPIC: ${query}`)
+  console.log(`\nPerforming targeted Tavily search for WEBSITE-SPECIFIC: ${query}`)
   try {
-    // Make sure we're searching the web for the topic, not just the website
+    // Make the search more focused on the specific website content
     const response = await tavilyClient.search(query, {
-      searchDepth: "advanced", // Use advanced depth for better results
-      max_results: 20, // Increased from 15 to 20 for more comprehensive research
+      searchDepth: "advanced",
+      max_results: 20,
       include_raw_content: true,
-      search_mode: "comprehensive", // Ensure we're doing a comprehensive web search
+      search_mode: "comprehensive",
     })
 
-    // Filter for higher quality URLs
+    // Filter for higher quality URLs that are more relevant to the specific website
     const urls = response.results
       .filter((result: any) => {
-        // Filter out low-quality sources
         const url = result.url || ""
         const hasGoodDomain =
           !url.includes("pinterest") &&
@@ -525,14 +532,19 @@ async function performTavilySearch(query: string): Promise<string[]> {
         // Check if it has substantial content
         const hasContent = result.rawContent && result.rawContent.length > 500
 
-        return url.match(/^https?:\/\/.+/) && hasGoodDomain && hasContent
+        // Check if content is relevant to the specific query (basic relevance check)
+        const isRelevant =
+          result.rawContent &&
+          result.rawContent.toLowerCase().includes(query.toLowerCase().split(" ").slice(0, 3).join(" "))
+
+        return url.match(/^https?:\/\/.+/) && hasGoodDomain && hasContent && isRelevant
       })
       .map((result: any) => result.url)
 
-    console.log(`Tavily found ${urls.length} high-quality URLs for TOPIC "${query}"`)
+    console.log(`Tavily found ${urls.length} high-quality URLs for WEBSITE-SPECIFIC query "${query}"`)
     return urls
   } catch (error) {
-    console.error(`Tavily search error for TOPIC "${query}":`, error)
+    console.error(`Tavily search error for WEBSITE-SPECIFIC query "${query}":`, error)
     return []
   }
 }
@@ -746,7 +758,7 @@ async function generateContentTables(topic: string, content: string): Promise<st
 // Add a new function to clean table HTML
 function cleanTableHTML(tableHTML: string): string {
   // Remove any markdown code block indicators
-  let cleanHTML = tableHTML.replace(/\`\`\`html\s*|\s*\`\`\`/g, "")
+  let cleanHTML = tableHTML.replace(/```html\s*|\s*```/g, "")
 
   // Remove any HTML comments
   cleanHTML = cleanHTML.replace(/<!--[\s\S]*?-->/g, "")
@@ -1281,9 +1293,9 @@ async function generateArticleFromScrapedData(
     const headings = formattedContent.match(/^#{1,3}\s+(.+)$/gm)?.map((h) => h.replace(/^#{1,3}\s+/, "")) || []
     const keywords = scrapedData.extractedKeywords
       ? scrapedData.extractedKeywords.slice(0, 5).map((k) => ({
-        keyword: k.keyword,
-        difficulty: k.relevance > 7 ? "High" : k.relevance > 4 ? "Medium" : "Low",
-      }))
+          keyword: k.keyword,
+          difficulty: k.relevance > 7 ? "High" : k.relevance > 4 ? "Medium" : "Low",
+        }))
       : []
 
     return {
@@ -1466,100 +1478,93 @@ async function addExternalLinksToSections(content: string, topic: string): Promi
 
 // NEW FUNCTIONS FOR IMAGE INTEGRATION
 
-// Function to fetch stock images based on a topic
-async function fetchStockImages(topic: string, count = 5): Promise<string[]> {
+async function fetchStockImages(topic: string, count = 3): Promise<string[]> {
   try {
-    // Extract more specific keywords from the topic
-    const specificKeywords = topic
-      .split(/\s+/)
-      .filter((word) => word.length > 3) // Only use meaningful words
-      .slice(0, 3) // Take up to 3 keywords
-      .join(" ")
+    const apiKey = process.env.RUNWARE_API_KEY || "";
+    console.log(`Generating ${count} images with Runware AI for topic: ${topic}`);
 
-    const searchTerm = specificKeywords || topic
-    console.log(`Fetching ${count} images from Unsplash for specific topic: ${searchTerm}`)
+    const { Runware } = await import("@runware/sdk-js");
+    const runware = new Runware({ apiKey });
+    console.log(`Initializing Runware AI for image generation...`);
 
-    // Use Unsplash API with your access key
-    const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || "SclojCLIEhQxPsObfsaWrVhE6bIwX5hN_OOROtN57vk"
+    await runware.ensureConnection();
 
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchTerm)}&per_page=${count}&orientation=landscape`,
-      {
-        headers: {
-          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-        },
-      },
-    )
+    const enhancedPrompt = `Professional, high-quality image of ${topic}. Photorealistic, detailed, perfect lighting, 8k resolution, commercial quality.`;
 
-    if (response.ok) {
-      const data = await response.json()
-      if (data.results && data.results.length > 0) {
-        console.log(`Successfully fetched ${data.results.length} images from Unsplash for "${searchTerm}"`)
-        return data.results.map((img: any) => img.urls.regular)
-      } else {
-        console.warn(`Unsplash returned no results for "${searchTerm}", trying alternative search`)
+    const images = await runware.requestImages({
+      positivePrompt: enhancedPrompt,
+      negativePrompt: "blurry, low quality, distorted, watermark, text, signature, low resolution, nsfw",
+      width: 1024,
+      height: 768,
+      model: "runware:100@1",
+      numberResults: count,
+      outputType: "URL",
+      outputFormat: "PNG",
+      steps: 25,
+      CFGScale: 4.0,
+      checkNSFW: true,
+    });
 
-        // Try a more generic search if specific topic returns no results
-        const altResponse = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(topic)}&per_page=${count}&orientation=landscape`,
-          {
-            headers: {
-              Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-            },
-          },
-        )
-
-        if (altResponse.ok) {
-          const altData = await altResponse.json()
-          if (altData.results && altData.results.length > 0) {
-            console.log(`Successfully fetched ${altData.results.length} images from Unsplash with alternative search`)
-            return altData.results.map((img: any) => img.urls.regular)
-          }
-        }
-      }
-    } else {
-      console.error(`Unsplash API error: ${response.status} - ${response.statusText}`)
+    // Check if images is defined and is an array
+    if (!images || !Array.isArray(images)) {
+      console.warn("Runware AI returned no images or an invalid response, falling back to placeholders");
+      return generatePlaceholderImages(count, topic);
     }
 
-    // If Unsplash fails, use public domain images from Pexels without API key
-    // Note: This is a fallback that may not work reliably without an API key
-    try {
-      console.log("Trying to fetch public images without API key as fallback")
-      const publicImages = [
-        `https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`,
-        `https://images.pexels.com/photos/3861943/pexels-photo-3861943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`,
-        `https://images.pexels.com/photos/1181271/pexels-photo-1181271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`,
-        `https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`,
-        `https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`,
-      ]
+    console.log(`Successfully generated ${images.length} images with Runware AI for "${topic}"`);
 
-      // Verify these URLs are accessible
-      const validImages = await Promise.all(
-        publicImages.map(async (url) => {
-          try {
-            const checkResponse = await fetch(url, { method: "HEAD" })
-            return checkResponse.ok ? url : null
-          } catch {
-            return null
-          }
-        }),
-      )
+    const imageUrls = images.map((img: any) => img.imageURL || "").filter((url: string) => url);
 
-      const filteredImages = validImages.filter(Boolean) as string[]
-      if (filteredImages.length > 0) {
-        console.log(`Found ${filteredImages.length} public domain images as fallback`)
-        return filteredImages.slice(0, count)
-      }
-    } catch (error) {
-      console.error("Error checking public domain images:", error)
+    if (imageUrls.length === 0) {
+      console.warn("No valid image URLs were generated by Runware AI, falling back to placeholders");
+      return generatePlaceholderImages(count, topic);
     }
 
-    // If all else fails, use placeholder images
-    console.warn("All image sources failed, using placeholder images")
-    return generatePlaceholderImages(count, topic)
+    return imageUrls;
   } catch (error) {
-    console.error("Error fetching stock images:", error)
-    return generatePlaceholderImages(count, topic)
+    console.error("Error generating images with Runware AI:", error);
+    try {
+      const apiKey = process.env.RUNWARE_API_KEY || "";
+      console.log("Trying with alternative model 'sdxl'...");
+      const { Runware } = await import("@runware/sdk-js");
+
+      const runware = new Runware({ apiKey });
+      await runware.ensureConnection();
+
+      const enhancedPrompt = `Professional, high-quality image of ${topic}. Photorealistic, detailed, perfect lighting, 8k resolution, commercial quality.`;
+
+      const images = await runware.requestImages({
+        positivePrompt: enhancedPrompt,
+        negativePrompt: "blurry, low quality, distorted, watermark, text, signature, low resolution",
+        width: 1024,
+        height: 768,
+        model: "runware:sdxl@1",
+        numberResults: count,
+        outputType: "URL",
+        outputFormat: "PNG",
+        steps: 25,
+        CFGScale: 4.0,
+        checkNSFW: true,
+      });
+
+      // Check if images is defined and is an array
+      if (!images || !Array.isArray(images)) {
+        console.warn("Runware AI (fallback) returned no images or an invalid response, falling back to placeholders");
+        return generatePlaceholderImages(count, topic);
+      }
+
+      console.log(`Successfully generated ${images.length} images with fallback model for "${topic}"`);
+
+      const imageUrls = images.map((img: any) => img.imageURL || "").filter((url: string) => url);
+
+      if (imageUrls.length > 0) {
+        return imageUrls;
+      }
+    } catch (fallbackError) {
+      console.error("Error with fallback model:", fallbackError);
+    }
+
+    return generatePlaceholderImages(count, topic);
   }
 }
 
@@ -1623,7 +1628,7 @@ async function determineImagePlacements(
     let placements = []
 
     try {
-      placements = JSON.parse(placementResult.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim())
+      placements = JSON.parse(placementResult.replace(/```json\n?|\n?```/g, "").trim())
     } catch (error) {
       console.error("Error parsing image placements:", error)
       // Fallback to simple placement if parsing fails
@@ -1927,21 +1932,21 @@ function processContentBeforeSaving(content: string): string {
 }
 
 export async function generateBlog(url: string, humanizeLevel: "normal" | "hardcore" = "normal"): Promise<BlogPost[]> {
-  const supabase = await createClient();
+  const supabase = await createClient()
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    throw new Error("You need to be authenticated to generate blog posts!");
+    throw new Error("You need to be authenticated to generate blog posts!")
   }
 
-  const userId = user.id;
-  const blogPosts: BlogPost[] = [];
-  const firstRevealDate = new Date();
-  const existingContent: string[] = []; // Track content to avoid repetition
-  const existingTitles: string[] = []; // Track titles to avoid repetition
+  const userId = user.id
+  const blogPosts: BlogPost[] = []
+  const firstRevealDate = new Date()
+  const existingContent: string[] = [] // Track content to avoid repetition
+  const existingTitles: string[] = [] // Track titles to avoid repetition
 
   const reformatExistingPosts = async (supabase: any, userId: string): Promise<void> => {
     try {
@@ -1949,45 +1954,45 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         .from("blogs")
         .select("id, blog_post")
         .eq("user_id", userId)
-        .is("needs_reformatting", true);
+        .is("needs_reformatting", true)
 
       if (selectError) {
-        console.error("Error selecting posts to reformat:", selectError.message);
-        return;
+        console.error("Error selecting posts to reformat:", selectError.message)
+        return
       }
 
       if (!postsToReformat || postsToReformat.length === 0) {
-        console.log("No posts need reformatting.");
-        return;
+        console.log("No posts need reformatting.")
+        return
       }
 
       for (const post of postsToReformat) {
         try {
-          const formattedContent = formatUtils.convertMarkdownToHtml(post.blog_post);
+          const formattedContent = formatUtils.convertMarkdownToHtml(post.blog_post)
 
           const { error: updateError } = await supabase
             .from("blogs")
             .update({ blog_post: formattedContent, needs_reformatting: false })
-            .eq("id", post.id);
+            .eq("id", post.id)
 
           if (updateError) {
-            console.error(`Error updating post ${post.id}:`, updateError.message);
+            console.error(`Error updating post ${post.id}:`, updateError.message)
           } else {
-            console.log(`Successfully reformatted post ${post.id}`);
+            console.log(`Successfully reformatted post ${post.id}`)
           }
         } catch (reformatError: any) {
-          console.error(`Error reformatting post ${post.id}:`, reformatError.message);
+          console.error(`Error reformatting post ${post.id}:`, reformatError.message)
         }
       }
     } catch (error: any) {
-      console.error("Error in reformatExistingPosts:", error.message);
+      console.error("Error in reformatExistingPosts:", error.message)
     }
-  };
+  }
 
   try {
     // Reformat existing posts if needed
-    console.log(`Checking for posts that need reformatting for user ${userId}`);
-    await reformatExistingPosts(supabase, userId);
+    console.log(`Checking for posts that need reformatting for user ${userId}`)
+    await reformatExistingPosts(supabase, userId)
 
     // Get existing posts to check for content similarity
     const { data: existingPosts } = await supabase
@@ -1995,17 +2000,17 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
       .select("title, blog_post, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(20)
 
     if (existingPosts && existingPosts.length > 0) {
       existingPosts.forEach((post: any) => {
-        existingTitles.push(post.title);
+        existingTitles.push(post.title)
         const textContent = post.blog_post
           .replace(/<[^>]+>/g, " ")
           .replace(/\s+/g, " ")
-          .trim();
-        existingContent.push(textContent);
-      });
+          .trim()
+        existingContent.push(textContent)
+      })
     }
 
     // Fetch subscription details
@@ -2013,14 +2018,14 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
       .from("subscriptions")
       .select("plan_id, credits, last_renewed")
       .eq("user_id", userId)
-      .single();
+      .single()
 
     if (subscriptionError || !subscription) {
-      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`);
+      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`)
     }
 
     if (!subscription.plan_id) {
-      throw new Error("No active subscription plan found for this user");
+      throw new Error("No active subscription plan found for this user")
     }
 
     // Define plan limits
@@ -2029,96 +2034,95 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
       starter: 30,
       pro: 30,
       professional: 60,
-    };
+    }
 
-    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0;
+    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0
     if (!maxPosts) {
-      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`);
+      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`)
     }
 
     // Check and renew credits if it's a new month
-    const currentDate = new Date();
-    const lastRenewed = subscription.last_renewed ? new Date(subscription.last_renewed) : new Date(0); // Default to epoch if null
+    const currentDate = new Date()
+    const lastRenewed = subscription.last_renewed ? new Date(subscription.last_renewed) : new Date(0) // Default to epoch if null
     const isNewMonth =
-      currentDate.getMonth() !== lastRenewed.getMonth() ||
-      currentDate.getFullYear() !== lastRenewed.getFullYear();
-    const isPastFirst = currentDate.getDate() >= 1 && currentDate > lastRenewed;
+      currentDate.getMonth() !== lastRenewed.getMonth() || currentDate.getFullYear() !== lastRenewed.getFullYear()
+    const isPastFirst = currentDate.getDate() >= 1 && currentDate > lastRenewed
 
-    let availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts;
+    let availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts
 
     if (isNewMonth && isPastFirst) {
-      console.log(`Renewing credits for ${subscription.plan_id} on ${currentDate.toISOString().split('T')[0]}`);
-      availableCredits = maxPosts; // Reset to max credits
+      console.log(`Renewing credits for ${subscription.plan_id} on ${currentDate.toISOString().split("T")[0]}`)
+      availableCredits = maxPosts // Reset to max credits
       const { error: renewError } = await supabase
         .from("subscriptions")
         .update({
           credits: maxPosts,
-          last_renewed: currentDate.toISOString()
+          last_renewed: currentDate.toISOString(),
         })
-        .eq("user_id", userId);
+        .eq("user_id", userId)
 
       if (renewError) {
-        console.error(`Failed to renew credits: ${renewError.message}`);
+        console.error(`Failed to renew credits: ${renewError.message}`)
       } else {
-        console.log(`Credits renewed to ${maxPosts} for ${subscription.plan_id}`);
+        console.log(`Credits renewed to ${maxPosts} for ${subscription.plan_id}`)
       }
     }
 
     if (availableCredits <= 0) {
-      throw new Error("No credits remaining to generate blog posts!");
+      throw new Error("No credits remaining to generate blog posts!")
     }
 
     // Count blogs generated since last renewal
-    const renewalDateStart = new Date(lastRenewed);
-    renewalDateStart.setDate(1); // Start of the renewal month
-    renewalDateStart.setHours(0, 0, 0, 0);
+    const renewalDateStart = new Date(lastRenewed)
+    renewalDateStart.setDate(1) // Start of the renewal month
+    renewalDateStart.setHours(0, 0, 0, 0)
 
     const { data: blogsThisMonth, error: blogsError } = await supabase
       .from("blogs")
       .select("id")
       .eq("user_id", userId)
       .gte("created_at", renewalDateStart.toISOString())
-      .lte("created_at", currentDate.toISOString());
+      .lte("created_at", currentDate.toISOString())
 
     if (blogsError) {
-      console.error(`Error fetching blogs this month: ${blogsError.message}`);
+      console.error(`Error fetching blogs this month: ${blogsError.message}`)
     }
 
-    const blogsGeneratedThisMonth = blogsThisMonth ? blogsThisMonth.length : 0;
-    console.log(`User has generated ${blogsGeneratedThisMonth} blogs since last renewal`);
+    const blogsGeneratedThisMonth = blogsThisMonth ? blogsThisMonth.length : 0
+    console.log(`User has generated ${blogsGeneratedThisMonth} blogs since last renewal`)
 
     // Calculate remaining posts to generate this month
-    const remainingCredits = Math.max(0, maxPosts - blogsGeneratedThisMonth);
-    const postsToGenerate = Math.min(remainingCredits, availableCredits);
-    console.log(`Can generate ${postsToGenerate} more posts this month with ${availableCredits} credits available`);
+    const remainingCredits = Math.max(0, maxPosts - blogsGeneratedThisMonth)
+    const postsToGenerate = Math.min(remainingCredits, availableCredits)
+    console.log(`Can generate ${postsToGenerate} more posts this month with ${availableCredits} credits available`)
 
     if (postsToGenerate <= 0) {
-      console.log("No more posts can be generated this month based on remaining credits.");
-      return blogPosts; // Return empty array if no posts can be generated
+      console.log("No more posts can be generated this month based on remaining credits.")
+      return blogPosts // Return empty array if no posts can be generated
     }
 
-    console.log(`Generating ${postsToGenerate} posts for user ${userId} - ONE AT A TIME, VERY SLOWLY`);
+    console.log(`Generating ${postsToGenerate} posts for user ${userId} - ONE AT A TIME, VERY SLOWLY`)
 
     // Generate posts sequentially
     for (let i = 0; i < postsToGenerate; i++) {
       try {
-        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`);
+        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`)
 
-        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`);
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`)
+        await new Promise((resolve) => setTimeout(resolve, 10000))
 
-        console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`);
-        const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
+        console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`)
+        const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId)
         if (!scrapedData) {
-          throw new Error(`Failed to scrape data for blog ${i + 1}`);
+          throw new Error(`Failed to scrape data for blog ${i + 1}`)
         }
-        console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`);
+        console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`)
 
-        console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`);
-        await new Promise((resolve) => setTimeout(resolve, 8000));
+        console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`)
+        await new Promise((resolve) => setTimeout(resolve, 8000))
 
-        console.log(`Starting content generation for blog post ${i + 1}...`);
-        let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
+        console.log(`Starting content generation for blog post ${i + 1}...`)
+        let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel)
 
         const contentSimilarityCheck = await checkContentSimilarity(
           result.blogPost
@@ -2127,30 +2131,30 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
             .trim(),
           existingContent,
           existingTitles,
-        );
+        )
 
         if (contentSimilarityCheck.isTooSimilar) {
           console.log(
             `⚠️ Generated content too similar to existing post "${contentSimilarityCheck.similarToTitle}". Regenerating with more diversity...`,
-          );
-          scrapedData.nudge = `IMPORTANT: Make this content COMPLETELY DIFFERENT from your previous post about "${contentSimilarityCheck.similarToTitle}". Use different examples, structure, and approach.`;
-          result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
+          )
+          scrapedData.nudge = `IMPORTANT: Make this content COMPLETELY DIFFERENT from your previous post about "${contentSimilarityCheck.similarToTitle}". Use different examples, structure, and approach.`
+          result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel)
         }
 
-        const coreTopic = result.title || "blog topic";
+        const coreTopic = result.title || "blog topic"
 
-        console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`)
+        await new Promise((resolve) => setTimeout(resolve, 5000))
 
-        console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`);
-        const enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2);
+        console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`)
+        const enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2)
 
-        const blogId = uuidv4();
-        const revealDate = new Date(firstRevealDate);
-        revealDate.setDate(revealDate.getDate() + i);
+        const blogId = uuidv4()
+        const revealDate = new Date(firstRevealDate)
+        revealDate.setDate(revealDate.getDate() + i)
 
-        console.log(`Waiting 3 seconds before saving blog post ${i + 1} to database...`);
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        console.log(`Waiting 3 seconds before saving blog post ${i + 1} to database...`)
+        await new Promise((resolve) => setTimeout(resolve, 3000))
 
         const blogData: BlogPost = {
           id: blogId,
@@ -2162,59 +2166,59 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
           timestamp: result.timestamp,
           reveal_date: revealDate.toISOString(),
           url: url,
-        };
-
-        const { error: insertError } = await supabase.from("blogs").insert(blogData);
-
-        if (insertError) {
-          throw new Error(`Failed to save blog ${i + 1} to Supabase: ${insertError.message}`);
         }
 
-        existingTitles.push(result.title);
+        const { error: insertError } = await supabase.from("blogs").insert(blogData)
+
+        if (insertError) {
+          throw new Error(`Failed to save blog ${i + 1} to Supabase: ${insertError.message}`)
+        }
+
+        existingTitles.push(result.title)
         existingContent.push(
           enhancedBlogPost
             .replace(/<[^>]+>/g, " ")
             .replace(/\s+/g, " ")
             .trim(),
-        );
+        )
 
-        console.log(`\n\n✅ COMPLETED BLOG POST ${i + 1} OF ${postsToGenerate}\n\n`);
-        blogPosts.push(blogData);
+        console.log(`\n\n✅ COMPLETED BLOG POST ${i + 1} OF ${postsToGenerate}\n\n`)
+        blogPosts.push(blogData)
 
         if (i < postsToGenerate - 1) {
-          const delaySeconds = 20;
-          console.log(`Waiting ${delaySeconds} seconds before starting the next blog post...`);
-          await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+          const delaySeconds = 20
+          console.log(`Waiting ${delaySeconds} seconds before starting the next blog post...`)
+          await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000))
         }
       } catch (error: any) {
-        console.error(`Error generating post ${i + 1}:`, error);
-        console.log(`Stopping generation due to error, ${blogPosts.length} posts completed...`);
-        break; // Stop generation on error, keep successful posts
+        console.error(`Error generating post ${i + 1}:`, error)
+        console.log(`Stopping generation due to error, ${blogPosts.length} posts completed...`)
+        break // Stop generation on error, keep successful posts
       }
     }
 
     // Deduct credits for successful posts only
-    const successfulPosts = blogPosts.length;
-    const newCredits = availableCredits - successfulPosts;
+    const successfulPosts = blogPosts.length
+    const newCredits = availableCredits - successfulPosts
 
     if (successfulPosts > 0) {
       const { error: updateError } = await supabase
         .from("subscriptions")
         .update({ credits: newCredits })
-        .eq("user_id", userId);
+        .eq("user_id", userId)
 
       if (updateError) {
-        console.error(`Failed to deduct credits: ${updateError.message}`);
+        console.error(`Failed to deduct credits: ${updateError.message}`)
       } else {
-        console.log(`Deducted ${successfulPosts} credits. New balance: ${newCredits}`);
+        console.log(`Deducted ${successfulPosts} credits. New balance: ${newCredits}`)
       }
     }
 
-    console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`);
-    return blogPosts;
+    console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`)
+    return blogPosts
   } catch (error: any) {
-    console.error(`Failed to generate blogs: ${error.message}`);
-    throw new Error(`Blog generation failed: ${error.message}`);
+    console.error(`Failed to generate blogs: ${error.message}`)
+    throw new Error(`Blog generation failed: ${error.message}`)
   }
 }
 
@@ -2328,7 +2332,7 @@ async function extractDataPointsFromResearch(
 
   try {
     const response = await callAzureOpenAI(prompt, 2000)
-    const cleanedResponse = response.replace(/\`\`\`json\n?|\`\`\`/g, "").trim()
+    const cleanedResponse = response.replace(/```json\n?|```/g, "").trim()
 
     try {
       const dataPoints = JSON.parse(cleanedResponse) as DataPoint[]
@@ -2822,19 +2826,19 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
 
     const termsResponse = await callAzureOpenAI(extractTermsPrompt, 200)
     const searchTerms = termsResponse
-      .replace(/\n/g, '')
-      .split(',')
-      .map(term => term.trim())
-      .filter(term => term.length > 0)
+      .replace(/\n/g, "")
+      .split(",")
+      .map((term) => term.trim())
+      .filter((term) => term.length > 0)
       .slice(0, 6) // Limit to 6 terms max
 
-    console.log(`Extracted search terms for external links: ${searchTerms.join(', ')}`)
+    console.log(`Extracted search terms for external links: ${searchTerms.join(", ")}`)
 
     // Now use these search terms to find external links with Tavily
     const allLinks: string[] = []
 
     // Process each search term in parallel
-    const searchPromises = searchTerms.map(async searchTerm => {
+    const searchPromises = searchTerms.map(async (searchTerm) => {
       try {
         const fullSearchTerm = `${searchTerm} ${topic} authoritative resource`
         console.log(`Searching Tavily for: "${fullSearchTerm}"`)
@@ -2853,26 +2857,36 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
 
             // Exclude common low-quality or social media sites
             const excludedDomains = [
-              'pinterest', 'facebook', 'instagram', 'twitter', 'tiktok',
-              'youtube', 'reddit', 'quora', 'medium.com', 'blogspot',
-              'wordpress.com', 'tumblr'
+              "pinterest",
+              "facebook",
+              "instagram",
+              "twitter",
+              "tiktok",
+              "youtube",
+              "reddit",
+              "quora",
+              "medium.com",
+              "blogspot",
+              "wordpress.com",
+              "tumblr",
             ]
 
-            const hasGoodDomain = !excludedDomains.some(domain => url.includes(domain))
+            const hasGoodDomain = !excludedDomains.some((domain) => url.includes(domain))
 
             // Prefer .edu, .gov, .org domains or well-known industry sites
-            const isAuthoritative = url.endsWith('.edu') ||
-              url.endsWith('.gov') ||
-              url.endsWith('.org') ||
-              url.includes('harvard') ||
-              url.includes('stanford') ||
-              url.includes('mit.edu') ||
-              url.includes('ieee') ||
-              url.includes('nature.com') ||
-              url.includes('sciencedirect') ||
-              url.includes('ncbi.nlm.nih.gov') ||
-              url.includes('springer') ||
-              url.includes('academic')
+            const isAuthoritative =
+              url.endsWith(".edu") ||
+              url.endsWith(".gov") ||
+              url.endsWith(".org") ||
+              url.includes("harvard") ||
+              url.includes("stanford") ||
+              url.includes("mit.edu") ||
+              url.includes("ieee") ||
+              url.includes("nature.com") ||
+              url.includes("sciencedirect") ||
+              url.includes("ncbi.nlm.nih.gov") ||
+              url.includes("springer") ||
+              url.includes("academic")
 
             return url.match(/^https?:\/\/.+/) && (hasGoodDomain || isAuthoritative)
           })
@@ -2906,16 +2920,18 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
         const broadUrls = broadResponse.results
           .filter((result: any) => {
             const url = result.url || ""
-            return url.match(/^https?:\/\/.+/) &&
-              !url.includes('pinterest') &&
-              !url.includes('facebook') &&
-              !url.includes('instagram') &&
-              !url.includes('twitter')
+            return (
+              url.match(/^https?:\/\/.+/) &&
+              !url.includes("pinterest") &&
+              !url.includes("facebook") &&
+              !url.includes("instagram") &&
+              !url.includes("twitter")
+            )
           })
           .map((result: any) => result.url)
 
         // Add these to our unique links
-        broadUrls.forEach(url => {
+        broadUrls.forEach((url) => {
           if (!uniqueLinks.includes(url)) {
             uniqueLinks.push(url)
           }
@@ -2932,11 +2948,11 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
     if (result.length === 0) {
       // If we still have no links, provide some generic fallbacks
       return [
-        `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/\s+/g, '_'))}`,
-        'https://www.sciencedirect.com/',
-        'https://scholar.google.com/',
-        'https://www.researchgate.net/',
-        'https://www.ncbi.nlm.nih.gov/pmc/'
+        `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/\s+/g, "_"))}`,
+        "https://www.sciencedirect.com/",
+        "https://scholar.google.com/",
+        "https://www.researchgate.net/",
+        "https://www.ncbi.nlm.nih.gov/pmc/",
       ].slice(0, count)
     }
 
@@ -2946,8 +2962,8 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
 
     // Return fallback links if everything fails
     return [
-      `https://example.com/${topic.replace(/\s+/g, '-')}-guide`,
-      `https://example.org/${topic.replace(/\s+/g, '-')}-resources`
+      `https://example.com/${topic.replace(/\s+/g, "-")}-guide`,
+      `https://example.org/${topic.replace(/\s+/g, "-")}-resources`,
     ].slice(0, count)
   }
 }
@@ -2959,7 +2975,7 @@ async function styleExternalLinks(htmlContent: string): Promise<string> {
     /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
     (match, url, text) => {
       return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
-    }
+    },
   )
 }
 
@@ -2968,7 +2984,7 @@ async function ensureExternalLinks(content: string, topic: string, count: number
   console.log(`Ensuring content has at least ${count} external links`)
 
   // Get paragraph-level content sections for adding links
-  const paragraphs = content.split(/(<p[^>]*>.*?<\/p>)/g).filter(part => part.startsWith('<p'))
+  const paragraphs = content.split(/(<p[^>]*>.*?<\/p>)/g).filter((part) => part.startsWith("<p"))
   if (paragraphs.length < 3) {
     return content // Not enough paragraphs to add links
   }
@@ -2991,13 +3007,13 @@ async function ensureExternalLinks(content: string, topic: string, count: number
 
   // Now add links to paragraphs that don't have links already
   let modifiedContent = content
-  let linkIndex = 0
+  const linkIndex = 0
 
   // First, analyze the content with OpenAI to find appropriate places for links
   const linkPlacementPrompt = `
     I have a blog post about "${topic}" and need to add ${externalLinks.length} external links to it.
     These are the external links to add:
-    ${externalLinks.map((url, i) => `${i + 1}. ${url}`).join('\n')}
+    ${externalLinks.map((url, i) => `${i + 1}. ${url}`).join("\n")}
     
     For each link, identify an appropriate paragraph and a specific phrase that would make sense to use as 
     anchor text for that link. Choose phrases that are naturally related to the link's domain or topic.
@@ -3020,7 +3036,7 @@ async function ensureExternalLinks(content: string, topic: string, count: number
 
   try {
     const linkPlacementResponse = await callAzureOpenAI(linkPlacementPrompt, 800)
-    const cleanedResponse = linkPlacementResponse.replace(/\`\`\`json\n?|\n?\`\`\`/g, "").trim()
+    const cleanedResponse = linkPlacementResponse.replace(/```json\n?|\n?```/g, "").trim()
     let linkPlacements = []
 
     try {
@@ -3041,7 +3057,7 @@ async function ensureExternalLinks(content: string, topic: string, count: number
         if (!paragraphIndicator || !anchorText || !linkUrl) continue
 
         // Find the paragraph that contains the indicator text
-        const paragraphRegex = new RegExp(`(<p[^>]*>.*?${escapeRegExp(paragraphIndicator)}.*?<\/p>)`, 'i')
+        const paragraphRegex = new RegExp(`(<p[^>]*>.*?${escapeRegExp(paragraphIndicator)}.*?<\/p>)`, "i")
         const paragraphMatch = modifiedContent.match(paragraphRegex)
 
         if (paragraphMatch && paragraphMatch[1]) {
@@ -3073,7 +3089,7 @@ async function ensureExternalLinks(content: string, topic: string, count: number
 
 // Helper function for escaping special characters in RegExp
 function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
 // Basic function to add links to paragraphs
@@ -3082,7 +3098,7 @@ async function addLinksBasic(content: string, externalLinks: string[]): Promise<
 
   // Get paragraphs
   const parts = content.split(/(<p[^>]*>.*?<\/p>)/g)
-  const paragraphs = parts.filter(part => part.startsWith('<p'))
+  const paragraphs = parts.filter((part) => part.startsWith("<p"))
 
   // If we have no paragraphs, return the original content
   if (paragraphs.length === 0) return content
@@ -3098,7 +3114,7 @@ async function addLinksBasic(content: string, externalLinks: string[]): Promise<
     if (paragraph.includes('<a href="http')) continue
 
     // Extract text content from the paragraph
-    const textMatch = paragraph.match(/>([^]+?)<\/p>/);
+    const textMatch = paragraph.match(/>([^]+?)<\/p>/)
     if (!textMatch || !textMatch[1]) continue
 
     const text = textMatch[1]
@@ -3110,7 +3126,7 @@ async function addLinksBasic(content: string, externalLinks: string[]): Promise<
     // Choose a random position in the paragraph
     const startPos = Math.floor(words.length / 2)
     const length = Math.min(3, words.length - startPos)
-    const anchorText = words.slice(startPos, startPos + length).join(' ')
+    const anchorText = words.slice(startPos, startPos + length).join(" ")
 
     // Create the link
     const linkUrl = externalLinks[i]
@@ -3134,13 +3150,12 @@ async function extractKeywords(
   return [{ keyword: coreTopic, relevance: 8, difficulty: "Medium" }]
 }
 
-// Dummy function to generate placeholder images
 function generatePlaceholderImages(count: number, topic: string): string[] {
-  const placeholderImages = []
+  const placeholderImages: string[] = [];
   for (let i = 0; i < count; i++) {
-    placeholderImages.push(`https://via.placeholder.com/640x360?text=${encodeURIComponent(topic)}+${i + 1}`)
+    placeholderImages.push(`https://via.placeholder.com/640x360?text=${encodeURIComponent(topic)}+${i + 1}`);
   }
-  return placeholderImages
+  return placeholderImages;
 }
 
 // Dummy function to remove duplicate content after conclusion
@@ -3150,12 +3165,14 @@ function removeDuplicateContentAfterConclusion(content: string): string {
   return content
 }
 
+// Update the scrapeWebsiteAndSaveToJson function to extract more specific website information:
+
 async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<ScrapedData | null> {
-  console.log(`Scraping ${url} and digging deeper with Tavily for user ${userId}`)
+  console.log(`Scraping ${url} and extracting website-specific data for user ${userId}`)
   const supabase = await createClient()
 
   try {
-    // Step 1: Scrape the initial URL with scrapeWithTavily (already in your code)
+    // Step 1: Scrape the initial URL with scrapeWithTavily
     const initialContent = await scrapeWithTavily(url)
     if (!initialContent || initialContent === "No content available") {
       console.error(`Failed to scrape ${url}`)
@@ -3163,18 +3180,55 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
     }
     const initialResearchSummary = await scrapeInitialUrlWithTavily(url)
 
-    // Step 2: Get the meta description and core topic (using existing functions)
+    // Step 2: Extract website-specific information
+    const websiteAnalysisPrompt = `
+      Analyze this website content and extract SPECIFIC information about what makes this website unique.
+      
+      Website content: "${initialContent.slice(0, 5000)}"
+      
+      Extract:
+      1. The EXACT core business/purpose of this specific website
+      2. The SPECIFIC products/services this website offers
+      3. The UNIQUE selling points or differentiators of this website
+      4. The SPECIFIC target audience this website addresses
+      5. The MAIN problems this website claims to solve
+      
+      Return a detailed, specific analysis focused ONLY on this website's unique attributes.
+    `
+    const websiteAnalysis = await callAzureOpenAI(websiteAnalysisPrompt, 800)
+
+    // Step 3: Generate a more specific core topic based on the website analysis
+    const coreTopicPrompt = `
+      Based on this website analysis, what is the MOST SPECIFIC core topic that represents what this website is about?
+      
+      Website analysis: "${websiteAnalysis}"
+      
+      Return ONLY a short, specific phrase (3-7 words) that precisely captures what makes this website unique.
+      Do NOT return a generic industry term, but rather what specifically differentiates this website.
+    `
+    const coreTopic = await callAzureOpenAI(coreTopicPrompt, 100)
+
+    // Step 4: Generate a website-specific meta description
     const metaDescription = await generateMetaDescription(url, initialContent)
-    const coreTopic = metaDescription.split(" ").slice(0, 5).join(" ") // Quick topic extraction
 
-    // Step 3: Use performTavilySearch to get more URLs (already defined in your code)
-    const moreUrls = await performTavilySearch(coreTopic)
-    console.log(`Got ${moreUrls.length} URLs from Tavily search for ${coreTopic}`)
+    // Step 5: Use the website-specific information to generate search queries
+    const searchQueries = await generateSearchQueries(metaDescription, coreTopic)
 
-    // Step 4: Scrape those URLs with scrapeWithTavily
+    // Step 6: Perform Tavily searches with the website-specific queries
+    const allUrls: string[] = []
+    for (const query of searchQueries.slice(0, 4)) {
+      // Limit to 4 queries for efficiency
+      const urls = await performTavilySearch(query)
+      allUrls.push(...urls)
+    }
+
+    // Remove duplicates
+    const uniqueUrls = [...new Set(allUrls)].slice(0, 8) // Limit to 8 URLs
+    console.log(`Got ${uniqueUrls.length} unique URLs from website-specific Tavily searches`)
+
+    // Step 7: Scrape those URLs
     const researchResults = await Promise.all(
-      moreUrls.slice(0, 5).map(async (researchUrl) => {
-        // Limit to 5 for sanity
+      uniqueUrls.map(async (researchUrl) => {
         const content = await scrapeWithTavily(researchUrl)
         return {
           url: researchUrl,
@@ -3188,44 +3242,70 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
     const validResearchResults = researchResults.filter(
       (result) => result.content && result.content !== "No content available",
     )
-    console.log(`Scraped ${validResearchResults.length} extra sources`)
+    console.log(`Scraped ${validResearchResults.length} website-specific sources`)
 
-    // Step 5: Generate a summary from all content (using existing functions)
-    const allContent = `${initialContent}\n\n${validResearchResults.map((r) => r.content).join("\n\n")}`.slice(0, 10000) // Cap to avoid overload
+    // Step 8: Generate a summary focused on the website-specific information
+    const allContent = `${initialContent}\n\n${validResearchResults.map((r) => r.content).join("\n\n")}`.slice(0, 10000)
     const researchSummaryPrompt = `
-      Summarize this "${coreTopic}" research in a chill, human way (300-500 words).
-      Content: "${allContent}"
+      Create a summary specifically focused on "${coreTopic}" as it relates to this exact website.
+      
+      Website analysis: "${websiteAnalysis}"
+      
+      Additional research content: "${allContent.slice(0, 5000)}"
+      
+      Create a 300-500 word summary that highlights:
+      1. What makes THIS SPECIFIC WEBSITE unique in its space
+      2. The SPECIFIC value propositions of this website
+      3. How this website SPECIFICALLY addresses its target audience's needs
+      4. What DIFFERENTIATES this website from competitors
+      
+      Focus ONLY on what makes this website unique, not generic industry information.
     `
-    const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 500)
+    const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 800)
 
-    const scrapedData: ScrapedData = {
-      initialUrl: "example.com",
-      initialResearchSummary: "summary",
-      researchResults: [],
-      researchSummary: "summary",
-      coreTopic: "topic",
-      brandInfo: "brand",
-      youtubeVideo: "some value", // Fixed property name
-      internalLinks: [],
-      references: [],
-      existingPosts: "posts",
-      targetKeywords: ["keyword"],
-      timestamp: "2025-03-22",
-      nudge: "nudge",
-      extractedKeywords: [{ keyword: "topic", relevance: 8 }],
+    // Step 9: Extract keywords specific to this website
+    const keywordsPrompt = `
+      Based on this website-specific analysis, extract 10 keywords or phrases that are UNIQUELY relevant to THIS SPECIFIC WEBSITE.
+      
+      Website analysis: "${websiteAnalysis}"
+      
+      Return ONLY keywords that are specific to this website's unique offerings, not generic industry terms.
+      For each keyword, assign a relevance score from 1-10 based on how central it is to this specific website.
+      
+      Return as JSON: [{"keyword": "term1", "relevance": 9}, {"keyword": "term2", "relevance": 8}]
+    `
+    const keywordsResponse = await callAzureOpenAI(keywordsPrompt, 300)
+    let extractedKeywords = []
+    try {
+      extractedKeywords = JSON.parse(keywordsResponse.replace(/```json\n?|\n?```/g, "").trim())
+    } catch (error) {
+      console.error("Error parsing keywords:", error)
+      extractedKeywords = [{ keyword: coreTopic, relevance: 8 }]
     }
-    // Optional: Save to Supabase (uncomment if you want it)
-    /*
-    const { error } = await supabase
-      .from("scraped_data")
-      .insert({ user_id: userId, data: scrapedData });
-    if (error) console.error(`Supabase save failed: ${error.message}`);
-    */
 
-    console.log(`Scraped and ready: ${coreTopic}`)
+    // Create the final scraped data object
+    const scrapedData: ScrapedData = {
+      initialUrl: url,
+      initialResearchSummary,
+      researchResults: validResearchResults,
+      researchSummary,
+      coreTopic,
+      brandInfo: websiteAnalysis,
+      youtubeVideo: null,
+      internalLinks: [],
+      references: validResearchResults.map((r) => r.url),
+      existingPosts: "",
+      targetKeywords: extractedKeywords.map((k: { keyword: string; relevance: number }) => k.keyword),
+      timestamp: new Date().toISOString(),
+      nudge: "",
+      extractedKeywords,
+    }
+
+    console.log(`Scraped website-specific data for: ${coreTopic}`)
     return scrapedData
   } catch (error: any) {
     console.error(`Scraping ${url} failed: ${error.message}`)
     return null
   }
 }
+

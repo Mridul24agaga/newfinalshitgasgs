@@ -24,7 +24,7 @@ export default function Footer() {
       { name: "Real Estate Blog Automation", href: "/real-estate-blog-automation" },
       { name: "Fashion Brand Blog Automation", href: "/fashion-brand-blog-automation" },
       { name: "Startup Blog Automation", href: "/startup-blog-automation" },
-      { name: "E Commerce Blog Automation", href: "/e-commerce-blog-automation" },
+      { name: "E Commerce Blog Automation", href: "/ecommerce-blog-automation" },
       { name: "Local Business Blog Automation", href: "/local-business-blog-automation" },
       { name: "Small Business Blog Automation", href: "/small-business-blog-automation" },
       { name: "Technology Company Blog Automation", href: "/technology-company-blog-automation" },
@@ -55,8 +55,7 @@ export default function Footer() {
       { name: "Lifestyle Blog Generator", href: "/lifestyle-blog-generator" },
       { name: "Marketing Strategy Generator", href: "/marketing-strategy-generator" },
       { name: "LinkedIn Profile Summary Generator", href: "/linkedin-profile-summary-generator" },
-      { name: "Meta Descriptions Generator", href: "/meta-descriptions-generator" },
-      { name: "Paragraph Generator", href: "/paragraph-generator" },
+      { name: "Paragraph Generator", href: "/paragrapher-generator" },
       { name: "Microcopy Generator", href: "/microcopy-generator" },
     ],
     LEARN: [

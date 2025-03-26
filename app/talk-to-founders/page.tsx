@@ -5,6 +5,7 @@ import { Calendar, Zap, Award, Users, ArrowRight, ExternalLink } from "lucide-re
 import { Saira } from "next/font/google"
 import Image from "next/image"
 import Link from "next/link"
+import Footer from "../components/footer"
 
 // Initialize the Saira font with the weights we need
 const saira = Saira({
@@ -18,7 +19,7 @@ export default function TalkToFoundersClientPage() {
   return (
     <main className={`${saira.className} min-h-screen bg-white`}>
       {/* Header */}
-      <header className="bg-[#FF9626] py-4">
+      <header className="bg-white py-4">
         <div className="max-w-6xl mx-auto px-4">
           <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between">
             <Link href="/" className="flex items-center">
@@ -125,7 +126,7 @@ export default function TalkToFoundersClientPage() {
             >
               <div className="aspect-square max-w-md mx-auto bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
                 <Image
-                  src="/placeholder.svg?height=600&width=600"
+                  src="/krissman.jpg"
                   alt="Founders of Blogosocial"
                   width={600}
                   height={600}
@@ -250,7 +251,7 @@ export default function TalkToFoundersClientPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-md">
                   <Image
-                    src="/placeholder.svg?height=400&width=400"
+                    src="/krissman.jpg"
                     alt="Krissmann Gupta"
                     width={400}
                     height={400}
@@ -539,42 +540,8 @@ export default function TalkToFoundersClientPage() {
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-[#FF9626]">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Let's Build Something Great Together</h2>
-            <p className="text-xl text-white opacity-90 mb-8">
-              At Blogosocial, we believe that every conversation is an opportunity to create something extraordinary.
-              Whether you're looking for guidance on your content strategy or exploring how our platform can help scale
-              your business, talking directly with our founders is the first step toward achieving your goals.
-            </p>
-
-            <h3 className="text-2xl font-bold text-white mb-6">Ready to Elevate Your Content Strategy?</h3>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="#schedule"
-                className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors"
-              >
-                Schedule a Call <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-              <a
-                href="mailto:info@blogosocial.com"
-                className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-medium flex items-center justify-center hover:bg-white/10 transition-colors"
-              >
-                Email: info@blogosocial.com
-              </a>
-            </div>
-
-            <p className="text-white mt-6">Let's redefine blogging excellence—together!</p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Bento Links Section */}
-      <section className="py-12 bg-white border-t border-gray-100">
+       {/* Bento Links Section */}
+       <section className="py-12 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -615,6 +582,42 @@ export default function TalkToFoundersClientPage() {
           </div>
         </div>
       </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-[#FF9626]">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Let's Build Something Great Together</h2>
+            <p className="text-xl text-white opacity-90 mb-8">
+              At Blogosocial, we believe that every conversation is an opportunity to create something extraordinary.
+              Whether you're looking for guidance on your content strategy or exploring how our platform can help scale
+              your business, talking directly with our founders is the first step toward achieving your goals.
+            </p>
+
+            <h3 className="text-2xl font-bold text-white mb-6">Ready to Elevate Your Content Strategy?</h3>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="#schedule"
+                className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors"
+              >
+                Schedule a Call <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+              <a
+                href="mailto:info@blogosocial.com"
+                className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-medium flex items-center justify-center hover:bg-white/10 transition-colors"
+              >
+                Email: info@blogosocial.com
+              </a>
+            </div>
+
+            <p className="text-white mt-6">Let's redefine blogging excellence—together!</p>
+          </motion.div>
+        </div>
+      </section>
+
+     
+      <Footer/>
     </main>
   )
 }

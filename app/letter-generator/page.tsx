@@ -8,6 +8,7 @@ import Link from "next/link"
 import Footer from "../components/footer"
 import TrustedBySection from "../components/trusted"
 import TestimonialsSection from "../components/testimonials"
+import UniversalBlogCTA from "../components/ctacontent"
 
 // Initialize the Saira font with the weights we need
 const saira = Saira({
@@ -607,32 +608,8 @@ export default function LetterGeneratorPage() {
       <TrustedBySection />
 
 
-      {/* CTA Section */}
-      <section className="py-16 bg-[#FF9626]">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Call-to-Action: Try It Now!</h2>
-            <p className="text-xl text-white opacity-90 mb-8">
-              Ready to simplify your letter-writing process? Experience the power of Blogosocial's Free Letter Generator
-              today!
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/generate-letter"
-                className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors text-lg"
-              >
-                Generate Your Letter Now
-              </Link>
-            </div>
-
-            <p className="text-white mt-8 opacity-80">
-              Blogosocial: Where innovation meets simplicity—helping you communicate effectively without breaking a
-              sweat!
-            </p>
-          </motion.div>
-        </div>
-      </section>
+     <UniversalBlogCTA/>
+      
 
       <Footer />
     </main>

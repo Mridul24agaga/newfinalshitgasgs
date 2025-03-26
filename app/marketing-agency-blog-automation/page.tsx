@@ -20,6 +20,8 @@ import Image from "next/image"
 import Link from "next/link"
 import Footer from "../components/footer"
 import TrustedBySection from "../components/trusted"
+import PricingSection from "../components/pagespricing"
+import UniversalBlogCTA from "../components/ctacontent"
 
 // Initialize the Saira font with the weights we need
 const saira = Saira({
@@ -591,95 +593,11 @@ export default function MarketingAgencyBlogAutomationPage() {
         </div>
       </section>
 
-      {/* Pricing Plans */}
-      <section className="py-16 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Pricing Plans</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">Choose a plan that fits your needs.</p>
-          </motion.div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-xl overflow-hidden shadow-md border border-gray-100">
-              <thead className="bg-[#FF9626] text-white">
-                <tr>
-                  <th className="py-4 px-6 text-left text-lg font-semibold">Plan</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold">Features</th>
-                  <th className="py-4 px-6 text-left text-lg font-semibold">Price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 text-gray-800 font-medium">Trial</td>
-                  <td className="py-4 px-6 text-gray-600">Two Expert-Led Blogs</td>
-                  <td className="py-4 px-6 text-gray-800 font-bold">$9</td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 text-gray-800 font-medium">Monthly</td>
-                  <td className="py-4 px-6 text-gray-600">Daily Blogs Delivered</td>
-                  <td className="py-4 px-6 text-gray-800 font-bold">$149/month</td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 text-gray-800 font-medium">Quarterly</td>
-                  <td className="py-4 px-6 text-gray-600">Daily Blogs for 3 Months</td>
-                  <td className="py-4 px-6 text-gray-800 font-bold">$399</td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 text-gray-800 font-medium">Semi-Annual</td>
-                  <td className="py-4 px-6 text-gray-600">Daily Blogs for 6 Months</td>
-                  <td className="py-4 px-6 text-gray-800 font-bold">$649</td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors bg-gray-50">
-                  <td className="py-4 px-6 text-gray-800 font-bold">Annual</td>
-                  <td className="py-4 px-6 text-gray-600">Daily Blogs for 12 Months</td>
-                  <td className="py-4 px-6 text-[#FF9626] font-bold">$999</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <PricingSection/>
       <TrustedBySection />
 
 
-      {/* CTA Section */}
-      <section className="py-16 bg-[#FF9626]" id="contact">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-              Call-to-Action: Elevate Your Marketing Agency Blogging Strategy Today!
-            </h2>
-            <p className="text-xl text-white opacity-90 mb-8">
-              Ready to transform your agency's content strategy? Choose Blogosocial—the ultimate solution for expert-led
-              blog automation that drives traffic, builds trust, and delivers measurable results.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="mailto:info@blogosocial.com"
-                className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors text-lg"
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/schedule-demo"
-                className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-medium flex items-center justify-center hover:bg-white/10 transition-colors text-lg"
-              >
-                Schedule a Demo
-              </Link>
-            </div>
-
-            <p className="text-white mt-8 opacity-80">
-              Blogosocial: Where Innovation Meets Expertise—Your Partner in Blogging Excellence!
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <UniversalBlogCTA/>
 
       <Footer />
     </main>

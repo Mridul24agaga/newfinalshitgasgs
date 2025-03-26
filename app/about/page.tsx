@@ -4,9 +4,10 @@ import { motion } from "framer-motion"
 import { Check, ArrowRight, Award, Users, Zap, Brain, FileText, BarChart3, Shield, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "../components/foot"
+import Footer from "../components/footer"
 import IntegrationsSection from "../components/integrations"
 import LanguageScroll from "../components/language"
+import UniversalBlogCTA from "../components/ctacontent"
 
 export default function AboutClient() {
   return (
@@ -14,7 +15,7 @@ export default function AboutClient() {
       {/* Header */}
       <header className="bg-white py-4">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between shadow-sm border border-gray-100">
+          <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between ">
             <Link href="/" className="flex items-center">
               <div className="font-bold text-xl flex items-center">
                 <span className="mr-1">blog</span>
@@ -75,14 +76,14 @@ export default function AboutClient() {
 
       {/* Hero Section */}
       <section className="relative bg-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-90 z-0"></div>
+        <div className="absolute inset-0 bg-white opacity-90 z-0"></div>
         <div className="max-w-6xl mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight leading-[1.2]">
-                Where <span className="bg-[#FF9626] px-3 py-1 text-white">Human Expertise</span> Meets AI Innovation
+                Where <span className="bg-[#FF9626] px-3 py-1 text-white">Human Expertise</span> <span className="relative top-5">Meets AI Innovation</span>
               </h1>
-              <p className="text-xl md:text-2xl text-gray-700 mb-8 leading-[1.6]">
+              <p className="text-xl md:text-2xl text-gray-700 mb-8 leading-[1.6] ">
                 Redefining Content Excellence to Build Trust, Drive Traffic, and Dominate Search
               </p>
             </motion.div>
@@ -422,7 +423,7 @@ export default function AboutClient() {
                 name: "Krissmann Gupta",
                 role: "Serial Entrepreneur",
                 bio: "8 years in entrepreneurship optimizing Fortune 500 EEAT scores",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/krissman.jpg",
               },
               {
                 name: "Mridul Thareja",
@@ -434,7 +435,7 @@ export default function AboutClient() {
                 name: "Anjali Singh",
                 role: "Google Quality Researcher",
                 bio: "Bridging AI ethics with real-world utility",
-                image: "/placeholder.svg?height=400&width=400",
+                image: "/abc5.jpg",
               },
             ].map((founder, index) => (
               <motion.div
@@ -606,95 +607,9 @@ export default function AboutClient() {
         </div>
       </section>
       <IntegrationsSection />
-      <LanguageScroll />
+      <LanguageScroll  />
 
-      {/* Additional CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-[#FF9626] to-[#FF7E26]">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-            >
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-[1.2]">
-                  Start Your Content Revolution Today
-                </h2>
-                <p className="text-lg text-gray-700 mb-6 leading-[1.8]">
-                  Join the 30,000+ brands that have already transformed their content strategy with Blogosocial. Our
-                  expert-led approach ensures your content stands out in a sea of AI-generated mediocrity.
-                </p>
-                <div className="space-y-4 md:space-y-0 md:flex md:space-x-4">
-                  <a
-                    href="/pricing"
-                    className="w-full md:w-auto flex items-center justify-center px-8 py-3 bg-[#FF9626] text-white rounded-lg font-medium hover:bg-[#e88620] transition-colors"
-                  >
-                    View Pricing Plans
-                  </a>
-                  <a
-                    href="/schedule-call"
-                    className="w-full md:w-auto flex items-center justify-center px-8 py-3 border-2 border-[#FF9626] text-[#FF9626] rounded-lg font-medium hover:bg-[#FF9626]/5 transition-colors"
-                  >
-                    Schedule a Strategy Call <ChevronRight className="ml-2 h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="aspect-square md:aspect-video rounded-xl overflow-hidden shadow-lg">
-                  <Image
-                    src="/placeholder.svg?height=400&width=600"
-                    alt="Content strategy transformation"
-                    width={600}
-                    height={400}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <div className="absolute -bottom-4 -right-4 bg-[#FF9626] text-white p-4 rounded-lg shadow-lg">
-                  <p className="font-bold text-xl">Limited Time Offer</p>
-                  <p className="text-sm">20% off annual plans</p>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="mt-12 border-t border-gray-100 pt-8">
-              <div className="flex flex-col md:flex-row items-center justify-between">
-                <div className="flex items-center mb-4 md:mb-0">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-10 w-10 rounded-full bg-gray-200 border-2 border-white overflow-hidden">
-                        <Image
-                          src={`/placeholder.svg?height=40&width=40`}
-                          alt={`User ${i}`}
-                          width={40}
-                          height={40}
-                          className="object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <p className="ml-4 text-gray-600">Joined by 2,500+ companies this month</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg
-                      key={star}
-                      className="w-5 h-5 text-yellow-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-.181h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                    </svg>
-                  ))}
-                  <span className="text-gray-600">4.9/5 from 800+ reviews</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <UniversalBlogCTA/>
 
       <Footer />
     </main>

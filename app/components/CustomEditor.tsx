@@ -4,32 +4,23 @@ import type React from "react"
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import {
   List,
-  ImageIcon,
   X,
   Loader2,
   AlertCircle,
   Bold,
   Italic,
   Underline,
-  Link,
   ListOrdered,
-  Sparkles,
-  Code,
-  Undo,
-  Redo,
   Save,
-  Youtube,
   Eye,
   Settings,
   FileCode,
   Copy,
   Check,
-  FileText,
   Table,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import AiCodeGeneratorModal from "./ai-code-generator-modal"
 
 // Initialize Supabase client
 const supabase = createClient()
@@ -192,10 +183,10 @@ const formatUtils = {
       .join(", ")
 
     return {
-      title: title || "Untitled Article",
+      title: title,
       description,
       keywords,
-      ogTitle: title || "Untitled Article",
+      ogTitle: title,
       ogDescription: description,
       ogImage: featuredImage || "",
     }
@@ -460,13 +451,16 @@ export async function generateStaticParams() {
   <!-- Canonical Link -->
   <link rel="canonical" href="${metaTags.canonicalUrl}">
   
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Styles -->
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Saira', sans-serif;
       line-height: 1.6;
       color: #333;
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -474,7 +468,7 @@ export async function generateStaticParams() {
       max-width: 100%;
       height: auto;
       border-radius: 8px;
-      margin: 1.5rem 0;
+      margin: 1.5rem auto;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     h1, h2, h3, h4, h5, h6 {
@@ -482,6 +476,7 @@ export async function generateStaticParams() {
       margin-bottom: 1rem;
       font-weight: bold;
       line-height: 1.25;
+      text-align: left;
     }
     h1 {
       font-size: 2.5rem;
@@ -497,6 +492,7 @@ export async function generateStaticParams() {
     p {
       margin-top: 1.5rem;
       margin-bottom: 1.5rem;
+      text-align: left;
     }
     a {
       color: #0070f3;
@@ -517,7 +513,7 @@ export async function generateStaticParams() {
       position: relative;
       width: 100%;
       padding-top: 56.25%;
-      margin: 1.5rem 0;
+      margin: 1.5rem auto;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -536,29 +532,37 @@ export async function generateStaticParams() {
       padding: 16px;
       overflow: auto;
       font-family: monospace;
+      text-align: left;
     }
     blockquote {
       border-left: 4px solid #ddd;
       padding-left: 16px;
       margin-left: 0;
       color: #666;
+      text-align: left;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 2rem 0;
+      margin: 2rem auto;
     }
     th {
       background-color: #f6f8fa;
       font-weight: 600;
-      text-align: left;
+      text-align: center;
     }
     th, td {
       border: 1px solid #ddd;
       padding: 8px 12px;
+      text-align: center;
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
+    }
+    ul, ol {
+      text-align: left;
+      list-style-position: outside;
+      padding-left: 2rem;
     }
   </style>
   
@@ -578,6 +582,15 @@ ${formatUtils.generateSchemaMarkup(html, metaTags.title, "Author Name", new Date
 </html>`
 
     return fullHtml
+  },
+
+  // Count words in content
+  countWords: (content: string): number => {
+    // Remove HTML tags and get plain text
+    const plainText = content.replace(/<[^>]+>/g, " ").trim()
+    // Split by whitespace and filter out empty strings
+    const words = plainText.split(/\s+/).filter((word) => word.length > 0)
+    return words.length
   },
 }
 
@@ -935,9 +948,10 @@ const PreviewModal: React.FC<{
               style={{
                 height: previewMode === "mobile" ? "80vh" : "auto",
                 boxShadow: "0 0 20px rgba(0,0,0,0.1)",
+                fontFamily: "'Saira', sans-serif",
               }}
             >
-              <div className="p-4">
+              <div className="p-4 text-center">
                 <h1 className="text-3xl font-bold mb-4">{title}</h1>
                 <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: content }} />
               </div>
@@ -949,580 +963,12 @@ const PreviewModal: React.FC<{
   )
 }
 
-// YouTube Embed Modal Component
-const YouTubeEmbedModal: React.FC<{
-  isOpen: boolean
-  onClose: () => void
-  onInsertEmbed: (embedHtml: string, videoId: string) => void
-}> = ({ isOpen, onClose, onInsertEmbed }) => {
-  const [url, setUrl] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Extract YouTube video ID from various URL formats
-  const extractYouTubeId = (url: string): string | null => {
-    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
-    const match = url.match(regExp)
-    return match && match[7].length === 11 ? match[7] : null
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsProcessing(true)
-
-    try {
-      const videoId = extractYouTubeId(url)
-
-      if (!videoId) {
-        throw new Error("Invalid YouTube URL. Please enter a valid YouTube video URL.")
-      }
-
-      // Create responsive embed HTML
-      const embedHtml = `<div class="youtube-embed-wrapper relative w-full pt-[56.25%] my-6 rounded-lg overflow-hidden shadow-lg">
-        <iframe 
-          src="https://www.youtube.com/embed/${videoId}" 
-          title="YouTube video player" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen
-          class="absolute top-0 left-0 w-full h-full"
-        ></iframe>
-      </div>`
-
-      onInsertEmbed(embedHtml, videoId)
-      setUrl("")
-      setIsProcessing(false)
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to process YouTube URL")
-      setIsProcessing(false)
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold flex items-center">
-            <Youtube className="h-5 w-5 mr-2 text-red-600" />
-            Embed YouTube Video
-          </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5">
-          <div className="mb-4">
-            <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700 mb-1">
-              YouTube Video URL
-            </label>
-            <input
-              id="youtube-url"
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              required
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Paste any YouTube video URL (youtube.com, youtu.be, or embed links)
-            </p>
-          </div>
-
-          {error && (
-            <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md flex items-start mb-4">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 mt-6">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md hover:bg-gray-50">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isProcessing || !url.trim()}
-              className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 flex items-center"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Insert Video"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// Table Insert Modal
-const TableInsertModal: React.FC<{
-  isOpen: boolean
-  onClose: () => void
-  onInsertTable: (tableHtml: string) => void
-}> = ({ isOpen, onClose, onInsertTable }) => {
-  const [rows, setRows] = useState(3)
-  const [columns, setColumns] = useState(3)
-  const [includeHeader, setIncludeHeader] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    try {
-      if (rows < 1 || columns < 1) {
-        throw new Error("Rows and columns must be at least 1")
-      }
-
-      // Generate table HTML
-      let tableHtml = '<table class="w-full border-collapse my-8">\n'
-
-      // Add header row if selected
-      if (includeHeader) {
-        tableHtml += "  <thead>\n    <tr>\n"
-        for (let i = 0; i < columns; i++) {
-          tableHtml +=
-            '      <th class="border border-gray-300 px-4 py-2 bg-gray-100 font-semibold text-left">Header ' +
-            (i + 1) +
-            "</th>\n"
-        }
-        tableHtml += "    </tr>\n  </thead>\n"
-      }
-
-      // Add body rows
-      tableHtml += "  <tbody>\n"
-      for (let i = 0; i < rows; i++) {
-        tableHtml += "    <tr>\n"
-        for (let j = 0; j < columns; j++) {
-          tableHtml += '      <td class="border border-gray-300 px-4 py-2">Cell ' + (i + 1) + "-" + (j + 1) + "</td>\n"
-        }
-        tableHtml += "    </tr>\n"
-      }
-      tableHtml += "  </tbody>\n</table>"
-
-      onInsertTable(tableHtml)
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create table")
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold flex items-center">
-            <Table className="h-5 w-5 mr-2 text-orange-600" />
-            Insert Table
-          </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5">
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="rows" className="block text-sm font-medium text-gray-700 mb-1">
-                Rows
-              </label>
-              <input
-                id="rows"
-                type="number"
-                min="1"
-                max="20"
-                value={rows}
-                onChange={(e) => setRows(Number.parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="columns" className="block text-sm font-medium text-gray-700 mb-1">
-                Columns
-              </label>
-              <input
-                id="columns"
-                type="number"
-                min="1"
-                max="10"
-                value={columns}
-                onChange={(e) => setColumns(Number.parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <div className="flex items-center">
-              <input
-                id="includeHeader"
-                type="checkbox"
-                checked={includeHeader}
-                onChange={(e) => setIncludeHeader(e.target.checked)}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              />
-              <label htmlFor="includeHeader" className="ml-2 block text-sm text-gray-700">
-                Include header row
-              </label>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md flex items-start mb-4">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 mt-6">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
-              Insert Table
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// Context Menu Component
-const ContextMenu: React.FC<{
-  visible: boolean
-  position: { x: number; y: number }
-  onClose: () => void
-  onDelete: () => void
-}> = ({ visible, position, onClose, onDelete }) => {
-  if (!visible) return null
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const menu = document.querySelector(".fixed.z-50")
-      if (menu && !menu.contains(e.target as Node)) {
-        onClose()
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [onClose])
-
-  return (
-    <div
-      className="fixed z-50 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200"
-      style={{ top: `${position.y}px`, left: `${position.x}px`, minWidth: "160px" }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="py-1">
-        <button
-          className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onDelete()
-            onClose()
-          }}
-        >
-          <X className="w-4 h-4 mr-2" />
-          Delete Media
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// FloatingToolbar
-const FloatingToolbar: React.FC<{
-  visible: boolean
-  position: { x: number; y: number }
-  onCommand: (command: string, value?: string) => void
-}> = ({ visible, position, onCommand }) => {
-  if (!visible) return null
-
-  return (
-    <div
-      className="absolute z-50 bg-gray-900 text-white rounded-lg shadow-lg flex items-center p-1.5 gap-1"
-      style={{
-        top: `${position.y}px`,
-        left: `${position.x}px`,
-        transform: "translate(-50%, -120%)",
-        opacity: visible ? 1 : 0,
-      }}
-    >
-      <button
-        onClick={() => onCommand("generateImage")}
-        className="p-1.5 hover:bg-gray-700 rounded-md flex items-center gap-1 text-xs"
-        title="Generate Image"
-      >
-        <ImageIcon className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => onCommand("embedYouTube")}
-        className="p-1.5 hover:bg-gray-700 rounded-md flex items-center gap-1 text-xs"
-        title="Embed YouTube Video"
-      >
-        <Youtube className="h-4 w-4" />
-      </button>
-      <div className="h-5 border-r border-gray-700 mx-1"></div>
-      <button onClick={() => onCommand("bold")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Bold">
-        <Bold className="h-4 w-4" />
-      </button>
-      <button onClick={() => onCommand("italic")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Italic">
-        <Italic className="h-4 w-4" />
-      </button>
-      <button onClick={() => onCommand("underline")} className="p-1.5 hover:bg-gray-700 rounded-md" title="Underline">
-        <Underline className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => {
-          const url = prompt("Enter URL:", "https://")
-          if (url && url.trim()) onCommand("createLink", url.trim())
-        }}
-        className="p-1.5 hover:bg-gray-700 rounded-md"
-        title="Insert Link"
-      >
-        <Link className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => onCommand("removeFormat")}
-        className="p-1.5 hover:bg-gray-700 rounded-md"
-        title="Clear Formatting"
-      >
-        <X className="h-4 w-4" />
-      </button>
-    </div>
-  )
-}
-
-// ImageGenerationModal
-const ImageGenerationModal: React.FC<{
-  isOpen: boolean
-  onClose: () => void
-  onInsertImage: (imageUrl: string) => void
-  blogContent: string
-}> = ({ isOpen, onClose, onInsertImage, blogContent }) => {
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedImages, setGeneratedImages] = useState<string[]>([])
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [aspectRatio] = useState<string>("16:9")
-
-  const determineImageCount = (content: string): number => {
-    const words = content
-      .replace(/<[^>]+>/g, " ")
-      .split(/\s+/)
-      .filter(Boolean).length
-    return words > 1000 ? 5 : words > 500 ? 4 : 3
-  }
-
-  const generatePromptsFromContent = (content: string, count: number): string[] => {
-    const headingMatches = content.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi) || []
-    const headings = headingMatches.map((h) => h.replace(/<\/?[^>]+(>|$)/g, "").trim())
-    const paragraphs = content.split("</p>").filter((p) => p.trim().length > 0)
-    const prompts: string[] = []
-
-    const extractKeyTopics = (text: string): string => {
-      const plainText = text.replace(/<[^>]+>/g, "").trim()
-      const contextText = plainText.slice(0, Math.min(plainText.length, 150))
-      return contextText.split(/[,.;:]/).filter((s) => s.trim().length > 15)[0] || contextText
-    }
-
-    for (let i = 0; i < count && i < paragraphs.length; i++) {
-      let paragraphIndex = i
-      while (paragraphIndex < paragraphs.length) {
-        const paragraph = paragraphs[paragraphIndex].replace(/<[^>]+>/g, "").trim()
-        if (paragraph.length >= 50) break
-        paragraphIndex++
-      }
-      if (paragraphIndex >= paragraphs.length) paragraphIndex = i
-
-      const paragraph = paragraphs[paragraphIndex].replace(/<[^>]+>/g, "").trim()
-      let nearestHeading = ""
-      for (let j = 0; j < headingMatches.length; j++) {
-        const headingPos = content.indexOf(headingMatches[j])
-        const paragraphPos = content.indexOf(paragraphs[paragraphIndex])
-        if (headingPos < paragraphPos) nearestHeading = headings[j]
-        else break
-      }
-
-      const keyTopic = extractKeyTopics(paragraph)
-      if (paragraph) {
-        let prompt = `Create a professional 16:9 photograph that precisely illustrates "${keyTopic}"`
-        if (nearestHeading) prompt += ` in the context of "${nearestHeading}"`
-        prompt += `. The image should show ${paragraph.slice(0, 100)}... Style: high-quality, realistic photography with natural lighting, professional composition.`
-        prompts.push(prompt)
-      }
-    }
-
-    while (prompts.length < count) {
-      if (headings.length > 0) {
-        const headingIndex = prompts.length % headings.length
-        prompts.push(
-          `Create a professional 16:9 photograph that precisely illustrates "${headings[headingIndex]}". Style: high-quality, realistic photography with natural lighting, professional composition.`,
-        )
-      } else {
-        prompts.push(
-          `Create a professional 16:9 photograph related to ${content
-            .replace(/<[^>]+>/g, "")
-            .split(" ")
-            .slice(0, 10)
-            .join(" ")}... Style: high-quality, realistic photography with natural lighting, professional composition.`,
-        )
-      }
-    }
-    return prompts.slice(0, count)
-  }
-
-  const handleGenerate = async () => {
-    if (!blogContent.trim()) {
-      setError("No blog content available to generate images.")
-      return
-    }
-    setIsGenerating(true)
-    setError(null)
-    setGeneratedImages([])
-    setSelectedImage(null)
-
-    try {
-      const imageCount = determineImageCount(blogContent)
-      const prompts = generatePromptsFromContent(blogContent, imageCount)
-      const imagePromises = prompts.map((prompt) =>
-        fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, aspect_ratio: aspectRatio }),
-        }).then((res) => res.json()),
-      )
-      const results = await Promise.all(imagePromises)
-      const images = results.flatMap((data) => data.images || [])
-      if (!images.length) throw new Error("No images generated")
-      setGeneratedImages(images)
-      setSelectedImage(images[0])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate images.")
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleInsert = () => {
-    if (selectedImage) {
-      onInsertImage(selectedImage)
-      onClose()
-      setGeneratedImages([])
-      setSelectedImage(null)
-      setError(null)
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-semibold flex items-center">
-            <ImageIcon className="h-5 w-5 mr-2 text-orange-600" />
-            Generate Images
-          </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-5 flex-1 overflow-auto">
-          <p className="text-sm text-gray-600 mb-3">
-            Generating {determineImageCount(blogContent)} images based on your content.
-          </p>
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full mt-4 px-4 py-2.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 flex items-center justify-center"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Images
-              </>
-            )}
-          </button>
-          {error && (
-            <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md flex items-start">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-          {isGenerating && (
-            <div className="mt-6 flex flex-col items-center py-8">
-              <Loader2 className="h-10 w-10 text-orange-600 animate-spin mb-4" />
-              <p className="text-gray-600">Generating images...</p>
-            </div>
-          )}
-          {generatedImages.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-medium mb-3">Generated Images</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {generatedImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className={`relative rounded-lg overflow-hidden border-2 cursor-pointer ${
-                      selectedImage === img ? "border-orange-500" : "border-transparent hover:border-orange-300"
-                    }`}
-                    onClick={() => setSelectedImage(img)}
-                  >
-                    <img
-                      src={img || "/placeholder.svg"}
-                      alt={`Generated image ${index + 1}`}
-                      className="w-full aspect-video object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="p-4 border-t flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 border rounded-md hover:bg-gray-50">
-            Cancel
-          </button>
-          <button
-            onClick={handleInsert}
-            disabled={!selectedImage}
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400"
-          >
-            Insert Image
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Basic Editor Component (Fixed)
+// Basic Editor Component
 const BasicEditor: React.FC<{
   value: string
   onChange: (value: string) => void
   className?: string
-  postId: string // Added postId prop
+  postId: string
   title: string
   seoSettings: SeoSettings
   onViewCode: (codeType: "html" | "nextjs") => void
@@ -1539,14 +985,25 @@ const BasicEditor: React.FC<{
   const [showContextMenu, setShowContextMenu] = useState(false)
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
   const contextMenuTarget = useRef<HTMLElement | null>(null)
-  const isComposingRef = useRef(false)
+  const isComposingRef = useRef<boolean>(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [hasPostId, setHasPostId] = useState(!!postId)
-  const [isPostIdInitialized, setIsPostIdInitialized] = useState(false)
   const [supabaseChannel, setSupabaseChannel] = useState<any>(null)
+
+  // Load Saira font
+  useEffect(() => {
+    const link = document.createElement("link")
+    link.href = "https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&display=swap"
+    link.rel = "stylesheet"
+    document.head.appendChild(link)
+    return () => {
+      document.head.removeChild(link)
+    }
+  }, [])
+
   const memoizedHandleSelectionChange = useCallback(() => {
     const selection = window.getSelection()
     if (
@@ -1574,7 +1031,7 @@ const BasicEditor: React.FC<{
         ? formatUtils.sanitizeHtml(value)
         : formatUtils.convertMarkdownToHtml(value)
     }
-  }, []) // Empty dependency array to run only on mount
+  }, [value])
 
   // Sync external value changes while preserving cursor
   useEffect(() => {
@@ -1687,7 +1144,6 @@ const BasicEditor: React.FC<{
             .eq("id", postId)
 
           if (error) {
-            // Fixed error handling - don't throw the error directly
             console.error("Supabase error:", error?.message || JSON.stringify(error) || "Unknown error")
             setSaveStatus("error")
             return false
@@ -1701,7 +1157,6 @@ const BasicEditor: React.FC<{
             setSaveStatus("idle")
           }, 2000)
         } catch (err) {
-          // Fixed error handling - provide fallbacks for empty error objects
           console.error("Error saving content:", (err as any)?.message || JSON.stringify(err) || "Unknown error")
           setSaveStatus("error")
         } finally {
@@ -1854,145 +1309,6 @@ const BasicEditor: React.FC<{
     }
   }, [onChange, saveContent])
 
-  // Let's add a specific function to delete YouTube videos that can be called from a button
-  // Add this function after the handleDeleteMedia function in the BasicEditor component:
-
-  const handleDeleteYouTubeVideo = useCallback(() => {
-    // Find all YouTube embeds in the editor
-    if (editorRef.current) {
-      // Use standard DOM methods that work in all JavaScript versions
-      const youtubeEmbeds = editorRef.current.querySelectorAll(".youtube-embed-wrapper")
-
-      if (youtubeEmbeds.length === 0) {
-        alert("No YouTube videos found in the content.")
-        return
-      }
-
-      // If there's only one video, delete it directly
-      if (youtubeEmbeds.length === 1) {
-        youtubeEmbeds[0].remove()
-        const newContent = editorRef.current.innerHTML
-        onChange(newContent)
-        saveContent(newContent)
-        return
-      }
-
-      // If there are multiple videos, ask which one to delete
-      const videoIndex = prompt(
-        `Found ${youtubeEmbeds.length} YouTube videos. Enter the number (1-${youtubeEmbeds.length}) of the video to delete:`,
-      )
-
-      if (videoIndex === null) return
-
-      const index = Number.parseInt(videoIndex, 10) - 1
-      if (isNaN(index) || index < 0 || index >= youtubeEmbeds.length) {
-        alert("Invalid video number.")
-        return
-      }
-
-      youtubeEmbeds[index].remove()
-      const newContent = editorRef.current.innerHTML
-      onChange(newContent)
-      saveContent(newContent)
-    }
-  }, [onChange, saveContent])
-
-  // Handle image insertion
-  const handleInsertImage = useCallback(
-    (imageUrl: string) => {
-      if (lastSelectionRef.current && editorRef.current) {
-        const selection = window.getSelection()
-        selection?.removeAllRanges()
-        selection?.addRange(lastSelectionRef.current)
-
-        const imgWrapper = document.createElement("div")
-        imgWrapper.className = "image-wrapper my-6"
-        const img = document.createElement("img")
-        img.src = imageUrl
-        img.alt = "Generated image"
-        img.className =
-          "rounded-lg w-full h-auto shadow-lg aspect-video object-cover hover:opacity-95 transition-opacity"
-        imgWrapper.appendChild(img)
-
-        // Add caption
-        const caption = document.createElement("p")
-        caption.className = "text-sm text-gray-500 mt-2 italic text-center"
-        caption.textContent = "Caption: Image related to content"
-        imgWrapper.appendChild(caption)
-
-        const range = lastSelectionRef.current
-        range.deleteContents()
-        range.insertNode(imgWrapper)
-
-        const newContent = editorRef.current.innerHTML
-        onChange(newContent)
-        saveContent(newContent)
-        setShowImageModal(false)
-      }
-    },
-    [onChange, saveContent],
-  )
-
-  // Handle YouTube embed insertion
-  const handleInsertYouTubeEmbed = useCallback(
-    (embedHtml: string, videoId: string) => {
-      if (lastSelectionRef.current && editorRef.current) {
-        const selection = window.getSelection()
-        selection?.removeAllRanges()
-        selection?.addRange(lastSelectionRef.current)
-
-        // Create a temporary container to hold the HTML
-        const tempContainer = document.createElement("div")
-        tempContainer.innerHTML = embedHtml
-
-        const range = lastSelectionRef.current
-        range.deleteContents()
-
-        // Insert the YouTube embed wrapper
-        const embedWrapper = tempContainer.firstChild
-        if (embedWrapper) {
-          range.insertNode(embedWrapper)
-        }
-
-        const newContent = editorRef.current.innerHTML
-        onChange(newContent)
-        saveContent(newContent)
-        setShowYouTubeModal(false)
-      }
-    },
-    [onChange, saveContent],
-  )
-
-  // Handle table insertion
-  const handleInsertTable = useCallback(
-    (tableHtml: string) => {
-      if (lastSelectionRef.current && editorRef.current) {
-        const selection = window.getSelection()
-        selection?.removeAllRanges()
-        selection?.addRange(lastSelectionRef.current)
-
-        // Create a temporary container to hold the HTML
-        const tempContainer = document.createElement("div")
-        tempContainer.innerHTML = tableHtml
-
-        const range = lastSelectionRef.current
-        range.deleteContents()
-
-        // Insert the table
-        const tableElement = tempContainer.firstChild
-        if (tableElement) {
-          range.insertNode(tableElement)
-        }
-
-        const newContent = editorRef.current.innerHTML
-        onChange(newContent)
-        saveContent(newContent)
-        setShowTableModal(false)
-      }
-    },
-    [onChange, saveContent],
-  )
-
   // Handle input events
   const handleInput = useCallback(() => {
     if (editorRef.current && !isComposingRef.current) {
@@ -2114,23 +1430,6 @@ const BasicEditor: React.FC<{
 
   return (
     <div className="relative bg-white">
-      <FloatingToolbar visible={showToolbar} position={toolbarPosition} onCommand={execCommand} />
-      <ImageGenerationModal
-        isOpen={showImageModal}
-        onClose={() => setShowImageModal(false)}
-        onInsertImage={handleInsertImage}
-        blogContent={value}
-      />
-      <YouTubeEmbedModal
-        isOpen={showYouTubeModal}
-        onClose={() => setShowYouTubeModal(false)}
-        onInsertEmbed={handleInsertYouTubeEmbed}
-      />
-      <TableInsertModal
-        isOpen={showTableModal}
-        onClose={() => setShowTableModal(false)}
-        onInsertTable={handleInsertTable}
-      />
       <PreviewModal
         isOpen={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
@@ -2149,6 +1448,7 @@ const BasicEditor: React.FC<{
           <select
             onChange={(e) => execCommand("formatBlock", e.target.value)}
             className="px-3 py-1.5 border rounded-md bg-white text-sm min-w-[100px]"
+            style={{ fontFamily: "'Saira', sans-serif" }}
           >
             <option value="p">Normal</option>
             <option value="h1">Heading 1</option>
@@ -2193,73 +1493,11 @@ const BasicEditor: React.FC<{
             <Table className="w-4 h-4" />
           </button>
           <div className="border-l border-gray-300 h-6 mx-1"></div>
-          <button
-            onClick={() => execCommand("generateImage")}
-            className="p-1.5 hover:bg-gray-200 rounded"
-            title="Insert Image"
-          >
-            <ImageIcon className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => execCommand("embedYouTube")}
-            className="p-1.5 hover:bg-gray-200 rounded"
-            title="Embed YouTube Video"
-          >
-            <Youtube className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleDeleteYouTubeVideo}
-            className="p-1.5 hover:bg-gray-200 rounded text-red-500"
-            title="Delete YouTube Video"
-          >
-            <Youtube className="w-4 h-4" />
-            <X className="w-3 h-3 absolute -top-1 -right-1" />
-          </button>
-          <button
-            onClick={() => {
-              const url = prompt("Enter URL:", "https://")
-              if (url && url.trim()) execCommand("createLink", url.trim())
-            }}
-            className="p-1.5 hover:bg-gray-200 rounded"
-            title="Insert Link"
-          >
-            <Link className="w-4 h-4" />
-          </button>
-          <button onClick={() => execCommand("code")} className="p-1.5 hover:bg-gray-200 rounded" title="Code Block">
-            <Code className="w-4 h-4" />
-          </button>
-          <div className="border-l border-gray-300 h-6 mx-1"></div>
-          <button onClick={() => execCommand("undo")} className="p-1.5 hover:bg-gray-200 rounded" title="Undo">
-            <Undo className="w-4 h-4" />
-          </button>
-          <button onClick={() => execCommand("redo")} className="p-1.5 hover:bg-gray-200 rounded" title="Redo">
-            <Redo className="w-4 h-4" />
-          </button>
           <button onClick={() => execCommand("preview")} className="p-1.5 hover:bg-gray-200 rounded" title="Preview">
             <Eye className="w-4 h-4" />
           </button>
-          <div className="border-l border-gray-300 h-6 mx-1"></div>
-          <div className="dropdown relative">
-            <button className="p-1.5 hover:bg-gray-200 rounded flex items-center gap-1" title="View Code">
-              <FileCode className="w-4 h-4" />
-              <span className="text-xs">Code</span>
-            </button>
-            <div className="dropdown-menu absolute hidden bg-white shadow-md rounded-md py-1 mt-1 z-10 w-32">
-              <button
-                onClick={() => execCommand("viewHtmlCode")}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100"
-              >
-                HTML
-              </button>
-              <button
-                onClick={() => execCommand("viewNextJsCode")}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100"
-              >
-                Next.js
-              </button>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center">
+          <div className="ml-auto flex items-center gap-3">
+            <div className="text-sm text-gray-600">{formatUtils.countWords(value)} words</div>
             {saveStatus === "saving" && (
               <div className="flex items-center text-gray-500 text-xs">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -2291,7 +1529,7 @@ const BasicEditor: React.FC<{
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         className={`p-4 sm:p-6 md:p-8 min-h-[500px] focus:outline-none prose prose-lg max-w-none ${className}`}
-        style={{ backgroundColor: "white" }}
+        style={{ backgroundColor: "white", fontFamily: "'Saira', sans-serif", textAlign: "left" }}
       />
       <style jsx global>{`
         .prose img {
@@ -2301,44 +1539,43 @@ const BasicEditor: React.FC<{
           object-fit: cover;
           width: 100%;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
+          margin: 0 auto;
         }
-        
+
         .prose img:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
         }
-        
+
         .image-wrapper {
-          margin: 2rem 0;
+          margin: 2rem auto;
           position: relative;
+          text-align: center;
         }
-        
+
         [contenteditable] {
           outline: none;
+          font-family: 'Saira', sans-serif;
+          text-align: left;
         }
-        
-        /* YouTube embed styling */
-        .youtube-embed-  {
-          outline: none;
-        }
-        
+
         /* YouTube embed styling */
         .youtube-embed-wrapper {
           position: relative;
           width: 100%;
           padding-top: 56.25%; /* 16:9 Aspect Ratio */
-          margin: 2rem 0;
+          margin: 2rem auto;
           border-radius: 0.5rem;
           overflow: hidden;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
+
         .youtube-embed-wrapper:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
         }
-        
+
         .youtube-embed-wrapper iframe {
           position: absolute;
           top: 0;
@@ -2347,12 +1584,12 @@ const BasicEditor: React.FC<{
           height: 100%;
           border: 0;
         }
-        
+
         /* External link styling */
         .external-link {
           position: relative;
         }
-        
+
         .external-link::after {
           content: "↗";
           display: inline-block;
@@ -2361,41 +1598,45 @@ const BasicEditor: React.FC<{
           vertical-align: super;
           opacity: 0.7;
         }
-        
-        /* Dropdown menu */
-        .dropdown:hover .dropdown-menu {
-          display: block;
-        }
-        
+
         /* Table styling */
         table {
           width: 100%;
           border-collapse: collapse;
-          margin: 2rem 0;
+          margin: 2rem auto;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         th {
           background-color: #f7fafc;
           font-weight: 600;
-          text-align: left;
+          text-align: center;
           color: #4a5568;
         }
-        
+
         th, td {
           border: 1px solid #e2e8f0;
           padding: 0.75rem 1rem;
+          text-align: center;
         }
-        
+
         tr:nth-child(even) {
           background-color: #f9fafb;
         }
-        
+
         tr:hover {
           background-color: #f3f4f6;
         }
-        
+
         /* Formatting styles */
+        [contenteditable] h1, [contenteditable] h2, [contenteditable] h3,
+        [contenteditable] h4, [contenteditable] h5, [contenteditable] h6 {
+          font-family: 'Saira', sans-serif;
+          text-align: left;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
         [contenteditable] h1 {
           font-size: 2.5rem;
           font-weight: bold;
@@ -2446,32 +1687,37 @@ const BasicEditor: React.FC<{
           border-radius: 0.375rem;
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
           font-size: 0.875rem;
-          margin: 1.5rem 0;
+          margin: 1.5rem auto;
           white-space: pre-wrap;
           border: 1px solid #e2e8f0;
           overflow-x: auto;
+          text-align: left;
         }
-        [contenteditable] ul {
-          list-style-type: disc;
-          margin: 1.5rem 0;
+        [contenteditable] ul, [contenteditable] ol {
+          list-style-position: outside;
+          margin: 1.5rem auto;
           padding-left: 2rem;
-        }
-        [contenteditable] ol {
-          list-style-type: decimal;
-          margin: 1.5rem 0;
-          padding-left: 2rem;
+          text-align: left;
         }
         [contenteditable] li {
           margin-bottom: 0.5rem;
           line-height: 1.6;
+          font-family: 'Saira', sans-serif;
         }
         [contenteditable] a {
           color: #ea580c; /* orange-600 */
           text-decoration: underline;
           transition: color 0.2s ease;
+          font-family: 'Saira', sans-serif;
         }
         [contenteditable] a:hover {
           color: #c2410c; /* orange-700 */
+        }
+        [contenteditable] p {
+          text-align: left;
+          margin-left: auto;
+          margin-right: auto;
+          font-family: 'Saira', sans-serif;
         }
         [contenteditable] strong {
           font-weight: bold;
@@ -2487,6 +1733,50 @@ const BasicEditor: React.FC<{
   )
 }
 
+// Context Menu Component
+const ContextMenu: React.FC<{
+  visible: boolean
+  position: { x: number; y: number }
+  onClose: () => void
+  onDelete: () => void
+}> = ({ visible, position, onClose, onDelete }) => {
+  if (!visible) return null
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const menu = document.querySelector(".fixed.z-50")
+      if (menu && !menu.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed z-50 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200"
+      style={{ top: `${position.y}px`, left: `${position.x}px`, minWidth: "160px" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="py-1">
+        <button
+          className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onDelete()
+            onClose()
+          }}
+        >
+          <X className="w-4 h-4 mr-2" />
+          Delete Media
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // Main CustomEditor Component
 export default function CustomEditor({
   initialValue,
@@ -2495,7 +1785,7 @@ export default function CustomEditor({
   onGenerateMore,
   citations,
   postId,
-  title = "Untitled Article",
+  title = "",
   slug = "",
   author = "Anonymous",
   publishDate = new Date().toISOString(),
@@ -2503,14 +1793,7 @@ export default function CustomEditor({
 }: CustomEditorProps) {
   const [content, setContent] = useState(initialValue)
   const [toc, setToc] = useState<{ id: string; text: string; level: number }[]>([])
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
-  const [showSeoSettings, setShowSeoSettings] = useState(false)
-  const [showCodeView, setShowCodeView] = useState(false)
-  const [codeViewType, setCodeViewType] = useState<"html" | "nextjs">("html")
-  const [showAiCodeGenerator, setShowAiCodeGenerator] = useState(false)
-
-  // Generate initial SEO settings
   const [seoSettings, setSeoSettings] = useState<SeoSettings>(() => {
     const metaTags = formatUtils.generateMetaTags(initialValue, title, featuredImage)
     return {
@@ -2519,6 +1802,8 @@ export default function CustomEditor({
       enableSchema: true,
     }
   })
+  const [showCodeView, setShowCodeView] = useState(false)
+  const [codeViewType, setCodeViewType] = useState<"html" | "nextjs">("html")
 
   useEffect(() => {
     const formattedContent = initialValue.startsWith("<")
@@ -2543,27 +1828,16 @@ export default function CustomEditor({
     setShowCodeView(true)
   }, [])
 
-  const metrics = useMemo(
-    () => ({
-      words: content
-        .replace(/<[^>]+>/g, " ")
-        .split(/\s+/)
-        .filter(Boolean).length,
-      headings: toc.length,
-      paragraphs: (content.match(/<p[^>]*>/g) || []).length,
-      readingTime: Math.ceil(
-        content
-          .replace(/<[^>]+>/g, " ")
-          .split(/\s+/)
-          .filter(Boolean).length / 200,
-      ),
-      images: (content.match(/<img[^>]+>/g) || []).length + (content.match(/<iframe[^>]+youtube[^>]+>/g) || []).length,
-    }),
-    [content, toc],
-  )
-
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <CodeViewModal
+        isOpen={showCodeView}
+        onClose={() => setShowCodeView(false)}
+        content={content}
+        title={title}
+        seoSettings={seoSettings}
+        codeType={codeViewType}
+      />
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -2577,32 +1851,12 @@ export default function CustomEditor({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowAiCodeGenerator(true)}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI Code
-            </button>
-            <button
-              onClick={() => setShowSeoSettings(true)}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              SEO
-            </button>
             <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">Publish</button>
-            <button
-              className="sm:hidden p-2 hover:bg-gray-100 rounded-full"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            >
-              <List className="w-5 h-5 text-gray-600" />
-            </button>
           </div>
         </div>
       </header>
-      <main className="flex-1 max-w-screen-2xl mx-auto flex flex-col md:flex-row">
-        <div className="flex-1">
+      <main className="flex-1 max-w-screen-2xl mx-auto flex flex-col">
+        <div className="flex-1 mx-auto w-full max-w-4xl">
           <BasicEditor
             value={content}
             onChange={handleContentChange}
@@ -2613,147 +1867,13 @@ export default function CustomEditor({
             onViewCode={handleViewCode}
           />
         </div>
-        <div
-          className={`md:w-80 flex-shrink-0 border-l border-gray-200 ${isSidebarOpen ? "block" : "hidden md:block"}`}
-        >
-          <div className="p-4">
-            <h3 className="font-medium mb-3">Content Brief</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Words</span>
-                  <span className="text-sm font-medium">{metrics.words}</span>
-                </div>
-                <div className="text-xs text-gray-500">2,000-2,404</div>
-              </div>
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Headings</span>
-                  <span className="text-sm font-medium">{metrics.headings}</span>
-                </div>
-                <div className="text-xs text-gray-500">5-36</div>
-              </div>
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Paragraphs</span>
-                  <span className="text-sm font-medium">{metrics.paragraphs}</span>
-                </div>
-                <div className="text-xs text-gray-500">65-117</div>
-              </div>
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Media</span>
-                  <span className="text-sm font-medium">{metrics.images}</span>
-                </div>
-                <div className="text-xs text-gray-500">3-29</div>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-200"></div>
-          <div className="p-4">
-            <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-              <List className="h-4 w-4 mr-2 text-orange-600" />
-              Table of Contents
-            </h2>
-            <div className="max-h-[240px] overflow-y-auto">
-              {toc.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {toc.map((item) => (
-                    <li key={item.id} className={`text-sm ${item.level > 1 ? `ml-${(item.level - 1) * 3}` : ""}`}>
-                      <a href={`#${item.id}`} className="text-orange-600 hover:underline">
-                        {item.text}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500 italic">No headings found</p>
-              )}
-            </div>
-          </div>
-          {citations.length > 0 && (
-            <>
-              <div className="border-t border-gray-200"></div>
-              <div className="p-4">
-                <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                  <FileText className="h-4 w-4 mr-2 text-orange-600" />
-                  References
-                </h2>
-                <ul className="space-y-2">
-                  {citations.map((citation, index) => (
-                    <li key={index} className="text-sm">
-                      <a
-                        href={citation}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-600 hover:underline flex items-center gap-1"
-                      >
-                        <span>{citation}</span>
-                        <Link className="h-3 w-3" />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          )}
-          {images.length > 0 && (
-            <>
-              <div className="border-t border-gray-200"></div>
-              <div className="p-4">
-                <h2 className="text-base font-semibold text-gray-900 mb-3">Images</h2>
-                <div className="space-y-3">
-                  {images.map((src, index) => (
-                    <img
-                      key={index}
-                      src={src || "/placeholder.svg"}
-                      alt={`Image ${index + 1}`}
-                      className="w-full rounded-md shadow-sm border"
-                    />
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-          <div className="border-t border-gray-200"></div>
-          <div className="p-4">
-            <button
-              onClick={onGenerateMore}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-3 flex items-center justify-center"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Generate More Content
-            </button>
-          </div>
-        </div>
       </main>
 
-      {/* Modals */}
-      <SeoSettingsModal
-        isOpen={showSeoSettings}
-        onClose={() => setShowSeoSettings(false)}
-        settings={seoSettings}
-        onSave={setSeoSettings}
-      />
-
-      <CodeViewModal
-        isOpen={showCodeView}
-        onClose={() => setShowCodeView(false)}
-        content={content}
-        title={title}
-        seoSettings={seoSettings}
-        codeType={codeViewType}
-      />
-
-      <AiCodeGeneratorModal
-        isOpen={showAiCodeGenerator}
-        onClose={() => setShowAiCodeGenerator(false)}
-        content={content}
-        title={title}
-        seoSettings={seoSettings}
-      />
-
       <style jsx global>{`
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6, .prose p, .prose li, .prose a, [contenteditable] {
+          font-family: 'Saira', sans-serif;
+          text-align: left;
+        }
         .prose h1 {
           font-size: 2.5rem;
           margin-top: 3rem;
@@ -2777,8 +1897,8 @@ export default function CustomEditor({
         }
         [contenteditable] a:hover {
           color: #c2410c; /* orange-700 */
-          }
-        `}</style>
+        }
+      `}</style>
     </div>
   )
 }

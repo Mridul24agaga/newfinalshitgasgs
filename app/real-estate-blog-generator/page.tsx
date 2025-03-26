@@ -20,6 +20,7 @@ import Image from "next/image"
 import Link from "next/link"
 import Footer from "../components/footer"
 import TrustedBySection from "../components/trusted"
+import UniversalBlogCTA from "../components/ctacontent"
 
 // Initialize the Saira font with the weights we need
 const saira = Saira({
@@ -536,39 +537,7 @@ export default function ToolsPage() {
       <TrustedBySection />
 
 
-      {/* CTA Section */}
-      <section className="py-16 bg-[#FF9626]" id="contact">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-              Ready to Transform Your Real Estate Blogging Strategy?
-            </h2>
-            <p className="text-xl text-white opacity-90 mb-8">
-              Join our waitlist to be the first to know when our Real Estate Blog Generator launches. Discover how our
-              innovative tool can save you time and enhance your online presence.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="mailto:info@blogosocial.com"
-                className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors text-lg"
-              >
-                Join Waitlist
-              </Link>
-              <Link
-                href="/contact"
-                className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-medium flex items-center justify-center hover:bg-white/10 transition-colors text-lg"
-              >
-                Contact Us
-              </Link>
-            </div>
-
-            <p className="text-white mt-8 opacity-80">
-              Blogosocial: Where Innovation Meets Expertise—Your Partner in Real Estate Content Excellence!
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <UniversalBlogCTA/>
 
       <Footer />
     </main>
