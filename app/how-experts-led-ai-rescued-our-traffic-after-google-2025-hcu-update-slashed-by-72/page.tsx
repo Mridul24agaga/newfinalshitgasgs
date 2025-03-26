@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/foot"
+import Footer from "@/app/components/footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -124,15 +124,7 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Summary: Surviving Google's Helpful Content Apocalypse
               </h2>
-              <div className="w-full mt-6 mb-6">
-                <Image
-                  src="/13.png"
-                  alt="Placeholder image for Summary: Surviving Google's Helpful Content Apocalypse"
-                  width={1200}
-                  height={600}
-                  className="rounded-lg mx-auto w-full h-auto max-w-3xl"
-                />
-              </div>
+             
               <p className="text-gray-700">
                 When Google's 2025 Helpful Content Update (HCU) wiped out 72% of our organic traffic overnight, it felt
                 like a gut punch. Years of hard work, engaging content, and traffic we had built up—gone. We weren't

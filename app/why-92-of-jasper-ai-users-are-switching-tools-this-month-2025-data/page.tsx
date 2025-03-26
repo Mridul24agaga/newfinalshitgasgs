@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/foot"
+import Footer from "@/app/components/footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -122,15 +122,7 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Executive Summary: The $14B AI Content Reckoning
               </h2>
-              <div className="w-full mt-6 mb-6">
-                <Image
-                  src="/78.png"
-                  alt="AI Content Reckoning Illustration"
-                  width={1200}
-                  height={600}
-                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
-                />
-              </div>
+              
               <p className="text-gray-700">
                 The AI writing boom of 2023-2024 saw a massive surge in businesses relying on tools like Jasper.ai for
                 fast content generation. However, by 2025, 92% of Jasper.ai users have started migrating to

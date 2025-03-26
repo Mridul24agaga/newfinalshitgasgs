@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import Footer from "@/app/components/foot"
+import Footer from "@/app/components/footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -120,15 +120,7 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Introduction: The End of Traditional Content Teams 🎯📉💡
               </h2>
-              <div className="w-full mt-6 mb-6">
-                <Image
-                  src="/91.png"
-                  alt="Traditional Content Teams vs PhD-led Teams"
-                  width={1200}
-                  height={600}
-                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
-                />
-              </div>
+             
               <p className="text-gray-700">
                 For years, we followed the conventional SaaS content model—hiring in-house writers and scaling content
                 through AI tools. But by 2025, Google's E-E-A-T (Experience, Expertise, Authoritativeness,
@@ -306,15 +298,7 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Section 4: Results That Redefined SaaS Content 🚀📈🏆
               </h2>
-              <div className="w-full mt-6 mb-6">
-                <Image
-                  src="/95.png"
-                  alt="SaaS Content Redefined Results"
-                  width={1200}
-                  height={600}
-                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
-                />
-              </div>
+              
               <h3 className="text-xl font-semibold text-black mb-3">120-Day Transformation Timeline</h3>
               <table className="w-full border-collapse border border-gray-300 mb-6">
                 <thead>
@@ -365,13 +349,14 @@ export default function BlogPost() {
               </h2>
               <div className="w-full mt-6 mb-6">
                 <Image
-                  src="/96.png"
-                  alt="Implementing PhD-Driven Content Operations"
+                  src="/91.png"
+                  alt="Traditional Content Teams vs PhD-led Teams"
                   width={1200}
                   height={600}
                   className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
                 />
               </div>
+             
               <h3 className="text-xl font-semibold text-black mb-3">5-Step Migration Blueprint</h3>
               <ol className="list-decimal pl-6 text-gray-700 mb-6">
                 <li>Audit Existing Content: Use tools like Blogosocial's Penalty Risk Analyzer[9]</li>
@@ -381,7 +366,7 @@ export default function BlogPost() {
                 <li>Enable Real-Time Updates: Auto-rewrite posts when regulations change 🔄</li>
               </ol>
               <p className="font-medium text-orange-600">
-                <Link href="/phd-hiring-checklist">Free Tool: Download Our PhD Hiring Checklist</Link>
+                <Link href="https://blogosocial.com">Free Tool: Download Our PhD Hiring Checklist</Link>
               </p>
             </section>
 
@@ -389,15 +374,7 @@ export default function BlogPost() {
               <h2 className="text-2xl font-semibold text-black mb-4">
                 Conclusion: The New Frontier of Expert-Led AI 🚀📖🌍
               </h2>
-              <div className="w-full mt-6 mb-6">
-                <Image
-                  src="/97.png"
-                  alt="The New Frontier of Expert-Led AI"
-                  width={1200}
-                  height={600}
-                  className="rounded-lg mx-auto w-full h-auto max-w-3xl object-cover"
-                />
-              </div>
+             
               <p className="text-gray-700 mb-4">
                 While pure AI tools risk $47K+ compliance penalties[3][9] and generic content teams lack technical
                 depth, our PhD hybrid model achieved:
@@ -411,20 +388,20 @@ export default function BlogPost() {
               <h3 className="text-xl font-semibold text-black mb-3">Next Steps:</h3>
               <ul className="list-disc pl-6 text-gray-700 mb-6">
                 <li>
-                  <Link href="/eeat-audit" className="text-orange-600 hover:underline">
+                  <Link href="https://blogosocial.com" className="text-orange-600 hover:underline">
                     Run a Free E-E-A-T Audit 📊
                   </Link>
                 </li>
                 <li>
-                  <Link href="/phd-content-revolution" className="text-orange-600 hover:underline">
+                  <Link href="https://blogosocial.com" className="text-orange-600 hover:underline">
                     Join 1,200+ Brands in the PhD Content Revolution 🚀
                   </Link>
                 </li>
               </ul>
               <p className="text-gray-700 mt-6">
                 Want the full 7,500-word version with all case studies?{" "}
-                <a href="mailto:team@blogosocial.com" className="text-orange-600 hover:underline">
-                  Email "PhD Blueprint" to team@blogosocial.com
+                <a href="mailto:info@blogosocial.com" className="text-orange-600 hover:underline">
+                  Email "PhD Blueprint" to info@blogosocial.com
                 </a>{" "}
                 📩
               </p>
@@ -461,7 +438,7 @@ export default function BlogPost() {
               </div>
               <div className="relative self-end md:self-center">
                 <Link
-                  href="/free-eeat-audit"
+                  href="https://blogosocial.com"
                   className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   Get Your Free E-E-A-T Audit

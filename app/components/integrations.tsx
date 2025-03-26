@@ -78,9 +78,10 @@ export default function IntegrationsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight md:leading-tight"
           >
-            <span className="bg-[#FF9626] px-3 py-1 text-white">Integration</span> Across Multiple Platforms
+            <span className="bg-[#FF9626] px-3 py-1 text-white inline-block mb-2 md:mb-0 md:mr-2">Integration</span>{" "}
+            <span className="inline-block">Across Multiple Platforms</span>
           </motion.h2>
 
           <motion.p
@@ -142,7 +143,11 @@ export default function IntegrationsSection() {
           transition={{ delay: 0.8 }}
           className="mt-16 text-center"
         >
-          <p className="text-gray-600 mb-6">Don't see your platform? We're constantly adding new integrations.</p>
+          <p className="text-gray-600 mb-3">Don't see your platform? We're constantly adding new integrations.</p>
+          <p className="text-gray-500 text-sm mb-6 max-w-2xl mx-auto">
+            Please note that it can take us a few days to build the integration since all the integrations are built
+            from scratch and are not premade.
+          </p>
           <a
             href="/#contact"
             className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-[#FF9626] text-white font-medium hover:bg-[#FF9626]/90 transition-colors"

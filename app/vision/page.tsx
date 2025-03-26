@@ -24,13 +24,10 @@ export default function VisionPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between">
             <Link href="/" className="flex items-center">
-              <div className="font-bold text-xl flex items-center">
-                <span className="mr-1">blog</span>
-                <span className="text-[#FF9626] font-bold">O</span>
-                <span>social</span>
+              <div className="flex items-center">
+                <Image src="/logo.png" alt="Logo" width={160} height={32} className="w-auto h-6 sm:h-8" />
               </div>
             </Link>
-
             <nav className="hidden md:flex items-center space-x-8">
               <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors">
                 About
@@ -39,10 +36,10 @@ export default function VisionPage() {
                 Team
               </Link>
               <Link
-                href="/vision"
+                href="/services"
                 className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-gray-900"
               >
-                Vision
+                Services
               </Link>
               <Link href="/mission" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Mission
@@ -50,7 +47,7 @@ export default function VisionPage() {
             </nav>
 
             <div className="flex items-center space-x-4">
-              
+
 
               <Link
                 href="/start"
@@ -62,6 +59,7 @@ export default function VisionPage() {
           </div>
         </div>
       </header>
+
 
       {/* Hero Section */}
       <section className="relative bg-white overflow-hidden">

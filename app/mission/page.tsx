@@ -12,18 +12,15 @@ import UniversalBlogCTA from "../components/ctacontent"
 export default function MissionPage() {
   return (
     <main className="min-h-screen bg-white font-['Saira',sans-serif]">
-      {/* Header */}
-      <header className="bg-white py-4">
+       {/* Header */}
+       <header className="bg-white py-4">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between ">
+          <div className="bg-white rounded-full py-3 px-6 flex items-center justify-between">
             <Link href="/" className="flex items-center">
-              <div className="font-bold text-xl flex items-center">
-                <span className="mr-1">blog</span>
-                <span className="text-[#FF9626] font-bold">O</span>
-                <span>social</span>
+              <div className="flex items-center">
+                <Image src="/logo.png" alt="Logo" width={160} height={32} className="w-auto h-6 sm:h-8" />
               </div>
             </Link>
-
             <nav className="hidden md:flex items-center space-x-8">
               <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors">
                 About
@@ -31,27 +28,31 @@ export default function MissionPage() {
               <Link href="/team" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Team
               </Link>
-              <Link href="/vision" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <Link
+                href="/vision"
+                className="text-gray-600 hover:text-gray-900 transition-colors font-medium text-gray-900"
+              >
                 Vision
               </Link>
-              <Link href="/mission" className="text-gray-900 font-medium hover:text-gray-900 transition-colors">
+              <Link href="/mission" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Mission
               </Link>
             </nav>
 
             <div className="flex items-center space-x-4">
-              
+
 
               <Link
                 href="/start"
                 className="bg-[#FF9626] text-white px-5 py-2 rounded-full font-medium hover:bg-[#e88620] transition-colors"
               >
-                Start Today
+                Try Now
               </Link>
             </div>
           </div>
         </div>
       </header>
+
 
       {/* Hero Section */}
       <section className="relative bg-white overflow-hidden">
