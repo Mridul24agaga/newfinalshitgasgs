@@ -14,8 +14,6 @@ import {
   Settings,
   Key,
   LogOut,
-  Calendar,
-  BarChart3,
   ChevronRight,
   Bell,
   PlusCircle,
@@ -756,27 +754,39 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar */}
+      {/* Modern Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 h-screen ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 h-screen ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-200 ease-in-out lg:translate-x-0`}
+        } transition-transform duration-300 ease-in-out lg:translate-x-0`}
       >
-        <div className="w-64 bg-white flex flex-col h-screen text-gray-900 border-r border-gray-200">
-          <div className="flex items-center justify-center p-5 border-b border-gray-200">
-            <h1 className="text-xl font-bold">Blogosocial</h1>
+        <div className="w-72 bg-white flex flex-col h-screen text-gray-800 border-r border-gray-200 shadow-lg">
+          <div className="flex items-center justify-center p-6 border-b border-gray-100">
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-8 rounded-md bg-[#294fd6] flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-[#294fd6] to-[#6284e4] bg-clip-text text-transparent">
+                Blogosocial
+              </h1>
+            </div>
           </div>
 
-          <div className="px-5 mt-6 mb-8">
+          <div className="px-5 mt-8 mb-8">
             <Link href="/dashboard/summarizer">
-              <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium py-3.5 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] border border-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.2)]">
-                Create Content
+              <button className="w-full bg-[#294fd6] text-white font-medium py-3.5 rounded-xl hover:bg-[#1e3eb8] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-[#294fd6]/20 flex items-center justify-center">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create New Content
               </button>
             </Link>
           </div>
 
-          <nav className="flex-1 px-4 overflow-y-auto">
-            {navigation.map((item) => {
+          <div className="px-3 mb-4">
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Main</div>
+          </div>
+
+          <nav className="flex-1 px-3 overflow-y-auto space-y-1">
+            {navigation.slice(0, 3).map((item) => {
               const Icon = item.icon
               const isActive =
                 pathname === item.href || (item.subItems && item.subItems.some((subItem) => pathname === subItem.href))
@@ -787,26 +797,26 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-2 group",
+                      "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group",
                       isActive
-                        ? "text-orange-600 bg-orange-50 border border-orange-100"
-                        : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                        ? "text-[#294fd6] bg-[#294fd6]/10 border-l-4 border-[#294fd6]"
+                        : "text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent",
                     )}
                   >
                     <Icon
                       className={cn(
                         "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
-                        isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                        isActive ? "text-[#294fd6]" : "text-gray-500 group-hover:text-[#294fd6]",
                       )}
                     />
                     {item.name}
                     {item.name === "Dashboard" && (
-                      <span className="ml-auto text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                      <span className="ml-auto text-xs bg-[#294fd6]/10 text-[#294fd6] px-2 py-0.5 rounded-full">
                         Home
                       </span>
                     )}
                     {item.name === "Website Summarizer" && (
-                      <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">
+                      <span className="ml-auto text-xs bg-[#294fd6]/10 text-[#294fd6] px-2 py-0.5 rounded-full">
                         New
                       </span>
                     )}
@@ -814,22 +824,36 @@ export function DashboardShell({ user }: DashboardShellProps) {
                 )
               }
 
+              return null
+            })}
+          </nav>
+
+          <div className="px-3 mb-4 mt-6">
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Workspace</div>
+          </div>
+
+          <nav className="px-3 overflow-y-auto space-y-1">
+            {navigation.slice(3).map((item) => {
+              const Icon = item.icon
+              const isActive =
+                pathname === item.href || (item.subItems && item.subItems.some((subItem) => pathname === subItem.href))
+
               return (
-                <div key={item.name} className="mb-2">
+                <div key={item.name} className="mb-1">
                   <div
                     className={cn(
                       "flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 group",
                       item.href ? "cursor-pointer" : "cursor-default",
                       isActive
-                        ? "text-orange-600 bg-orange-50 border border-orange-100"
-                        : "text-gray-700 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                        ? "text-[#294fd6] bg-[#294fd6]/10 border-l-4 border-[#294fd6]"
+                        : "text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent",
                     )}
                     onClick={() => item.subItems && setOpenSubmenu(openSubmenu === item.name ? "" : item.name)}
                   >
                     <Icon
                       className={cn(
                         "w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
-                        isActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                        isActive ? "text-[#294fd6]" : "text-gray-500 group-hover:text-[#294fd6]",
                       )}
                     />
                     {item.name}
@@ -855,14 +879,14 @@ export function DashboardShell({ user }: DashboardShellProps) {
                             className={cn(
                               "flex items-center px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
                               isSubActive
-                                ? "text-orange-600 bg-orange-50 border border-orange-100"
-                                : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
+                                ? "text-[#294fd6] bg-[#294fd6]/10"
+                                : "text-gray-600 hover:text-[#294fd6] hover:bg-[#294fd6]/5",
                             )}
                           >
                             <SubIcon
                               className={cn(
                                 "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
-                                isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
+                                isSubActive ? "text-[#294fd6]" : "text-gray-500 group-hover:text-[#294fd6]",
                               )}
                             />
                             {subItem.name}
@@ -876,41 +900,37 @@ export function DashboardShell({ user }: DashboardShellProps) {
             })}
           </nav>
 
-          <div className="p-5 mt-auto border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
-            <div className="flex flex-col space-y-4">
-              <div className="flex items-center justify-between">
+          <div className="p-4 mt-auto">
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
-                  <CreditCard className="w-4 h-4 mr-2 text-orange-500" />
+                  <CreditCard className="w-4 h-4 mr-2 text-[#294fd6]" />
                   <p className="text-sm font-medium text-gray-800">Credits</p>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-sm font-bold text-gray-800">{creditsRemaining}</span>
+                  <span className="text-sm font-bold text-[#294fd6]">{creditsRemaining}</span>
                   <span className="text-xs text-gray-500 ml-1">remaining</span>
                 </div>
               </div>
 
-              <div className="w-full bg-gray-100 rounded-full h-2.5 border border-gray-200">
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 h-2.5 rounded-full transition-all duration-300 relative"
+                  className="bg-[#294fd6] h-2 rounded-full transition-all duration-300"
                   style={{ width: `${totalCredits > 0 ? (stats.creditsUsed / totalCredits) * 100 : 0}%` }}
-                >
-                  {totalCredits > 0 && stats.creditsUsed / totalCredits > 0.8 && (
-                    <span className="absolute -right-1 -top-1 w-3 h-3 bg-orange-500 rounded-full animate-ping opacity-75"></span>
-                  )}
-                </div>
+                ></div>
               </div>
 
-              <div className="flex justify-between text-xs text-gray-500 px-1">
+              <div className="flex justify-between text-xs text-gray-500 mt-2 mb-3">
                 <span>{stats.creditsUsed} used</span>
                 <span>{totalCredits} total</span>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                 <div className="flex items-center">
                   {subscription && (planName === "Professional" || planName === "Enterprise") ? (
                     <div className="flex items-center">
-                      <Sparkles className="w-4 h-4 mr-1.5 text-orange-500" />
-                      <span className="text-sm font-semibold text-orange-500">{planName}</span>
+                      <Sparkles className="w-4 h-4 mr-1.5 text-[#294fd6]" />
+                      <span className="text-sm font-semibold text-[#294fd6]">{planName}</span>
                     </div>
                   ) : (
                     <span className="text-sm font-medium text-gray-700">{planName}</span>
@@ -921,9 +941,9 @@ export function DashboardShell({ user }: DashboardShellProps) {
                   subscription.plan_id.toLowerCase() !== "enterprise" && (
                     <Link
                       href="/upgrade"
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 flex items-center gap-1 transform hover:scale-105 border border-orange-600"
+                      className="bg-[#294fd6] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 flex items-center gap-1"
                     >
-                      <Zap className="w-3.5 h-3.5 mr-1" />
+                      <Zap className="w-3 h-3 mr-1" />
                       Upgrade
                     </Link>
                   )}
@@ -933,9 +953,9 @@ export function DashboardShell({ user }: DashboardShellProps) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 w-full lg:pl-64">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex flex-col flex-1 w-full lg:pl-72">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -945,33 +965,34 @@ export function DashboardShell({ user }: DashboardShellProps) {
               >
                 <Menu size={24} />
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+              <h2 className="text-xl font-bold text-gray-900">Dashboard</h2>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
+            <div className="flex items-center space-x-4">
+              <button className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 relative">
                 <Bell size={20} />
+                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
               </button>
 
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center justify-center w-9 h-9 rounded-full overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200"
+                  className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-[#294fd6]/20 hover:border-[#294fd6]/50 transition-all duration-200"
                   aria-expanded={isProfileOpen}
                   aria-haspopup="true"
                   type="button"
                 >
-                  <div className="w-9 h-9 bg-black flex items-center justify-center text-white font-medium">
+                  <div className="w-10 h-10 bg-[#294fd6] flex items-center justify-center text-white font-medium">
                     {user.email?.charAt(0).toUpperCase()}
                   </div>
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-md py-1 z-50 border border-gray-200 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl py-1 z-50 border border-gray-200 overflow-hidden shadow-lg">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-3">
-                          <div className="w-10 h-10 bg-black flex items-center justify-center text-white font-medium text-lg">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#294fd6]/20 mr-3">
+                          <div className="w-10 h-10 bg-[#294fd6] flex items-center justify-center text-white font-medium text-lg">
                             {user.email?.charAt(0).toUpperCase()}
                           </div>
                         </div>
@@ -1037,212 +1058,284 @@ export function DashboardShell({ user }: DashboardShellProps) {
             </div>
           )}
 
-          <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-            <div className="bg-black rounded-lg p-6 text-white border border-gray-800 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-orange-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-radial from-orange-500/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
-              <div className="flex items-start justify-between relative z-10">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-2">
-                    Welcome to Blogosocial <Sparkles className="h-5 w-5 text-orange-500" />
-                  </h1>
-                  <p className="text-gray-300 text-sm">
-                    Your professional content creation platform is ready to help you craft engaging content.
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Welcome Banner */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-[#294fd6] to-[#6284e4] rounded-2xl p-8 text-white mb-8 shadow-xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/3"></div>
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
+                <div className="mb-6 md:mb-0">
+                  <h1 className="text-3xl font-bold tracking-tight mb-3">Welcome to Blogosocial</h1>
+                  <p className="text-white/80 text-lg max-w-xl">
+                    Your professional content creation platform is ready to help you craft engaging content that
+                    resonates with your audience.
                   </p>
                 </div>
-                <button
-                  onClick={() => router.push("/dashboard/summarizer")}
-                  className="hidden sm:flex items-center px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-all duration-300 text-sm font-medium border border-orange-600 transform hover:scale-105"
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  New Content
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={() => router.push("/dashboard/summarizer")}
+                    className="flex items-center justify-center px-6 py-3 bg-white text-[#294fd6] rounded-xl hover:bg-gray-100 transition-all duration-300 text-sm font-medium border border-white/10 transform hover:scale-105 shadow-lg"
+                  >
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Create Content
+                  </button>
+                  <button
+                    onClick={() => router.push("/company-database/ideas")}
+                    className="flex items-center justify-center px-6 py-3 bg-[#294fd6]/20 text-white rounded-xl hover:bg-[#294fd6]/30 transition-all duration-300 text-sm font-medium border border-white/20 transform hover:scale-105"
+                  >
+                    <Lightbulb className="mr-2 h-5 w-5" />
+                    Generate Ideas
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {subscription && (
-                <div className="md:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                        <span className="text-orange-500 mr-2">★</span>
-                        Your {formatPlanName(subscription.plan_id)} Subscription
-                      </h2>
-                      <button
-                        onClick={() => router.push("/upgrade")}
-                        className="px-4 py-1.5 bg-black text-white rounded-full hover:bg-gray-800 transition-all duration-300 text-xs font-medium border border-black transform hover:scale-105"
-                      >
-                        Upgrade Plan
-                      </button>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-500">Posts Created</h3>
+                  <div className="p-2 bg-[#294fd6]/10 rounded-lg">
+                    <FileText className="h-5 w-5 text-[#294fd6]" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{stats.postsCreated}</p>
+                <div className="mt-2 flex items-center text-xs text-green-600">
+                  <span className="flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
+                    12% increase
+                  </span>
+                  <span className="text-gray-500 ml-2">from last month</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-500">Credits Used</h3>
+                  <div className="p-2 bg-[#294fd6]/10 rounded-lg">
+                    <CreditCard className="h-5 w-5 text-[#294fd6]" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{stats.creditsUsed}</p>
+                <div className="mt-2 flex items-center text-xs text-gray-500">
+                  <span>{creditsRemaining} credits remaining</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-500">Website Summaries</h3>
+                  <div className="p-2 bg-[#294fd6]/10 rounded-lg">
+                    <Globe className="h-5 w-5 text-[#294fd6]" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{stats.websiteSummaries}</p>
+                <div className="mt-2 flex items-center text-xs text-blue-600">
+                  <span className="flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
+                    New feature
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-500">Current Plan</h3>
+                  <div className="p-2 bg-[#294fd6]/10 rounded-lg">
+                    <Sparkles className="h-5 w-5 text-[#294fd6]" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{planName}</p>
+                <div className="mt-2 flex items-center text-xs">
+                  {subscription &&
+                    subscription.plan_id.toLowerCase() !== "professional" &&
+                    subscription.plan_id.toLowerCase() !== "enterprise" && (
+                      <Link href="/upgrade" className="text-[#294fd6] font-medium flex items-center">
+                        Upgrade your plan
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Link>
+                    )}
+                </div>
+              </div>
+            </div>
+
+            {/* Subscription Details */}
+            {subscription && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm mb-8">
+                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center">
+                      <span className="text-[#294fd6] mr-2">★</span>
+                      Your Subscription
+                    </h2>
+                    <button
+                      onClick={() => router.push("/upgrade")}
+                      className="px-4 py-2 bg-[#294fd6] text-white rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 text-sm font-medium shadow-md shadow-[#294fd6]/10"
+                    >
+                      Upgrade Plan
+                    </button>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-300">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Current Plan</p>
+                      <p className="text-2xl font-bold text-[#294fd6] flex items-center">
+                        {formatPlanName(subscription.plan_id)}
+                        {(planName === "Professional" || planName === "Enterprise") && (
+                          <Sparkles className="h-4 w-4 ml-2 text-[#294fd6]" />
+                        )}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-600">{isAnnual ? "Billed annually" : "Billed monthly"}</p>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-300">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Status</p>
+                      <div className="flex items-center">
+                        <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                        <p className="text-2xl font-bold text-gray-900 capitalize">{subscription.status || "Active"}</p>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600">Your subscription is active and working</p>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-300">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Next Billing</p>
+                      <p className="text-2xl font-bold text-gray-900 capitalize flex items-center">
+                        {subscription.current_period_end
+                          ? new Date(subscription.current_period_end).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Not available"}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-600">
+                        {isAnnual ? "Your yearly subscription will renew" : "Your monthly subscription will renew"}
+                      </p>
                     </div>
                   </div>
-                  <div className="p-5">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Current Plan</p>
-                        <p className="text-xl font-bold text-black flex items-center">
-                          {formatPlanName(subscription.plan_id)}
-                          {(planName === "Professional" || planName === "Enterprise") && (
-                            <Sparkles className="h-4 w-4 ml-2 text-orange-500" />
-                          )}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Status</p>
-                        <div className="flex items-center">
-                          <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                          <p className="text-xl font-bold text-black capitalize">{subscription.status || "Active"}</p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Billing Cycle</p>
-                        <p className="text-xl font-bold text-black capitalize flex items-center">
-                          {isAnnual ? (
-                            <>
-                              Yearly <Calendar className="ml-2 h-4 w-4 text-orange-500" />
-                            </>
-                          ) : (
-                            "Monthly"
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-6 bg-orange-50 p-4 rounded-lg border border-orange-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-700 flex items-center">
-                          <CreditCard className="h-4 w-4 mr-2 text-orange-500" />
+
+                  <div className="mt-8 bg-[#294fd6]/5 p-6 rounded-xl border border-[#294fd6]/20">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                          <CreditCard className="h-5 w-5 mr-2 text-[#294fd6]" />
                           Credits Usage
-                        </p>
-                        <p className="text-sm font-medium bg-white px-2 py-1 rounded-full border border-orange-200">
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">Track your content generation credits</p>
+                      </div>
+                      <div className="mt-4 md:mt-0">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full bg-white border border-[#294fd6]/20 text-sm font-medium text-[#294fd6]">
                           {subscription.credits} credits available
-                        </p>
-                      </div>
-                      <div className="w-full bg-white rounded-full h-3 overflow-hidden border border-orange-200">
-                        <div
-                          className="bg-gradient-to-r from-orange-400 to-orange-600 h-3 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${Math.min(100, (stats.creditsUsed / (subscription.credits + stats.creditsUsed)) * 100)}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between mt-2 text-xs text-gray-600">
-                        <span className="font-medium text-orange-600">{stats.creditsUsed} credits used</span>
-                        <span className="font-medium">{subscription.credits} remaining</span>
-                      </div>
-                    </div>
-                    {subscription.current_period_end && (
-                      <div className="flex items-center justify-end mt-4 text-xs text-gray-500">
-                        <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                        <span>
-                          {isAnnual ? "Renews yearly on" : "Renews on"}{" "}
-                          <span className="font-medium">
-                            {new Date(subscription.current_period_end).toLocaleDateString()}
-                          </span>
                         </span>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded-lg border border-gray-200">
-                <div className="p-5 border-b border-gray-100">
-                  <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2 text-orange-500" />
-                    Stats
-                  </h2>
-                </div>
-                <div className="p-5">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Posts Created</p>
-                      <p className="text-2xl font-bold">{stats.postsCreated}</p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Credits Used</p>
-                      <p className="text-2xl font-bold">{stats.creditsUsed}</p>
+                    <div className="w-full bg-white rounded-full h-3 overflow-hidden border border-[#294fd6]/20">
+                      <div
+                        className="bg-[#294fd6] h-3 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.min(100, (stats.creditsUsed / (subscription.credits + stats.creditsUsed)) * 100)}%`,
+                        }}
+                      ></div>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                        Website Summaries
-                      </p>
-                      <p className="text-2xl font-bold">{stats.websiteSummaries}</p>
+                    <div className="flex justify-between mt-3 text-sm">
+                      <span className="font-medium text-[#294fd6]">{stats.creditsUsed} credits used</span>
+                      <span className="font-medium text-gray-700">{subscription.credits} remaining</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                  <span className="bg-black text-white p-1 rounded-md mr-2 text-xs">PRO</span>
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center">
+                  <span className="bg-[#294fd6] text-white p-1 rounded-md mr-2 text-xs">PRO</span>
                   Quick Actions
                 </h2>
               </div>
-              <div className="p-5">
-                <div className="grid gap-4 md:grid-cols-3">
+              <div className="p-6">
+                <div className="grid gap-6 md:grid-cols-3">
                   <button
                     onClick={() => router.push("/dashboard/summarizer")}
-                    className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
+                    className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:border-[#294fd6]/60 hover:shadow-lg transition-all duration-300 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="flex items-center relative z-10">
-                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-3 border border-orange-200 group-hover:bg-orange-200 transition-colors duration-300">
-                        <Target className="h-6 w-6 text-orange-600" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#294fd6]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-14 h-14 rounded-xl bg-[#294fd6]/10 flex items-center justify-center mb-4 group-hover:bg-[#294fd6]/20 transition-colors duration-300">
+                        <Target className="h-7 w-7 text-[#294fd6]" />
                       </div>
-                      <div className="text-left">
-                        <span className="font-medium text-gray-900 text-base">Create Content</span>
-                        <p className="text-xs text-gray-500 mt-1">Craft professional blog posts</p>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Create Content</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Generate professional blog posts and articles tailored to your audience
+                      </p>
+                      <div className="flex items-center text-[#294fd6] text-sm font-medium">
+                        Get started
+                        <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
-                    </span>
-                    <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
+                    </div>
                   </button>
 
                   <button
                     onClick={() => router.push("/dashboard/summarizer")}
-                    className="flex items-center justify-between p-4 border border-blue-200 rounded-lg hover:border-blue-400 transition-all duration-300 group relative overflow-hidden"
+                    className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:border-[#294fd6]/60 hover:shadow-lg transition-all duration-300 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="flex items-center relative z-10">
-                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 border border-blue-200 group-hover:bg-blue-200 transition-colors duration-300">
-                        <Globe className="h-6 w-6 text-blue-600" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#294fd6]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-14 h-14 rounded-xl bg-[#294fd6]/10 flex items-center justify-center mb-4 group-hover:bg-[#294fd6]/20 transition-colors duration-300">
+                        <Globe className="h-7 w-7 text-[#294fd6]" />
                       </div>
-                      <div className="text-left">
-                        <span className="font-medium text-gray-900 text-base">Summarize Website</span>
-                        <p className="text-xs text-gray-500 mt-1">Generate AI website summaries</p>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Summarize Website</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Generate AI-powered summaries of any website to understand content quickly
+                      </p>
+                      <div className="flex items-center text-[#294fd6] text-sm font-medium">
+                        Analyze site
+                        <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
-                    </span>
-                    <ChevronRight className="h-5 w-5 text-blue-400 group-hover:text-blue-600 transition-colors relative z-10" />
+                    </div>
                   </button>
 
                   <button
                     onClick={() => router.push("/company-database/ideas")}
-                    className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
+                    className="group relative bg-white rounded-xl border border-gray-200 p-6 hover:border-[#294fd6]/60 hover:shadow-lg transition-all duration-300 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="flex items-center relative z-10">
-                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-3 border border-orange-200 group-hover:bg-orange-200 transition-colors duration-300">
-                        <Lightbulb className="h-6 w-6 text-orange-600" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#294fd6]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-14 h-14 rounded-xl bg-[#294fd6]/10 flex items-center justify-center mb-4 group-hover:bg-[#294fd6]/20 transition-colors duration-300">
+                        <Lightbulb className="h-7 w-7 text-[#294fd6]" />
                       </div>
-                      <div className="text-left">
-                        <span className="font-medium text-gray-900 text-base">Generate Ideas</span>
-                        <p className="text-xs text-gray-500 mt-1">Discover trending topics</p>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Generate Ideas</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Discover trending topics and content ideas for your industry and audience
+                      </p>
+                      <div className="flex items-center text-[#294fd6] text-sm font-medium">
+                        Explore ideas
+                        <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
-                    </span>
-                    <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
+                    </div>
                   </button>
                 </div>
               </div>
             </div>
 
-            {debugInfo && (
-              <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg overflow-auto max-h-96">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Debug Information</h3>
-                <p className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{debugInfo}</p>
-              </div>
-            )}
+            
           </div>
         </main>
       </div>

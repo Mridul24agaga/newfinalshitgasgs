@@ -82,12 +82,12 @@ export default function GenerateBlogContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-      <header className="p-4 sm:p-6 bg-white shadow-sm">
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="p-4 sm:p-6 bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <button
             onClick={() => router.push("/dashboard/blogs")}
-            className="text-[#294fd6] hover:text-[#1a3ca8] flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors"
+            className="text-[#2563eb] hover:text-[#1d4ed8] flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors"
           >
             <ArrowLeft size={20} />
             Back to Dashboard
@@ -98,17 +98,17 @@ export default function GenerateBlogContent() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12">
         <div className="w-full max-w-4xl mx-auto animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 border border-gray-100">
+          <div className="bg-white rounded-lg p-6 sm:p-8 border border-gray-200">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
-                <FileText className="text-[#294fd6]" size={28} />
+                <FileText className="text-[#2563eb]" size={28} />
                 Generate Blog Post
               </h1>
             </div>
 
             {success ? (
               <div className="py-16 flex flex-col items-center justify-center text-center">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6 border border-green-200">
                   <ArrowRight size={32} className="text-green-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Blog Post Generated!</h2>
@@ -116,19 +116,19 @@ export default function GenerateBlogContent() {
                   Successfully generated a blog post based on your website content. Redirecting you to your new blog
                   post...
                 </p>
-                <div className="w-16 h-1 bg-[#294fd6] animate-pulse rounded-full"></div>
+                <div className="w-16 h-1 bg-[#2563eb] animate-pulse rounded-full"></div>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-blue-200 overflow-hidden transition-all duration-300 mb-8">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 mb-8">
                 <div className="p-8 pt-10">
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-3">
-                      <label htmlFor="url" className="block text-sm font-semibold text-blue-900">
+                      <label htmlFor="url" className="block text-sm font-semibold text-gray-700">
                         Website URL
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                          <Link2 className="h-5 w-5 text-[#294fd6]" />
+                          <Link2 className="h-5 w-5 text-[#2563eb]" />
                         </div>
                         <input
                           type="url"
@@ -137,17 +137,17 @@ export default function GenerateBlogContent() {
                           onChange={(e) => setUrl(e.target.value)}
                           placeholder="https://example.com"
                           disabled={isLoading}
-                          className="w-full pl-10 pr-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6] disabled:bg-blue-50 disabled:text-blue-400 transition-all duration-200 placeholder:text-blue-300"
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 placeholder:text-gray-300"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 p-5 rounded-xl">
+                    <div className="bg-gray-50 border border-gray-200 p-5 rounded-lg">
                       <div className="flex items-start">
-                        <AlertCircle className="h-5 w-5 text-[#294fd6] mr-3 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="h-5 w-5 text-[#2563eb] mr-3 flex-shrink-0 mt-0.5" />
                         <div>
-                          <h3 className="text-sm font-medium text-blue-800">About Blog Generation</h3>
-                          <p className="text-sm text-blue-700 mt-1">
+                          <h3 className="text-sm font-medium text-gray-800">About Blog Generation</h3>
+                          <p className="text-sm text-gray-600 mt-1">
                             Our AI will analyze your website and generate a blog post tailored to your audience. The
                             generated content will be based on your website's topic, style, and target audience.
                           </p>
@@ -156,7 +156,7 @@ export default function GenerateBlogContent() {
                     </div>
 
                     {error && (
-                      <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                      <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                         <div className="flex items-start">
                           <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
                           <div>
@@ -168,10 +168,10 @@ export default function GenerateBlogContent() {
                     )}
 
                     {isLoading && (
-                      <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                      <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
                         <div className="flex items-center">
-                          <Loader2 className="animate-spin h-5 w-5 text-[#294fd6] mr-3" />
-                          <span className="text-sm font-medium text-blue-800">
+                          <Loader2 className="animate-spin h-5 w-5 text-[#2563eb] mr-3" />
+                          <span className="text-sm font-medium text-gray-800">
                             Generating blog post... This may take a few minutes.
                           </span>
                         </div>
@@ -180,10 +180,10 @@ export default function GenerateBlogContent() {
 
                     <button
                       type="submit"
-                      className={`w-full px-6 py-3 rounded-xl text-white font-bold flex items-center justify-center transition-all duration-300 border ${
+                      className={`w-full px-6 py-3 rounded-lg text-white font-bold flex items-center justify-center transition-all duration-300 border ${
                         isLoading
                           ? "bg-blue-400 border-blue-500 cursor-not-allowed"
-                          : "bg-[#294fd6] border-[#294fd6] hover:bg-[#1a3ca8] hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:ring-offset-2"
+                          : "bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2"
                       }`}
                       disabled={isLoading}
                     >
@@ -206,6 +206,18 @@ export default function GenerateBlogContent() {
           </div>
         </div>
       </main>
+
+      {/* Custom animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }

@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import {
   Globe,
   ArrowLeft,
-  Edit,
-  RotateCcw,
   Check,
   Save,
   CheckCircle,
@@ -38,7 +36,7 @@ export default function SummaryPage() {
   const url = searchParams.get("url") || localStorage.getItem("websiteUrl") || ""
 
   // Define the custom blue color
-  const blueColor = "#294fd6"
+  const blueColor = "#2563eb"
 
   // Initialize Supabase client
   useEffect(() => {
@@ -174,11 +172,11 @@ export default function SummaryPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="p-4 sm:p-6 bg-white shadow-sm">
+      <header className="p-4 sm:p-6 bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto">
           <button
             onClick={() => router.push("/onboarding")}
-            className="text-[#294fd6] hover:text-[#1a3ca8] flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors"
+            className="text-[#2563eb] hover:text-[#1d4ed8] flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors"
           >
             <ArrowLeft size={20} />
             Back to URL Input
@@ -188,56 +186,23 @@ export default function SummaryPage() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12">
         <div className="w-full max-w-4xl mx-auto animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 border border-gray-100 relative overflow-hidden">
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#294fd6]/10 to-transparent rounded-bl-full -z-10"></div>
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-[#294fd6]/5 to-transparent rounded-tr-full -z-10"></div>
-
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-[#294fd6]/20 rounded-full blur-md"></div>
-                  <div className="relative bg-[#294fd6] text-white p-2 rounded-full">
-                    <Globe size={24} />
-                  </div>
-                </div>
-                Website Summary
-              </h1>
-
-              <div className="flex items-center gap-2">
-                {!isLoading && !isEditing && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 text-[#294fd6] border border-[#294fd6]/30 rounded-md hover:bg-[#294fd6]/10 transition-colors text-sm font-medium flex items-center shadow-sm hover:shadow"
-                  >
-                    <Edit size={16} className="mr-2" />
-                    Edit
-                  </button>
-                )}
-
-                {!isLoading && !isEditing && (
-                  <button
-                    onClick={() => {
-                      // Regenerate functionality
-                    }}
-                    className="px-4 py-2 text-[#294fd6] border border-[#294fd6]/30 rounded-md hover:bg-[#294fd6]/10 transition-colors text-sm font-medium flex items-center shadow-sm hover:shadow"
-                  >
-                    <RotateCcw size={16} className="mr-2" />
-                    Regenerate
-                  </button>
-                )}
+          <div className="bg-white rounded-xl p-6 sm:p-8 border border-gray-100 relative overflow-hidden">
+            <div className="flex items-center mb-8">
+              <div className="bg-[#2563eb] text-white p-2 rounded-full mr-3">
+                <Globe size={24} />
               </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Website Summary</h1>
             </div>
 
             <div className="mb-8">
-              <div className="flex items-center text-sm text-gray-600 mb-2 bg-gradient-to-r from-gray-50 to-blue-50/50 p-3 rounded-lg border border-blue-100/50">
-                <Globe size={18} className="mr-3 text-[#294fd6]" />
+              <div className="flex items-center text-sm text-gray-600 mb-2 bg-blue-50 p-3 rounded-lg">
+                <Globe size={18} className="mr-3 text-[#2563eb]" />
                 <span className="font-medium mr-2">Website URL:</span>
                 <a
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#294fd6] hover:underline truncate max-w-[300px] font-medium"
+                  className="text-[#2563eb] hover:underline truncate max-w-[300px]"
                 >
                   {url}
                 </a>
@@ -245,23 +210,20 @@ export default function SummaryPage() {
             </div>
 
             {isLoading ? (
-              <div className="py-16 flex flex-col items-center justify-center">
-                {/* Enhanced loading animation */}
+              <div className="py-16 flex flex-col items-center justify-center bg-white rounded-xl border border-gray-100">
+                {/* Simplified loading animation */}
                 <div className="relative w-48 h-48 mb-10">
-                  {/* Outer glow */}
-                  <div className="absolute inset-0 rounded-full bg-[#294fd6]/10 blur-xl animate-pulse"></div>
-
-                  {/* Animated progress ring */}
-                  <div className="absolute inset-0 rounded-full">
+                  {/* Progress circle */}
+                  <div className="absolute inset-0">
                     <svg className="w-full h-full" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5ff" strokeWidth="10" />
                       <circle
                         cx="50"
                         cy="50"
                         r="45"
                         fill="none"
-                        stroke={blueColor}
-                        strokeWidth="8"
+                        stroke="#2563eb"
+                        strokeWidth="10"
                         strokeDasharray="283"
                         strokeDashoffset={283 - (loadingStep / 5) * 283}
                         strokeLinecap="round"
@@ -270,49 +232,35 @@ export default function SummaryPage() {
                     </svg>
                   </div>
 
-                  {/* Spinning inner circle */}
-                  <div className="absolute inset-4 rounded-full border-4 border-dashed border-[#294fd6]/30 animate-spin-slow"></div>
-
                   {/* Center content */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white rounded-full w-28 h-28 flex flex-col items-center justify-center shadow-lg">
-                      <div className="text-[#294fd6] font-bold text-3xl">
+                    <div className="bg-white rounded-full w-32 h-32 flex flex-col items-center justify-center">
+                      <div className="text-[#2563eb] font-bold text-3xl">
                         {Math.min(Math.round((loadingStep / 5) * 100), 99)}%
                       </div>
                       <div className="text-xs text-gray-500 mt-1">ANALYZING</div>
                     </div>
                   </div>
-
-                  {/* Orbiting dots */}
-                  <div className="absolute inset-0 animate-orbit">
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-[#294fd6] rounded-full shadow-md shadow-[#294fd6]/30"></div>
-                  </div>
-                  <div className="absolute inset-0 animate-orbit animation-delay-1000">
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#294fd6]/80 rounded-full shadow-md shadow-[#294fd6]/20"></div>
-                  </div>
-                  <div className="absolute inset-0 animate-orbit animation-delay-2000">
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-[#294fd6]/60 rounded-full shadow-sm shadow-[#294fd6]/10"></div>
-                  </div>
                 </div>
 
                 <div className="w-full max-w-lg">
-                  <div className="relative pt-1 mb-8">
+                  <div className="relative pt-1 mb-6">
                     <div className="flex mb-2 items-center justify-between">
                       <div>
-                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-[#294fd6] bg-[#294fd6]/10">
-                          Analysis Progress
+                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-[#2563eb] bg-[#2563eb]/10">
+                          ANALYSIS PROGRESS
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-semibold inline-block text-[#294fd6]">
+                        <span className="text-xs font-semibold inline-block text-[#2563eb]">
                           Step {loadingStep} of 5
                         </span>
                       </div>
                     </div>
-                    <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-[#294fd6]/10">
+                    <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-blue-100">
                       <div
                         style={{ width: `${(loadingStep / 5) * 100}%` }}
-                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-[#294fd6] to-[#4361e1] transition-all duration-500 ease-in-out"
+                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-[#2563eb] transition-all duration-500 ease-in-out"
                       ></div>
                     </div>
                   </div>
@@ -320,50 +268,48 @@ export default function SummaryPage() {
                   <div className="space-y-5">
                     {loadingSteps.map((step) => {
                       const StepIcon = step.icon
+                      const isCompleted = loadingStep > step.step
+                      const isCurrent = loadingStep === step.step
+
                       return (
                         <div
                           key={step.step}
                           className={`flex items-center ${
                             loadingStep >= step.step ? "text-gray-800" : "text-gray-400"
-                          } transition-all duration-300 ease-in-out transform ${
-                            loadingStep === step.step ? "scale-105" : "scale-100"
                           }`}
                         >
                           <div
-                            className={`w-14 h-14 rounded-xl flex items-center justify-center mr-4 ${
-                              loadingStep > step.step
-                                ? "bg-[#294fd6]/10 text-[#294fd6] border border-[#294fd6]/30"
-                                : loadingStep === step.step
-                                  ? "bg-gradient-to-br from-[#294fd6] to-[#3b5bd9] text-white border border-[#294fd6] shadow-lg shadow-[#294fd6]/20"
-                                  : "bg-gray-100 text-gray-400 border border-gray-200"
-                            } transition-all duration-300`}
+                            className={`w-12 h-12 rounded-lg flex items-center justify-center mr-4 ${
+                              isCompleted
+                                ? "bg-blue-50 text-[#2563eb]"
+                                : isCurrent
+                                  ? "bg-[#2563eb] text-white"
+                                  : "bg-gray-100 text-gray-400"
+                            } border ${isCompleted || isCurrent ? "border-blue-200" : "border-gray-200"}`}
                           >
-                            {loadingStep > step.step ? (
-                              <Check size={24} />
+                            {isCompleted ? (
+                              <Check size={20} />
                             ) : (
-                              <StepIcon size={24} className={loadingStep === step.step ? "animate-pulse" : ""} />
+                              <StepIcon size={20} className={isCurrent ? "animate-pulse" : ""} />
                             )}
                           </div>
                           <div className="flex-1">
-                            <span
-                              className={`text-sm font-semibold ${loadingStep === step.step ? "text-[#294fd6]" : ""}`}
-                            >
+                            <span className={`text-sm font-medium ${isCurrent ? "text-[#2563eb]" : ""}`}>
                               {step.text}
                             </span>
                             <div className="text-xs text-gray-500 mt-0.5">{step.subtext}</div>
-                            {loadingStep === step.step && (
-                              <div className="mt-2 h-1.5 w-full bg-[#294fd6]/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-[#294fd6] to-[#4361e1] rounded-full animate-pulse-width"></div>
+                            {isCurrent && (
+                              <div className="mt-2 h-1.5 w-full bg-blue-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#2563eb] rounded-full animate-pulse-width"></div>
                               </div>
                             )}
                           </div>
-                          {loadingStep === step.step && (
-                            <div className="ml-2 relative">
-                              <div className="absolute inset-0 bg-[#294fd6]/20 rounded-full blur-md animate-pulse"></div>
-                              <Loader2 size={24} className="text-[#294fd6] animate-spin relative" />
+                          {isCurrent && (
+                            <div className="ml-2">
+                              <Loader2 size={24} className="text-[#2563eb] animate-spin" />
                             </div>
                           )}
-                          {loadingStep > step.step && (
+                          {isCompleted && (
                             <div className="ml-2">
                               <div className="bg-green-100 p-1 rounded-full">
                                 <CheckCircle size={20} className="text-green-500" />
@@ -423,17 +369,24 @@ export default function SummaryPage() {
               </div>
             ) : (
               <div>
-                <div className="bg-gradient-to-br from-[#294fd6]/5 to-[#294fd6]/10 rounded-lg p-6 border border-[#294fd6]/20 mb-8 relative overflow-hidden shadow-inner">
+                <div className="bg-gradient-to-br from-[#294fd6]/5 to-[#294fd6]/10 rounded-lg p-6 border border-gray-200 mb-8 relative overflow-hidden">
                   {/* Decorative elements */}
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white to-transparent rounded-bl-full"></div>
                   <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-white to-transparent rounded-tr-full"></div>
 
                   <div className="prose prose-blue max-w-none relative z-10">
+                    <h3 className="text-xl font-semibold text-[#294fd6] mb-4">Website Summary Analysis</h3>
                     {summary.split("\n").map((paragraph, index) => (
                       <p key={index} className="mb-4 last:mb-0 text-gray-700 text-base leading-relaxed">
                         {paragraph}
                       </p>
                     ))}
+                    <div className="mt-6 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                      <p className="text-sm text-gray-600 flex items-center">
+                        <CheckCircle size={16} className="text-green-500 mr-2" />
+                        This summary was generated automatically based on the website content.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
