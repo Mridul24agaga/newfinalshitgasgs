@@ -1,8 +1,8 @@
 import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
-import DashboardContent from "./dashboard-content"
+import GenerateBlogContent from "./generate-blog-content"
 
-export default function DashboardPage() {
+export default function GenerateBlogPage() {
   return (
     <Suspense
       fallback={
@@ -11,7 +11,7 @@ export default function DashboardPage() {
         </div>
       }
     >
-      <DashboardContent />
+      <GenerateBlogContent />
     </Suspense>
   )
 }

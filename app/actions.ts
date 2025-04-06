@@ -266,12 +266,6 @@ interface ArticleResult {
   timestamp: string
 }
 
-interface Subscription {
-  plan_id: string
-  credits: number
-  user_id: string
-}
-
 // Define the DataPoint interface
 interface DataPoint {
   type: "percentage" | "statistic" | "year" | "comparison" | "count"
@@ -926,12 +920,11 @@ async function generateArticleFromScrapedData(
   console.log(`Generating article from scraped data for topic: ${scrapedData.coreTopic}`)
   const now = new Date().toISOString().split("T")[0]
   const tempFileName = uuidv4() + ".md"
-  const supabase = await createClient()
 
   try {
     // Use the scraped data to generate a simple title
     console.log("Generating simple title based on scraped data")
-    const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData, supabase)
+    const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData)
 
     console.log(`Generated title: ${simpleTitle}`)
 
@@ -1884,51 +1877,79 @@ ${faqContent}
   return finalContent
 }
 
-// Update processContentBeforeSaving to fix bullet point styling
 function processContentBeforeSaving(content: string): string {
   // First, directly convert any markdown links in the HTML content to HTML <a> tags
-  let processedContent = content.replace(/\[([^\]]+)\]\s*$$([^)]+)$$/g, (match, text, url) => {
+  let processedContent = content.replace(/\[([^\]]+)\]\s*\(([^)]+)\)/g, (match, text, url) => {
     // Clean up any extra whitespace
-    const cleanText = text.trim()
-    const cleanUrl = url.trim()
+    const cleanText = text.trim();
+    const cleanUrl = url.trim();
 
     if (cleanUrl.startsWith("http") || cleanUrl.startsWith("https")) {
-      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`
+      return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`;
     } else if (cleanUrl.startsWith("/")) {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
     } else {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
     }
-  })
+  });
 
   // Also ensure all external links have the right styling
   processedContent = processedContent.replace(
     /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
-    (match, url, text) => {
-      return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`
-    },
-  )
+    (_match, url, text) => {
+      return `<a href="${url}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    }
+  );
 
   // Ensure bold text is properly rendered
-  processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+  processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
 
   // Remove bullet points and convert them to regular paragraphs
   processedContent = processedContent.replace(
     /<li[^>]*>(?:<span[^>]*>•<\/span>)?<div>(.*?)<\/div><\/li>/g,
-    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>',
-  )
+    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>'
+  );
 
   // Convert any remaining list items to paragraphs
   processedContent = processedContent.replace(
     /<li[^>]*>(.*?)<\/li>/g,
-    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>',
-  )
+    '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">$1</p>'
+  );
 
   // Remove any ul/ol tags
-  processedContent = processedContent.replace(/<\/?ul[^>]*>/g, "")
-  processedContent = processedContent.replace(/<\/?ol[^>]*>/g, "")
+  processedContent = processedContent.replace(/<\/?ul[^>]*>/g, "").replace(/<\/?ol[^>]*>/g, "");
 
-  return processedContent
+  return processedContent;
+}
+
+// Simple similarity check function
+async function checkContentSimilarity(
+  newContent: string,
+  existingContent: string[],
+  existingTitles: string[]
+): Promise<{ isTooSimilar: boolean; similarToTitle?: string }> {
+  // Basic similarity threshold (e.g., 80% match)
+  const SIMILARITY_THRESHOLD = 0.8;
+
+  // Function to calculate similarity between two strings (simple word overlap)
+  const getSimilarity = (str1: string, str2: string): number => {
+    const words1 = str1.toLowerCase().split(/\s+/).filter(Boolean);
+    const words2 = str2.toLowerCase().split(/\s+/).filter(Boolean);
+    const intersection = words1.filter((word) => words2.includes(word)).length;
+    const union = new Set([...words1, ...words2]).size;
+    return intersection / union;
+  };
+
+  for (let i = 0; i < existingContent.length; i++) {
+    const contentSimilarity = getSimilarity(newContent, existingContent[i]);
+    const titleSimilarity = existingTitles[i] ? getSimilarity(newContent, existingTitles[i]) : 0;
+
+    if (contentSimilarity > SIMILARITY_THRESHOLD || titleSimilarity > SIMILARITY_THRESHOLD) {
+      return { isTooSimilar: true, similarToTitle: existingTitles[i] };
+    }
+  }
+
+  return { isTooSimilar: false };
 }
 
 export async function generateBlog(url: string, humanizeLevel: "normal" | "hardcore" = "normal"): Promise<BlogPost[]> {
@@ -2013,94 +2034,8 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
       })
     }
 
-    // Fetch subscription details
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from("subscriptions")
-      .select("plan_id, credits, last_renewed")
-      .eq("user_id", userId)
-      .single()
-
-    if (subscriptionError || !subscription) {
-      throw new Error(`Failed to fetch subscription: ${subscriptionError?.message || "No subscription found"}`)
-    }
-
-    if (!subscription.plan_id) {
-      throw new Error("No active subscription plan found for this user")
-    }
-
-    // Define plan limits
-    const planCreditsMap: { [key: string]: number } = {
-      trial: 2,
-      starter: 30,
-      pro: 30,
-      professional: 60,
-    }
-
-    const maxPosts = planCreditsMap[subscription.plan_id.toLowerCase()] || 0
-    if (!maxPosts) {
-      throw new Error(`Invalid subscription plan: ${subscription.plan_id}`)
-    }
-
-    // Check and renew credits if it's a new month
-    const currentDate = new Date()
-    const lastRenewed = subscription.last_renewed ? new Date(subscription.last_renewed) : new Date(0) // Default to epoch if null
-    const isNewMonth =
-      currentDate.getMonth() !== lastRenewed.getMonth() || currentDate.getFullYear() !== lastRenewed.getFullYear()
-    const isPastFirst = currentDate.getDate() >= 1 && currentDate > lastRenewed
-
-    let availableCredits = subscription.credits !== undefined ? subscription.credits : maxPosts
-
-    if (isNewMonth && isPastFirst) {
-      console.log(`Renewing credits for ${subscription.plan_id} on ${currentDate.toISOString().split("T")[0]}`)
-      availableCredits = maxPosts // Reset to max credits
-      const { error: renewError } = await supabase
-        .from("subscriptions")
-        .update({
-          credits: maxPosts,
-          last_renewed: currentDate.toISOString(),
-        })
-        .eq("user_id", userId)
-
-      if (renewError) {
-        console.error(`Failed to renew credits: ${renewError.message}`)
-      } else {
-        console.log(`Credits renewed to ${maxPosts} for ${subscription.plan_id}`)
-      }
-    }
-
-    if (availableCredits <= 0) {
-      throw new Error("No credits remaining to generate blog posts!")
-    }
-
-    // Count blogs generated since last renewal
-    const renewalDateStart = new Date(lastRenewed)
-    renewalDateStart.setDate(1) // Start of the renewal month
-    renewalDateStart.setHours(0, 0, 0, 0)
-
-    const { data: blogsThisMonth, error: blogsError } = await supabase
-      .from("blogs")
-      .select("id")
-      .eq("user_id", userId)
-      .gte("created_at", renewalDateStart.toISOString())
-      .lte("created_at", currentDate.toISOString())
-
-    if (blogsError) {
-      console.error(`Error fetching blogs this month: ${blogsError.message}`)
-    }
-
-    const blogsGeneratedThisMonth = blogsThisMonth ? blogsThisMonth.length : 0
-    console.log(`User has generated ${blogsGeneratedThisMonth} blogs since last renewal`)
-
-    // Calculate remaining posts to generate this month
-    const remainingCredits = Math.max(0, maxPosts - blogsGeneratedThisMonth)
-    const postsToGenerate = Math.min(remainingCredits, availableCredits)
-    console.log(`Can generate ${postsToGenerate} more posts this month with ${availableCredits} credits available`)
-
-    if (postsToGenerate <= 0) {
-      console.log("No more posts can be generated this month based on remaining credits.")
-      return blogPosts // Return empty array if no posts can be generated
-    }
-
+    // Set a fixed number of posts to generate (e.g., 5) since subscriptions are removed
+    const postsToGenerate = 1
     console.log(`Generating ${postsToGenerate} posts for user ${userId} - ONE AT A TIME, VERY SLOWLY`)
 
     // Generate posts sequentially
@@ -2197,80 +2132,12 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
       }
     }
 
-    // Deduct credits for successful posts only
     const successfulPosts = blogPosts.length
-    const newCredits = availableCredits - successfulPosts
-
-    if (successfulPosts > 0) {
-      const { error: updateError } = await supabase
-        .from("subscriptions")
-        .update({ credits: newCredits })
-        .eq("user_id", userId)
-
-      if (updateError) {
-        console.error(`Failed to deduct credits: ${updateError.message}`)
-      } else {
-        console.log(`Deducted ${successfulPosts} credits. New balance: ${newCredits}`)
-      }
-    }
-
     console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`)
     return blogPosts
   } catch (error: any) {
     console.error(`Failed to generate blogs: ${error.message}`)
     throw new Error(`Blog generation failed: ${error.message}`)
-  }
-}
-
-// New function to check content similarity
-async function checkContentSimilarity(
-  newContent: string,
-  existingContents: string[],
-  existingTitles: string[],
-): Promise<{ isTooSimilar: boolean; similarToTitle: string; similarityScore: number }> {
-  if (existingContents.length === 0) {
-    return { isTooSimilar: false, similarToTitle: "", similarityScore: 0 }
-  }
-
-  // Extract significant words (longer than 4 chars) for comparison
-  const getSignificantWords = (text: string): string[] => {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .split(/\s+/)
-      .filter((word) => word.length > 4)
-  }
-
-  const newContentWords = getSignificantWords(newContent)
-
-  let highestSimilarity = 0
-  let mostSimilarTitle = ""
-
-  for (let i = 0; i < existingContents.length; i++) {
-    const existingWords = getSignificantWords(existingContents[i])
-
-    // Count matching words
-    let matchCount = 0
-    for (const word of newContentWords) {
-      if (existingWords.includes(word)) {
-        matchCount++
-      }
-    }
-
-    // Calculate similarity as percentage of matching words
-    const similarity = (matchCount / newContentWords.length) * 100
-
-    if (similarity > highestSimilarity) {
-      highestSimilarity = similarity
-      mostSimilarTitle = existingTitles[i] || "previous post"
-    }
-  }
-
-  // If more than 40% of significant words match, consider it too similar
-  return {
-    isTooSimilar: highestSimilarity > 40,
-    similarToTitle: mostSimilarTitle,
-    similarityScore: highestSimilarity,
   }
 }
 
@@ -2501,14 +2368,11 @@ function generateFallbackDataPoints(topic: string): DataPoint[] {
   ]
 }
 
-// Add the generateEnhancedTitle function after the extractDataPointsFromResearch function
-
 // Function to generate an enhanced, data-driven title
 async function generateEnhancedTitle(
   topic: string,
   userId: string,
   scrapedData: ScrapedData,
-  supabase: any,
 ): Promise<string> {
   console.log(`Generating enhanced title for topic: ${topic}`)
 
@@ -2516,25 +2380,12 @@ async function generateEnhancedTitle(
     // First, extract data points from research to use in title
     const dataPoints = await extractDataPointsFromResearch(scrapedData.researchResults, topic)
 
-    // Get existing titles to avoid duplication
-    const { data: existingPosts } = await supabase
-      .from("blogs")
-      .select("title")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10)
-
-    const existingTitles = existingPosts ? existingPosts.map((post: any) => post.title) : []
-
     // Create a detailed prompt for title generation
     const titlePrompt = `
       Generate a data-driven, curiosity-inducing blog post title about "${topic}" that will maximize engagement and drive clicks.
       
       USE THESE DATA POINTS (choose the most compelling one):
       ${dataPoints.map((dp) => `- ${dp.type}: ${dp.value} - ${dp.context}`).join("\n")}
-      
-      AVOID THESE EXISTING TITLES (do not duplicate):
-      ${existingTitles.join("\n")}
       
       REQUIREMENTS:
       - START TITLES with "Why", "How", "What", or similar question words when possible
@@ -2884,6 +2735,8 @@ async function findAuthorityExternalLinks(topic: string, count: number): Promise
               url.includes("ieee") ||
               url.includes("nature.com") ||
               url.includes("sciencedirect") ||
+              url.includes("nature.com") ||
+              url.includes("sciencedirect") ||
               url.includes("ncbi.nlm.nih.gov") ||
               url.includes("springer") ||
               url.includes("academic")
@@ -3142,14 +2995,6 @@ async function addLinksBasic(content: string, externalLinks: string[]): Promise<
   return modifiedContent
 }
 
-async function extractKeywords(
-  initialResearchSummary: string,
-  coreTopic: string,
-): Promise<{ keyword: string; difficulty: string; relevance: number }[]> {
-  console.log(`Dummy function: extractKeywords called with initialResearchSummary and coreTopic`)
-  return [{ keyword: coreTopic, relevance: 8, difficulty: "Medium" }]
-}
-
 function generatePlaceholderImages(count: number, topic: string): string[] {
   const placeholderImages: string[] = [];
   for (let i = 0; i < count; i++) {
@@ -3169,7 +3014,6 @@ function removeDuplicateContentAfterConclusion(content: string): string {
 
 async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<ScrapedData | null> {
   console.log(`Scraping ${url} and extracting website-specific data for user ${userId}`)
-  const supabase = await createClient()
 
   try {
     // Step 1: Scrape the initial URL with scrapeWithTavily
@@ -3247,65 +3091,64 @@ async function scrapeWebsiteAndSaveToJson(url: string, userId: string): Promise<
     // Step 8: Generate a summary focused on the website-specific information
     const allContent = `${initialContent}\n\n${validResearchResults.map((r) => r.content).join("\n\n")}`.slice(0, 10000)
     const researchSummaryPrompt = `
-      Create a summary specifically focused on "${coreTopic}" as it relates to this exact website.
-      
-      Website analysis: "${websiteAnalysis}"
-      
-      Additional research content: "${allContent.slice(0, 5000)}"
-      
-      Create a 300-500 word summary that highlights:
-      1. What makes THIS SPECIFIC WEBSITE unique in its space
-      2. The SPECIFIC value propositions of this website
-      3. How this website SPECIFICALLY addresses its target audience's needs
-      4. What DIFFERENTIATES this website from competitors
-      
-      Focus ONLY on what makes this website unique, not generic industry information.
-    `
-    const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 800)
+  Create a summary specifically focused on "${coreTopic}" as it relates to this exact website.
+  
+  Website analysis: "${websiteAnalysis}"
+  
+  Additional research content: "${allContent.slice(0, 5000)}"
+  
+  Create a 300-500 word summary that highlights:
+  1. What makes THIS SPECIFIC WEBSITE unique in its space
+  2. The SPECIFIC value propositions of this website
+  3. How this website SPECIFICALLY addresses its target audience's needs
+  4. What DIFFERENTIATES this website from competitors
+  
+  Focus ONLY on what makes this website unique, not generic industry information.
+`
+const researchSummary = await callAzureOpenAI(researchSummaryPrompt, 800)
 
-    // Step 9: Extract keywords specific to this website
-    const keywordsPrompt = `
-      Based on this website-specific analysis, extract 10 keywords or phrases that are UNIQUELY relevant to THIS SPECIFIC WEBSITE.
-      
-      Website analysis: "${websiteAnalysis}"
-      
-      Return ONLY keywords that are specific to this website's unique offerings, not generic industry terms.
-      For each keyword, assign a relevance score from 1-10 based on how central it is to this specific website.
-      
-      Return as JSON: [{"keyword": "term1", "relevance": 9}, {"keyword": "term2", "relevance": 8}]
-    `
-    const keywordsResponse = await callAzureOpenAI(keywordsPrompt, 300)
-    let extractedKeywords = []
-    try {
-      extractedKeywords = JSON.parse(keywordsResponse.replace(/```json\n?|\n?```/g, "").trim())
-    } catch (error) {
-      console.error("Error parsing keywords:", error)
-      extractedKeywords = [{ keyword: coreTopic, relevance: 8 }]
-    }
-
-    // Create the final scraped data object
-    const scrapedData: ScrapedData = {
-      initialUrl: url,
-      initialResearchSummary,
-      researchResults: validResearchResults,
-      researchSummary,
-      coreTopic,
-      brandInfo: websiteAnalysis,
-      youtubeVideo: null,
-      internalLinks: [],
-      references: validResearchResults.map((r) => r.url),
-      existingPosts: "",
-      targetKeywords: extractedKeywords.map((k: { keyword: string; relevance: number }) => k.keyword),
-      timestamp: new Date().toISOString(),
-      nudge: "",
-      extractedKeywords,
-    }
-
-    console.log(`Scraped website-specific data for: ${coreTopic}`)
-    return scrapedData
-  } catch (error: any) {
-    console.error(`Scraping ${url} failed: ${error.message}`)
-    return null
-  }
+// Step 9: Extract keywords specific to this website
+const keywordsPrompt = `
+  Based on this website-specific analysis, extract 10 keywords or phrases that are UNIQUELY relevant to THIS SPECIFIC WEBSITE.
+  
+  Website analysis: "${websiteAnalysis}"
+  
+  Return ONLY keywords that are specific to this website's unique offerings, not generic industry terms.
+  For each keyword, assign a relevance score from 1-10 based on how central it is to this specific website.
+  
+  Return as JSON: [{"keyword": "term1", "relevance": 9}, {"keyword": "term2", "relevance": 8}]
+`
+const keywordsResponse = await callAzureOpenAI(keywordsPrompt, 300)
+let extractedKeywords = []
+try {
+  extractedKeywords = JSON.parse(keywordsResponse.replace(/```json\n?|\n?```/g, "").trim())
+} catch (error) {
+  console.error("Error parsing keywords:", error)
+  extractedKeywords = [{ keyword: coreTopic, relevance: 8 }]
 }
 
+// Create the final scraped data object
+const scrapedData: ScrapedData = {
+  initialUrl: url,
+  initialResearchSummary,
+  researchResults: validResearchResults,
+  researchSummary,
+  coreTopic,
+  brandInfo: websiteAnalysis,
+  youtubeVideo: null,
+  internalLinks: [],
+  references: validResearchResults.map((r) => r.url),
+  existingPosts: "",
+  targetKeywords: extractedKeywords.map((k: { keyword: string; relevance: number }) => k.keyword),
+  timestamp: new Date().toISOString(),
+  nudge: "",
+  extractedKeywords,
+}
+
+console.log(`Scraped website-specific data for: ${coreTopic}`)
+return scrapedData
+} catch (error: any) {
+  console.error(`Scraping ${url} failed: ${error.message}`)
+  return null
+}
+}

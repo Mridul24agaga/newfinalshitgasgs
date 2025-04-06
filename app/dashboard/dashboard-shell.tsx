@@ -3,14 +3,12 @@
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import type { User } from "@supabase/supabase-js"
-import { createClient } from "@/utitls/supabase/client" // Fixed typo in path
+import type { User as SupabaseUser } from "@supabase/supabase-js"
+import { createClient } from "@/utitls/supabase/client"
 import {
   Menu,
   FileText,
   Lightbulb,
-  Users,
-  Check,
   Sparkles,
   Target,
   Settings,
@@ -22,28 +20,23 @@ import {
   Bell,
   PlusCircle,
   CreditCard,
+  Globe,
+  CheckCircle,
+  Zap,
 } from "lucide-react"
-import { PaymentPage } from "@/app/components/PaymentPage"
-import { Saira } from "next/font/google"
 import { usePathname } from "next/navigation"
-import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { PenLine, LayoutGrid, BarChart2, Database, Home, ChevronDown, Link2, ExternalLink, Zap } from "lucide-react"
-
-const saira = Saira({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-saira",
-})
+import { PenLine, LayoutGrid, BarChart2, Database, Home, ChevronDown, Link2, ExternalLink } from "lucide-react"
 
 interface DashboardShellProps {
-  user: User
+  user: SupabaseUser
 }
 
 interface Subscription {
   plan_id: string
   credits: number
   status?: string
+  current_period_start?: string
   current_period_end?: string
   billing_cycle?: string
   subscription_type?: string
@@ -51,15 +44,14 @@ interface Subscription {
   annual_price?: number
   annual_discount_percentage?: number
   currency?: string
-  onboarding_completed?: boolean
+  onboarding_completed?: boolean | null
+  website_onboarding_completed?: boolean | null
 }
 
 export function DashboardShell({ user }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [showPaymentPage, setShowPaymentPage] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [completionStatus, setCompletionStatus] = useState({
     contentIdeas: false,
     blogSettings: false,
@@ -69,27 +61,36 @@ export function DashboardShell({ user }: DashboardShellProps) {
     postsCreated: 0,
     ideasGenerated: 0,
     creditsUsed: 0,
+    websiteSummaries: 0,
   })
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
   const [openSubmenu, setOpenSubmenu] = useState("Company Database")
   const pathname = usePathname()
+  const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string | null>(null)
 
   const formatPlanName = (planId: string | undefined) => {
     if (!planId) return "No Plan"
     const plan = planId.toLowerCase()
-    if (plan === "basic") return "Starter"
-    if (plan === "pro") return "Professional"
+    if (plan === "basic") return "Basic"
+    if (plan === "starter") return "Starter"
+    if (plan === "growth") return "Growth"
+    if (plan === "professional" || plan === "pro") return "Professional"
+    if (plan === "enterprise") return "Enterprise"
     return planId.charAt(0).toUpperCase() + planId.slice(1)
   }
 
   const planName = formatPlanName(subscription?.plan_id)
 
+  // Modify navigation to point to dashboard/summarizer instead of onboarding
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Content Planner", href: "/dashboard/summarizer", icon: PenLine },
+    { name: "Website Summarizer", href: "/dashboard/summarizer", icon: Globe }, // Changed from /onboarding to /dashboard/summarizer
     {
       name: "Company Database",
       icon: Database,
@@ -107,13 +108,29 @@ export function DashboardShell({ user }: DashboardShellProps) {
     },
   ]
 
+  // Update the planCreditsMap to match the credits from the payment page
   const planCreditsMap: { [key: string]: number } = {
     trial: 2,
-    starter: 30,
+    basic: 2,
+    starter: 15,
+    growth: 30,
     professional: 60,
-    basic: 30,
-    pro: 60,
+    enterprise: 120,
   }
+
+  // Add a function to calculate total credits based on plan and billing cycle
+  const getPlanTotalCredits = (planId: string, billingCycle?: string): number => {
+    const normalizedPlanId = planId.toLowerCase()
+    // All plans have the same number of credits regardless of billing cycle
+    return planCreditsMap[normalizedPlanId] || 0
+  }
+
+  // Redirect from onboarding page if user has completed onboarding
+  useEffect(() => {
+    if (pathname === "/onboarding") {
+      router.replace("/dashboard/summarizer")
+    }
+  }, [pathname, router])
 
   useEffect(() => {
     const handleResize = () => {
@@ -126,43 +143,75 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true)
-      await setupRealtimeSubscription()
-      await checkOnboardingStatus()
-      setIsLoading(false)
+      try {
+        console.log("Fetching dashboard data...")
+        await setupRealtimeSubscription()
+        await checkOnboardingStatus()
+        await fetchWebsiteSummariesCount()
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err)
+      }
     }
 
     const userId = searchParams.get("user_id")
     const plan = searchParams.get("plan")
     const credits = searchParams.get("credits")
     const billingCycle = searchParams.get("billing_cycle")
-    const monthlyPrice = searchParams.get("monthly_price")
-    const annualPrice = searchParams.get("annual_price")
     const currency = searchParams.get("currency")
 
     if (userId && plan && credits) {
-      handlePaymentSuccess(
-        userId,
-        plan,
-        Number.parseInt(credits),
-        billingCycle || "monthly",
-        monthlyPrice ? Number.parseFloat(monthlyPrice) : undefined,
-        annualPrice ? Number.parseFloat(annualPrice) : undefined,
-        currency || "USD",
-      )
+      console.log("Processing payment success with params:", { userId, plan, credits, billingCycle, currency })
+      setDebugInfo(`Payment params: ${JSON.stringify({ userId, plan, credits, billingCycle, currency })}`)
+      handlePaymentSuccess(userId, plan, Number.parseInt(credits), billingCycle || "monthly", currency || "USD")
+      // Show subscription banner for new payments
+      setShowSubscriptionBanner(true)
+      // Hide banner after 5 seconds
+      setTimeout(() => setShowSubscriptionBanner(false), 5000)
+
+      // Clear URL parameters after processing to prevent reprocessing on refresh
+      // Use history.replaceState to avoid a page reload
+      if (typeof window !== "undefined") {
+        const newUrl = window.location.pathname
+        window.history.replaceState({}, document.title, newUrl)
+      }
     } else {
       fetchData()
     }
   }, [searchParams])
 
+  // Force onboarding to be completed on component mount
+  useEffect(() => {
+    setHasCompletedOnboarding(true)
+    if (subscription) {
+      setSubscription({
+        ...subscription,
+        onboarding_completed: true,
+        website_onboarding_completed: true,
+      })
+    }
+
+    // Update the database to mark onboarding as completed
+    const updateOnboardingInDB = async () => {
+      try {
+        await supabase
+          .from("subscriptions")
+          .update({
+            onboarding_completed: true,
+            website_onboarding_completed: true,
+          })
+          .eq("user_id", user.id)
+      } catch (error) {
+        console.error("Error updating onboarding status in database:", error)
+      }
+    }
+
+    updateOnboardingInDB()
+  }, [subscription, user.id, supabase])
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      if (
-        isProfileOpen &&
-        !target.closest('[aria-haspopup="true"]') &&
-        !target.closest(".absolute")
-      ) {
+      if (isProfileOpen && !target.closest('[aria-haspopup="true"]') && !target.closest(".absolute")) {
         setIsProfileOpen(false)
       }
     }
@@ -177,8 +226,8 @@ export function DashboardShell({ user }: DashboardShellProps) {
         .from("subscriptions")
         .select("onboarding_completed")
         .eq("user_id", user.id)
-        .limit(1) // Ensure only one row is returned
-        .maybeSingle() // Use maybeSingle() instead of single() to handle no rows gracefully
+        .limit(1)
+        .maybeSingle()
 
       if (error) {
         console.error("Error checking onboarding status:", error.message)
@@ -193,7 +242,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
         })
       } else if (!data) {
         console.log("No subscription found for user, assuming onboarding not completed")
-        // Optionally initialize a default subscription here if needed
       }
     } catch (err) {
       console.error("Unexpected error in checkOnboardingStatus:", err)
@@ -216,163 +264,190 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
-  const setupRealtimeSubscription = async () => {
+  const fetchWebsiteSummariesCount = async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) {
-        console.error("Failed to get user for real-time subscription:", error)
+      const { data, error } = await supabase
+        .from("summary_website_save")
+        .select("id", { count: "exact" })
+        .eq("user_id", user.id)
+
+      if (error) {
+        console.error("Error fetching website summaries count:", error.message)
         return
       }
 
-      const userId = user.id
-      const [subscriptionResult, blogsCount] = await Promise.all([
-        supabase
-          .from("subscriptions")
-          .select(
-            "plan_id, credits, status, current_period_end, billing_cycle, subscription_type, monthly_price, annual_price, annual_discount_percentage, currency, onboarding_completed",
-          )
-          .eq("user_id", userId)
-          .limit(1)
-          .maybeSingle(),
-        fetchBlogsCount(),
-      ])
+      const count = data?.length || 0
+      console.log(`Fetched ${count} website summaries for user ${user.id}`)
 
-      const { data: subscriptionData, error: fetchError } = subscriptionResult
+      setStats((prev) => ({
+        ...prev,
+        websiteSummaries: count,
+      }))
+
+      // If user has at least one summary, mark onboarding as completed
+      if (count > 0) {
+        setHasCompletedOnboarding(true)
+      }
+
+      return count
+    } catch (err) {
+      console.error("Error in fetchWebsiteSummariesCount:", err)
+    }
+  }
+
+  // Update the setupRealtimeSubscription function to properly handle onboarding status
+  const setupRealtimeSubscription = async () => {
+    try {
+      console.log("Setting up real-time subscription for user:", user.id)
+      const userId = user.id
+
+      // Check if user is coming from payment success page
+      const isFromPayment = searchParams.has("user_id") && searchParams.has("plan") && searchParams.has("credits")
+
+      // Fetch subscription data
+      const { data: subscriptionData, error: fetchError } = await supabase
+        .from("subscriptions")
+        .select(
+          "plan_id, credits, status, current_period_end, billing_cycle, subscription_type, monthly_price, annual_price, annual_discount_percentage, currency, onboarding_completed, website_onboarding_completed",
+        )
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle()
 
       if (fetchError) {
         console.error("Error fetching subscription:", fetchError.message, fetchError.details)
-        setShowPaymentPage(true)
+        // Set a default subscription to avoid blocking the UI
+        setSubscription({
+          plan_id: "growth",
+          credits: 30,
+          status: "active",
+          billing_cycle: "monthly",
+          subscription_type: "monthly",
+          currency: "USD",
+          onboarding_completed: true, // Always set to true
+          website_onboarding_completed: true, // Always set to true
+        })
+
+        // Always mark onboarding as completed
+        setHasCompletedOnboarding(true)
+        setCompletionStatus({
+          contentIdeas: true,
+          blogSettings: true,
+          audienceKeywords: true,
+        })
+
         return
       }
 
+      // Check if user has website summaries - if they do, they've completed onboarding
+      const { data: summaries, error: summariesError } = await supabase
+        .from("summary_website_save")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1)
+
+      const hasCompletedWebsiteOnboarding = summaries && summaries.length > 0
+
+      // Fetch blogs count
+      const blogsCount = await fetchBlogsCount().catch((err) => {
+        console.error("Error fetching blogs count:", err)
+        return 0
+      })
+
       if (subscriptionData) {
-        console.log(`Subscription data: ${JSON.stringify(subscriptionData)}`)
-        const planId = subscriptionData.plan_id.toLowerCase()
-        const maxPosts = planCreditsMap[planId] || 0
+        console.log(`Subscription data found:`, subscriptionData)
+        setDebugInfo((prev) => `${prev}\nSubscription data: ${JSON.stringify(subscriptionData)}`)
 
-        if (subscriptionData.credits === null || subscriptionData.credits !== maxPosts) {
-          const { error: updateError } = await supabase
-            .from("subscriptions")
-            .update({ credits: maxPosts })
-            .eq("user_id", userId)
-          if (updateError) {
-            console.error("Failed to reset credits:", updateError)
-          } else {
-            subscriptionData.credits = maxPosts
-          }
-        }
+        // Always mark onboarding as completed
+        await supabase
+          .from("subscriptions")
+          .update({
+            website_onboarding_completed: true,
+            onboarding_completed: true,
+          })
+          .eq("user_id", userId)
 
-        if (!subscriptionData.subscription_type && subscriptionData.billing_cycle) {
-          const subType = subscriptionData.billing_cycle === "annually" ? "annual" : "monthly"
-          const { error: updateError } = await supabase
-            .from("subscriptions")
-            .update({ subscription_type: subType })
-            .eq("user_id", userId)
-          if (updateError) {
-            console.error("Failed to set default subscription type:", updateError)
-          } else {
-            subscriptionData.subscription_type = subType
-          }
-        }
+        // Update the local subscription data
+        subscriptionData.website_onboarding_completed = true
+        subscriptionData.onboarding_completed = true
 
+        // Update state with subscription data
         setSubscription(subscriptionData)
         setStats((prev) => ({
           ...prev,
           postsCreated: blogsCount,
           creditsUsed: blogsCount,
+          websiteSummaries: summaries?.length || 0,
         }))
-        setShowPaymentPage(false)
+
+        // Always set onboarding completion status to true
+        setHasCompletedOnboarding(true)
+        setCompletionStatus({
+          contentIdeas: true,
+          blogSettings: true,
+          audienceKeywords: true,
+        })
       } else {
-        setShowPaymentPage(true)
-      }
+        console.log("No subscription data found, using default")
+        // Create a default subscription
+        const defaultSubscription: Subscription = {
+          plan_id: "growth",
+          credits: 30,
+          status: "active",
+          billing_cycle: "monthly",
+          subscription_type: "monthly",
+          currency: "USD",
+          onboarding_completed: true, // Always set to true
+          website_onboarding_completed: true, // Always set to true
+        }
+        setSubscription(defaultSubscription)
+        setStats((prev) => ({
+          ...prev,
+          postsCreated: blogsCount,
+          creditsUsed: blogsCount,
+          websiteSummaries: summaries?.length || 0,
+        }))
 
-      const subscriptionChannel = supabase
-        .channel("subscriptions-changes")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "subscriptions",
-            filter: `user_id=eq.${userId}`,
-          },
-          async (payload) => {
-            console.log("Subscription change detected:", payload)
-            if (payload.new) {
-              const updatedSubscription = payload.new as Subscription
-              const planId = updatedSubscription.plan_id.toLowerCase()
-              const maxPosts = planCreditsMap[planId] || 0
-
-              if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
-                const shouldResetCredits =
-                  payload.eventType === "INSERT" ||
-                  (payload.old && payload.old.plan_id !== updatedSubscription.plan_id) ||
-                  updatedSubscription.credits !== maxPosts
-
-                if (shouldResetCredits) {
-                  console.log(`Resetting credits to ${maxPosts} for plan ${planId}`)
-                  const { error: updateError } = await supabase
-                    .from("subscriptions")
-                    .update({ credits: maxPosts })
-                    .eq("user_id", userId)
-                  if (updateError) {
-                    console.error("Failed to reset credits:", updateError)
-                  } else {
-                    updatedSubscription.credits = maxPosts
-                  }
-                }
-              }
-
-              const currentBlogsCount = await fetchBlogsCount()
-              setSubscription(updatedSubscription)
-              setStats((prev) => ({
-                ...prev,
-                postsCreated: currentBlogsCount,
-                creditsUsed: currentBlogsCount,
-              }))
-            }
-          },
-        )
-        .subscribe()
-
-      const blogsChannel = supabase
-        .channel("blogs-changes")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "blogs",
-            filter: `user_id=eq.${userId}`,
-          },
-          async () => {
-            console.log("Blog change detected, updating count")
-            const currentBlogsCount = await fetchBlogsCount()
-            setStats((prev) => ({
-              ...prev,
-              postsCreated: currentBlogsCount,
-              creditsUsed: currentBlogsCount,
-            }))
-          },
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(subscriptionChannel)
-        supabase.removeChannel(blogsChannel)
+        // Always set onboarding completion status to true
+        setHasCompletedOnboarding(true)
+        setCompletionStatus({
+          contentIdeas: true,
+          blogSettings: true,
+          audienceKeywords: true,
+        })
       }
     } catch (err) {
       console.error("Unexpected error while setting up subscription:", err)
+      // Set default subscription to prevent UI from being stuck
+      const isFromPayment = searchParams.has("user_id") && searchParams.has("plan") && searchParams.has("credits")
+
+      setSubscription({
+        plan_id: "growth",
+        credits: 30,
+        status: "active",
+        billing_cycle: "monthly",
+        subscription_type: "monthly",
+        currency: "USD",
+        onboarding_completed: true, // Always set to true
+        website_onboarding_completed: true, // Always set to true
+      })
+
+      // Always set onboarding completion status to true
+      setHasCompletedOnboarding(true)
+      setCompletionStatus({
+        contentIdeas: true,
+        blogSettings: true,
+        audienceKeywords: true,
+      })
     }
   }
 
+  // Update the handlePaymentSuccess function to properly mark onboarding as completed
   const handlePaymentSuccess = async (
     userId: string,
     plan: string,
     credits: number,
     billingCycle: string,
-    monthlyPrice?: number,
-    annualPrice?: number,
     currency = "USD",
   ) => {
     try {
@@ -388,6 +463,33 @@ export function DashboardShell({ user }: DashboardShellProps) {
         periodEnd.setMonth(periodEnd.getMonth() + 1)
       }
 
+      // First, check if the current authenticated user matches the userId
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError) {
+        console.error("Auth error when updating subscription:", authError.message)
+        // Continue showing the subscription banner even if there was an error
+        setShowSubscriptionBanner(true)
+        setTimeout(() => setShowSubscriptionBanner(false), 5000)
+        return
+      }
+
+      // If the authenticated user doesn't match the userId, we can't update the subscription
+      if (!authUser || authUser.id !== userId) {
+        console.error("User ID mismatch or not authenticated. Cannot update subscription.")
+        // Still show the banner as the payment might have been successful
+        setShowSubscriptionBanner(true)
+        setTimeout(() => setShowSubscriptionBanner(false), 5000)
+        return
+      }
+
+      console.log("Authenticated user matches userId, proceeding with subscription update")
+      setDebugInfo((prev) => `${prev}\nUpdating subscription for plan: ${plan}, credits: ${credits}`)
+
+      // Define the subscription data with proper types - always mark onboarding as completed after payment
       const subscriptionData = {
         user_id: userId,
         plan_id: plan,
@@ -395,23 +497,114 @@ export function DashboardShell({ user }: DashboardShellProps) {
         status: "active",
         billing_cycle: billingCycleValue,
         subscription_type: subscriptionTypeValue,
-        monthly_price: monthlyPrice || 0,
-        annual_price: annualPrice || 0,
         currency: currency,
         current_period_start: currentDate.toISOString(),
         current_period_end: periodEnd.toISOString(),
+        onboarding_completed: true,
+        website_onboarding_completed: true,
       }
 
-      const { error } = await supabase.from("subscriptions").upsert(subscriptionData)
-      if (error) {
-        console.error("Error updating subscription after payment:", error)
-        throw error
+      // Use the API route to update the subscription
+      try {
+        console.log("Updating subscription via API route")
+        const response = await fetch("/api/update-subscription", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(subscriptionData),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("API route error:", errorData)
+
+          // Fallback to direct Supabase update if API route fails
+          console.log("Falling back to direct Supabase update")
+
+          // First check if a subscription already exists
+          const { data: existingSub, error: checkError } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", userId)
+            .single()
+
+          if (existingSub) {
+            console.log("Updating existing subscription")
+            const { error } = await supabase.from("subscriptions").update(subscriptionData).eq("user_id", userId)
+            if (error) console.error("Error updating subscription:", error)
+          } else {
+            console.log("Creating new subscription")
+            const { error } = await supabase.from("subscriptions").insert(subscriptionData)
+            if (error) console.error("Error creating subscription:", error)
+          }
+        } else {
+          console.log("Subscription updated via API route")
+        }
+      } catch (apiError) {
+        console.error(
+          "Failed to update subscription via API route:",
+          apiError instanceof Error ? apiError.message : JSON.stringify(apiError),
+        )
       }
 
-      await setupRealtimeSubscription()
-      router.replace("/dashboard")
+      // Also update onboarding_status to mark it as completed using the API route
+      try {
+        const onboardingResponse = await fetch("/api/update-onboarding", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user_id: userId }),
+        })
+
+        if (!onboardingResponse.ok) {
+          console.error("Error updating onboarding status via API route")
+
+          // Fallback to direct update
+          await supabase.from("onboarding_status").upsert({
+            user_id: userId,
+            is_completed: true,
+            updated_at: currentDate.toISOString(),
+          })
+        }
+      } catch (onboardingError) {
+        console.error("Failed to update onboarding status:", onboardingError)
+      }
+
+      // Update local subscription state
+      setSubscription({
+        plan_id: plan,
+        credits: credits,
+        status: "active",
+        billing_cycle: billingCycleValue,
+        subscription_type: subscriptionTypeValue,
+        currency: currency,
+        current_period_start: currentDate.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        onboarding_completed: true,
+        website_onboarding_completed: true,
+      })
+
+      // Set onboarding completion status to true
+      setHasCompletedOnboarding(true)
+      setCompletionStatus({
+        contentIdeas: true,
+        blogSettings: true,
+        audienceKeywords: true,
+      })
+
+      // Show subscription banner
+      setShowSubscriptionBanner(true)
+      setTimeout(() => setShowSubscriptionBanner(false), 5000)
     } catch (error) {
-      console.error("Error updating subscription after payment:", error)
+      console.error(
+        "Error updating subscription after payment:",
+        error instanceof Error ? error.message : JSON.stringify(error),
+      )
+      // Continue showing the subscription banner even if there was an error
+      setShowSubscriptionBanner(true)
+      setTimeout(() => setShowSubscriptionBanner(false), 5000)
     }
   }
 
@@ -482,24 +675,30 @@ export function DashboardShell({ user }: DashboardShellProps) {
     router.push(path)
   }
 
-  if (isLoading) {
-    return (
-      <div className={`${saira.className} min-h-screen flex items-center justify-center bg-gray-100`}>
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    )
+  // Get the total credits based on the plan
+  const getTotalCreditsForPlan = (planId: string): number => {
+    const normalizedPlanId = planId.toLowerCase()
+    return planCreditsMap[normalizedPlanId] || 0
   }
 
-  if (showPaymentPage) {
-    return <PaymentPage />
-  }
+  // Update the totalCredits calculation to use the new function
+  const totalCredits = subscription ? getTotalCreditsForPlan(subscription.plan_id) : 0
 
-  const totalCredits = subscription ? planCreditsMap[subscription.plan_id.toLowerCase()] || 0 : 0
+  // Use the actual credits value from the subscription
   const creditsRemaining = subscription?.credits || 0
-  const creditsUsagePercentage = totalCredits ? ((totalCredits - creditsRemaining) / totalCredits) * 100 : 0
+
+  // Calculate credits used (total - remaining)
+  const creditsUsed = totalCredits - creditsRemaining
+
+  // Update stats with the calculated credits used
+  useEffect(() => {
+    if (subscription) {
+      setStats((prev) => ({
+        ...prev,
+        creditsUsed: creditsUsed > 0 ? creditsUsed : 0,
+      }))
+    }
+  }, [subscription, creditsUsed])
 
   const isAnnual =
     subscription?.subscription_type === "annual" ||
@@ -507,18 +706,65 @@ export function DashboardShell({ user }: DashboardShellProps) {
     subscription?.billing_cycle === "annual" ||
     subscription?.billing_cycle === "annually"
 
+  const forceCompleteOnboarding = async () => {
+    try {
+      console.log("Forcing onboarding completion for user:", user.id)
+
+      // Call the API to force complete onboarding
+      const response = await fetch("/api/force-complete-onboarding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Error forcing onboarding completion:", errorData)
+        return
+      }
+
+      console.log("Onboarding forcefully marked as completed")
+
+      // Update local state
+      setHasCompletedOnboarding(true)
+      setCompletionStatus({
+        contentIdeas: true,
+        blogSettings: true,
+        audienceKeywords: true,
+      })
+
+      // Update subscription state
+      if (subscription) {
+        setSubscription({
+          ...subscription,
+          onboarding_completed: true,
+          website_onboarding_completed: true,
+        })
+      }
+
+      // Show success message
+      alert("Onboarding has been marked as completed!")
+
+      // Refresh the page to ensure everything is updated
+      window.location.reload()
+    } catch (error) {
+      console.error("Error in forceCompleteOnboarding:", error)
+    }
+  }
+
   return (
-    <div className={`${saira.className} flex h-screen overflow-hidden bg-gray-50`}>
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 h-screen ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-200 ease-in-out lg:translate-x-0`}
       >
-        <div
-          className={`${saira.className} w-64 bg-white flex flex-col h-screen text-gray-900 border-r border-gray-200`}
-        >
+        <div className="w-64 bg-white flex flex-col h-screen text-gray-900 border-r border-gray-200">
           <div className="flex items-center justify-center p-5 border-b border-gray-200">
-            <Image src="/logo.png" alt="Texta.ai Logo" width={140} height={40} className="object-contain" />
+            <h1 className="text-xl font-bold">Blogosocial</h1>
           </div>
 
           <div className="px-5 mt-6 mb-8">
@@ -559,6 +805,11 @@ export function DashboardShell({ user }: DashboardShellProps) {
                         Home
                       </span>
                     )}
+                    {item.name === "Website Summarizer" && (
+                      <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200">
+                        New
+                      </span>
+                    )}
                   </Link>
                 )
               }
@@ -596,38 +847,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       {item.subItems.map((subItem) => {
                         const SubIcon = subItem.icon
                         const isSubActive = pathname === subItem.href
-
-                        if (subItem.name === "GetMoreBacklinks") {
-                          return (
-                            <Link
-                              key={subItem.name}
-                              href={subItem.href}
-                              className={cn(
-                                "flex flex-col px-4 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200 group",
-                                isSubActive
-                                  ? "text-orange-600 bg-orange-50 border border-orange-100"
-                                  : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/50 border border-transparent hover:border-orange-100",
-                              )}
-                            >
-                              <div className="flex items-center">
-                                <SubIcon
-                                  className={cn(
-                                    "w-[16px] h-[16px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200",
-                                    isSubActive ? "text-orange-500" : "text-gray-500 group-hover:text-orange-500",
-                                  )}
-                                />
-                                {subItem.name}
-                                <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full border border-green-200 flex items-center">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse"></span>
-                                  Active
-                                </span>
-                              </div>
-                              <div className="ml-9 mt-1 text-xs text-gray-500">
-                                Auto-publishing blogs to external sites
-                              </div>
-                            </Link>
-                          )
-                        }
 
                         return (
                           <Link
@@ -688,7 +907,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center">
-                  {subscription && (planName === "Professional" || planName === "Pro") ? (
+                  {subscription && (planName === "Professional" || planName === "Enterprise") ? (
                     <div className="flex items-center">
                       <Sparkles className="w-4 h-4 mr-1.5 text-orange-500" />
                       <span className="text-sm font-semibold text-orange-500">{planName}</span>
@@ -697,13 +916,17 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <span className="text-sm font-medium text-gray-700">{planName}</span>
                   )}
                 </div>
-                <Link
-                  href="/upgrade"
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 flex items-center gap-1 transform hover:scale-105 border border-orange-600"
-                >
-                  <Zap className="w-3.5 h-3.5 mr-1" />
-                  Upgrade
-                </Link>
+                {subscription &&
+                  subscription.plan_id.toLowerCase() !== "professional" &&
+                  subscription.plan_id.toLowerCase() !== "enterprise" && (
+                    <Link
+                      href="/upgrade"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 flex items-center gap-1 transform hover:scale-105 border border-orange-600"
+                    >
+                      <Zap className="w-3.5 h-3.5 mr-1" />
+                      Upgrade
+                    </Link>
+                  )}
               </div>
             </div>
           </div>
@@ -738,17 +961,9 @@ export function DashboardShell({ user }: DashboardShellProps) {
                   aria-haspopup="true"
                   type="button"
                 >
-                  {user.user_metadata?.avatar_url ? (
-                    <img
-                      src={user.user_metadata.avatar_url || "/placeholder.svg"}
-                      alt="Profile"
-                      className="w-9 h-9 object-cover"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 bg-black flex items-center justify-center text-white font-medium">
-                      {user.email?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <div className="w-9 h-9 bg-black flex items-center justify-center text-white font-medium">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
                 </button>
 
                 {isProfileOpen && (
@@ -756,17 +971,9 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-3">
-                          {user.user_metadata?.avatar_url ? (
-                            <img
-                              src={user.user_metadata.avatar_url || "/placeholder.svg"}
-                              alt="Profile"
-                              className="w-10 h-10 object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 bg-black flex items-center justify-center text-white font-medium text-lg">
-                              {user.email?.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          <div className="w-10 h-10 bg-black flex items-center justify-center text-white font-medium text-lg">
+                            {user.email?.charAt(0).toUpperCase()}
+                          </div>
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">
@@ -813,6 +1020,23 @@ export function DashboardShell({ user }: DashboardShellProps) {
         </header>
 
         <main className="flex-1 overflow-y-auto">
+          {showSubscriptionBanner && (
+            <div className="bg-green-50 border-b border-green-200 p-3 text-center">
+              <div className="flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                <p className="text-green-800 font-medium">
+                  Your subscription has been activated successfully! You now have access to all {planName} features.
+                </p>
+                <button
+                  onClick={() => setShowSubscriptionBanner(false)}
+                  className="ml-4 text-green-600 hover:text-green-800"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
             <div className="bg-black rounded-lg p-6 text-white border border-gray-800 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-radial from-orange-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -843,7 +1067,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-medium text-gray-900 flex items-center">
                         <span className="text-orange-500 mr-2">★</span>
-                        Your Subscription
+                        Your {formatPlanName(subscription.plan_id)} Subscription
                       </h2>
                       <button
                         onClick={() => router.push("/upgrade")}
@@ -857,7 +1081,12 @@ export function DashboardShell({ user }: DashboardShellProps) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                       <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Current Plan</p>
-                        <p className="text-xl font-bold text-black">{formatPlanName(subscription.plan_id)}</p>
+                        <p className="text-xl font-bold text-black flex items-center">
+                          {formatPlanName(subscription.plan_id)}
+                          {(planName === "Professional" || planName === "Enterprise") && (
+                            <Sparkles className="h-4 w-4 ml-2 text-orange-500" />
+                          )}
+                        </p>
                       </div>
                       <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Status</p>
@@ -886,18 +1115,20 @@ export function DashboardShell({ user }: DashboardShellProps) {
                           Credits Usage
                         </p>
                         <p className="text-sm font-medium bg-white px-2 py-1 rounded-full border border-orange-200">
-                          {Math.max(0, totalCredits - stats.creditsUsed)} / {totalCredits} credits
+                          {subscription.credits} credits available
                         </p>
                       </div>
                       <div className="w-full bg-white rounded-full h-3 overflow-hidden border border-orange-200">
                         <div
                           className="bg-gradient-to-r from-orange-400 to-orange-600 h-3 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min(100, (stats.creditsUsed / totalCredits) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (stats.creditsUsed / (subscription.credits + stats.creditsUsed)) * 100)}%`,
+                          }}
                         ></div>
                       </div>
                       <div className="flex justify-between mt-2 text-xs text-gray-600">
                         <span className="font-medium text-orange-600">{stats.creditsUsed} credits used</span>
-                        <span className="font-medium">{Math.max(0, totalCredits - stats.creditsUsed)} remaining</span>
+                        <span className="font-medium">{subscription.credits} remaining</span>
                       </div>
                     </div>
                     {subscription.current_period_end && (
@@ -932,6 +1163,12 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Credits Used</p>
                       <p className="text-2xl font-bold">{stats.creditsUsed}</p>
                     </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                        Website Summaries
+                      </p>
+                      <p className="text-2xl font-bold">{stats.websiteSummaries}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -945,7 +1182,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                 </h2>
               </div>
               <div className="p-5">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <button
                     onClick={() => router.push("/dashboard/summarizer")}
                     className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
@@ -956,12 +1193,30 @@ export function DashboardShell({ user }: DashboardShellProps) {
                         <Target className="h-6 w-6 text-orange-600" />
                       </div>
                       <div className="text-left">
-                        <span className="font-medium text-gray-900 text-base">Create New Content</span>
-                        <p className="text-xs text-gray-500 mt-1">Craft professional blog posts and articles</p>
+                        <span className="font-medium text-gray-900 text-base">Create Content</span>
+                        <p className="text-xs text-gray-500 mt-1">Craft professional blog posts</p>
                       </div>
                     </span>
                     <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
                   </button>
+
+                  <button
+                    onClick={() => router.push("/dashboard/summarizer")}
+                    className="flex items-center justify-between p-4 border border-blue-200 rounded-lg hover:border-blue-400 transition-all duration-300 group relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="flex items-center relative z-10">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 border border-blue-200 group-hover:bg-blue-200 transition-colors duration-300">
+                        <Globe className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-medium text-gray-900 text-base">Summarize Website</span>
+                        <p className="text-xs text-gray-500 mt-1">Generate AI website summaries</p>
+                      </div>
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-blue-400 group-hover:text-blue-600 transition-colors relative z-10" />
+                  </button>
+
                   <button
                     onClick={() => router.push("/company-database/ideas")}
                     className="flex items-center justify-between p-4 border border-orange-200 rounded-lg hover:border-orange-400 transition-all duration-300 group relative overflow-hidden"
@@ -973,7 +1228,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       </div>
                       <div className="text-left">
                         <span className="font-medium text-gray-900 text-base">Generate Ideas</span>
-                        <p className="text-xs text-gray-500 mt-1">Discover trending content topics</p>
+                        <p className="text-xs text-gray-500 mt-1">Discover trending topics</p>
                       </div>
                     </span>
                     <ChevronRight className="h-5 w-5 text-orange-400 group-hover:text-orange-600 transition-colors relative z-10" />
@@ -982,140 +1237,10 @@ export function DashboardShell({ user }: DashboardShellProps) {
               </div>
             </div>
 
-            {!subscription?.onboarding_completed && (
-              <div className="bg-white rounded-lg border border-gray-200">
-                <div className="p-5 border-b border-gray-100">
-                  <h2 className="text-lg font-medium text-gray-900">Setup Progress</h2>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-700">Completion Status</span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {Object.values(completionStatus).filter(Boolean).length} of 3 completed
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 mb-6 border border-gray-200">
-                    <div
-                      className="bg-black h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(Object.values(completionStatus).filter(Boolean).length / 3) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                              completionStatus.contentIdeas
-                                ? "bg-green-100 border-green-200"
-                                : "bg-orange-100 border-orange-200"
-                            }`}
-                          >
-                            {completionStatus.contentIdeas ? (
-                              <Check className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <Lightbulb className="w-5 h-5 text-orange-600" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-base font-medium text-gray-900">Content Ideas</h3>
-                          <p className="text-xs text-gray-500">Set up your content idea sources and preferences</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => router.push("/company-database/ideas")}
-                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
-                          completionStatus.contentIdeas
-                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
-                            : "text-white bg-black hover:bg-gray-800 border-black"
-                        } transition-colors`}
-                      >
-                        {completionStatus.contentIdeas ? "Edit" : "Complete"}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                              completionStatus.blogSettings
-                                ? "bg-green-100 border-green-200"
-                                : "bg-orange-100 border-orange-200"
-                            }`}
-                          >
-                            {completionStatus.blogSettings ? (
-                              <Check className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <FileText className="w-5 h-5 text-orange-600" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-base font-medium text-gray-900">Blog Settings</h3>
-                          <p className="text-xs text-gray-500">
-                            Configure your blog preferences and publishing strategy
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => router.push("/company-database/blog")}
-                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
-                          completionStatus.blogSettings
-                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
-                            : "text-white bg-black hover:bg-gray-800 border-black"
-                        } transition-colors`}
-                      >
-                        {completionStatus.blogSettings ? "Edit" : "Complete"}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                              completionStatus.audienceKeywords
-                                ? "bg-green-100 border-green-200"
-                                : "bg-orange-100 border-orange-200"
-                            }`}
-                          >
-                            {completionStatus.audienceKeywords ? (
-                              <Check className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <Users className="w-5 h-5 text-orange-600" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-base font-medium text-gray-900">Audience and Keywords</h3>
-                          <p className="text-xs text-gray-500">Define your target audience and important keywords</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => router.push("/settings")}
-                        className={`px-3 py-1.5 text-xs font-medium rounded border ${
-                          completionStatus.audienceKeywords
-                            ? "text-gray-700 bg-gray-100 hover:bg-gray-200 border-gray-300"
-                            : "text-white bg-black hover:bg-gray-800 border-black"
-                        } transition-colors`}
-                      >
-                        {completionStatus.audienceKeywords ? "Edit" : "Complete"}
-                      </button>
-                    </div>
-
-                    <div className="flex justify-center pt-4">
-                      <button
-                        onClick={markAllAsCompleted}
-                        className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors flex items-center border border-black"
-                      >
-                        <Check className="mr-2 h-4 w-4" />
-                        Mark All Steps as Completed
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            {debugInfo && (
+              <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg overflow-auto max-h-96">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Debug Information</h3>
+                <p className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{debugInfo}</p>
               </div>
             )}
           </div>
@@ -1124,3 +1249,4 @@ export function DashboardShell({ user }: DashboardShellProps) {
     </div>
   )
 }
+

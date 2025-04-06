@@ -2,365 +2,691 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import CustomEditor from "@/app/components/CustomEditor"
+import { CreditCard, Lock, ArrowUp, Calendar, LinkIcon, Clock, CheckCircle } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { createClient } from "@/utitls/supabase/client"
-import { Loader2, ArrowLeft, Save, FileText, ChevronLeft, MoreHorizontal, Share2, Download, Trash2 } from "lucide-react"
+import PaymentPage from "@/app/components/payment-page"
 
-// Types
-type MetricType = {
-  count: number
-  range: string
+// Use the test mode URL for Dodo Payments
+const DODO_URL = "https://test.checkout.dodopayments.com/buy"
+
+type BlogPost = {
+  id: string
+  user_id: string
+  blog_post: string
+  citations: any[] // Adjust type based on your citations structure
+  created_at: string
+  title: string
+  timestamp: string
+  reveal_date: string
+  url: string
 }
 
-type ContentBriefType = {
-  words: MetricType
-  headings: MetricType
-  paragraphs: MetricType
-  images: MetricType
-  readability: { score: number; level: string }
-  keywords: string[]
+type UserSignedUp = {
+  id: string
+  email: string
+  created_at: string
+  updated_at: string
 }
 
-export default function GeneratedBlogPage() {
+type Subscription = {
+  id: string
+  user_id: string
+  plan_id: string
+  credits: number
+  status: string
+  billing_cycle: string
+  subscription_type: string
+  current_period_end?: string
+}
+
+// Define the plan type to fix the 'any' type error
+type Plan = {
+  id: string
+  name: string
+  dodoProductId: string
+  numericPrice: number
+}
+
+export default function BlogPostPage() {
+  const [blogPost, setBlogPost] = useState<BlogPost | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showPricing, setShowPricing] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [user, setUser] = useState<UserSignedUp | null>(null)
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly")
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showLoginForm, setShowLoginForm] = useState(false)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>("")
+
   const params = useParams()
   const router = useRouter()
+  const id = params?.id as string
+
+  // Ref for scroll to top functionality
+  const topRef = useRef<HTMLDivElement>(null)
+
+  // Initialize Supabase client
   const supabase = createClient()
 
-  // State
-  const [blogPost, setBlogPost] = useState<string>("")
-  const [citations, setCitations] = useState<string[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [saving, setSaving] = useState<boolean>(false)
-  const [title, setTitle] = useState<string>("")
-  const [lastSaved, setLastSaved] = useState<string>("")
-  const [showDropdown, setShowDropdown] = useState<boolean>(false)
-
-  // Mock data for content brief
-  const contentBrief: ContentBriefType = {
-    words: {
-      count: 1139,
-      range: "2,000-2,404",
-    },
-    headings: {
-      count: 0,
-      range: "5-36",
-    },
-    paragraphs: {
-      count: 1,
-      range: "65-117",
-    },
-    images: {
-      count: 0,
-      range: "3-29",
-    },
-    readability: {
-      score: 30.3,
-      level: "College grade",
-    },
-    keywords: [
-      "eating plan 3/1-3",
-      "intermittent fasting 43/16-19",
-      "fasting 7/7/5-7",
-      "masks 0/1-3",
-      "people 5/6-8",
-      "research 10/4-6",
-    ],
+  // Add a log function to track what's happening
+  const addLog = (message: string) => {
+    console.log(message)
+    setDebugInfo((prev) => `${prev}\n${message}`)
   }
 
+  // Check if user is authenticated and has subscription
   useEffect(() => {
-    fetchBlog()
+    const checkUserAndSubscription = async () => {
+      try {
+        addLog("Checking user authentication...")
 
-    // Close dropdown when clicking outside
-    const handleClickOutside = () => {
-      setShowDropdown(false)
+        // First try to get the user from Supabase auth
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser()
+
+        if (authError) {
+          addLog(`Auth error: ${authError.message}`)
+          setUser(null)
+          return
+        }
+
+        if (!authUser) {
+          addLog("No authenticated user")
+          setUser(null)
+          return
+        }
+
+        addLog(`Auth user found: ${authUser.id}`)
+
+        // Now check if this user exists in the userssignuped table
+        const { data: signupUser, error: signupError } = await supabase
+          .from("userssignuped")
+          .select("*")
+          .eq("id", authUser.id)
+          .single()
+
+        if (signupError) {
+          addLog(`Error fetching user from userssignuped: ${signupError.message}`)
+
+          // If user doesn't exist in userssignuped, create an entry
+          if (signupError.code === "PGRST116") {
+            addLog("User not found in userssignuped table, creating entry...")
+            const { data: newUser, error: insertError } = await supabase
+              .from("userssignuped")
+              .insert({
+                id: authUser.id,
+                email: authUser.email,
+              })
+              .select()
+              .single()
+
+            if (insertError) {
+              addLog(`Failed to create user record: ${insertError.message}`)
+              setUser(null)
+            } else {
+              addLog(`Created new user in userssignuped: ${newUser.id}`)
+              setUser(newUser)
+              setUserId(authUser.id)
+
+              // Check for subscription
+              await checkSubscription(authUser.id)
+            }
+          } else {
+            setUser(null)
+          }
+        } else if (signupUser) {
+          addLog(`User found in userssignuped table: ${signupUser.id}`)
+          setUser(signupUser)
+          setUserId(signupUser.id)
+
+          // Check for subscription
+          await checkSubscription(authUser.id)
+        }
+      } catch (err) {
+        addLog(`User check error: ${err instanceof Error ? err.message : String(err)}`)
+        setUser(null)
+      }
     }
 
-    document.addEventListener("click", handleClickOutside)
-    return () => {
-      document.removeEventListener("click", handleClickOutside)
-    }
+    checkUserAndSubscription()
   }, [])
 
-  const fetchBlog = async () => {
+  // Check if user has an active subscription
+  const checkSubscription = async (userId: string) => {
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser()
+      addLog(`Checking subscription for user: ${userId}`)
 
-      if (authError || !user) {
-        setError("Authentication required")
-        setBlogPost("<p>Please log in to continue.</p>")
-        setCitations([])
-        router.push("/auth")
+      // Get all subscriptions for the user
+      const { data: subscriptions, error: subError } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+
+      if (subError) {
+        addLog(`Error fetching subscriptions: ${subError.message}`)
+        setHasActiveSubscription(false)
         return
       }
 
-      const { data, error: fetchError } = await supabase
-        .from("blogs")
-        .select("blog_post, citations, title, reveal_date")
-        .eq("id", params.id)
-        .eq("user_id", user.id)
-        .single()
+      addLog(`Found ${subscriptions?.length || 0} subscriptions`)
 
-      if (fetchError || !data) {
-        setError("Blog not found")
-        setBlogPost("<p>This blog post could not be found.</p>")
-        setCitations([])
-      } else {
-        setBlogPost(data.blog_post)
-        setTitle(data.title || "Untitled Blog Post")
+      if (subscriptions && subscriptions.length > 0) {
+        // Find active subscriptions
+        const activeSubscription = subscriptions.find((sub) => sub.status === "active")
 
-        // Parse citations
-        let parsedCitations: string[] = []
-        if (typeof data.citations === "string") {
-          try {
-            parsedCitations = JSON.parse(data.citations)
-            if (!Array.isArray(parsedCitations)) {
-              parsedCitations = [data.citations]
+        if (activeSubscription) {
+          addLog(`Found active subscription: ${activeSubscription.plan_id}`)
+
+          // Check if subscription is expired
+          if (activeSubscription.current_period_end) {
+            const currentPeriodEnd = new Date(activeSubscription.current_period_end)
+            const now = new Date()
+
+            if (currentPeriodEnd > now) {
+              // Subscription is active and not expired
+              addLog(`Subscription is valid until: ${currentPeriodEnd.toISOString()}`)
+              setHasActiveSubscription(true)
+              setSubscriptionPlan(activeSubscription.plan_id)
+            } else {
+              // Subscription is expired
+              addLog(`Subscription expired on: ${currentPeriodEnd.toISOString()}`)
+              setHasActiveSubscription(false)
             }
-          } catch (parseError) {
-            parsedCitations = data.citations.split(",").map((item: string) => item.trim())
+          } else {
+            // No expiration date, assume active
+            addLog("Subscription has no expiration date, assuming active")
+            setHasActiveSubscription(true)
+            setSubscriptionPlan(activeSubscription.plan_id)
           }
-        } else if (Array.isArray(data.citations)) {
-          parsedCitations = data.citations
+        } else {
+          addLog("No active subscriptions found")
+          setHasActiveSubscription(false)
         }
-
-        setCitations(parsedCitations)
-        setLastSaved(new Date().toLocaleTimeString())
+      } else {
+        addLog("No subscriptions found")
+        setHasActiveSubscription(false)
       }
     } catch (err) {
-      setError("Failed to load blog")
-      setBlogPost("<p>An error occurred while loading the blog.</p>")
-      setCitations([])
-    } finally {
-      setLoading(false)
+      addLog(`Error checking subscription: ${err instanceof Error ? err.message : String(err)}`)
+      setHasActiveSubscription(false)
     }
   }
 
-  const handleContentChange = async (newContent: string) => {
-    setBlogPost(newContent)
-    setSaving(true)
+  useEffect(() => {
+    const fetchBlogPost = async () => {
+      if (!id) return
+
+      try {
+        addLog(`Fetching blog post with ID: ${id}`)
+        const { data: blog, error } = await supabase.from("blogs").select("*").eq("id", id).single()
+
+        if (error || !blog) {
+          addLog(`Error fetching blog post: ${error?.message || "No data returned"}`)
+          setBlogPost(null)
+        } else {
+          addLog(`Blog post fetched successfully: ${blog.title}`)
+          setBlogPost(blog)
+        }
+      } catch (err) {
+        addLog(`Error fetching blog post: ${err instanceof Error ? err.message : String(err)}`)
+        setBlogPost(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBlogPost()
+  }, [id])
+
+  // Handle scroll events to show/hide the scroll button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollButton(true)
+      } else {
+        setShowScrollButton(false)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    topRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  // Handle login directly checking userssignuped table
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
 
     try {
+      setError(null)
+      addLog("Attempting login...")
+
+      // First authenticate with Supabase Auth
       const {
-        data: { user },
-      } = await supabase.auth.getUser()
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (user) {
-        const { error } = await supabase
-          .from("blogs")
-          .update({ blog_post: newContent })
-          .eq("id", params.id)
-          .eq("user_id", user.id)
-
-        if (!error) {
-          setLastSaved(new Date().toLocaleTimeString())
-        }
+      if (authError) {
+        addLog(`Authentication failed: ${authError.message}`)
+        throw new Error(`Authentication failed: ${authError.message}`)
       }
+
+      if (!authUser) {
+        addLog("Authentication failed: No user returned")
+        throw new Error("Authentication failed: No user returned")
+      }
+
+      addLog(`User authenticated: ${authUser.id}`)
+
+      // Now check if this user exists in the userssignuped table
+      const { data: signupUser, error: signupError } = await supabase
+        .from("userssignuped")
+        .select("*")
+        .eq("id", authUser.id)
+        .single()
+
+      if (signupError) {
+        // If user doesn't exist in userssignuped, create an entry
+        if (signupError.code === "PGRST116") {
+          addLog("Creating new user record in userssignuped table")
+          const { data: newUser, error: insertError } = await supabase
+            .from("userssignuped")
+            .insert({
+              id: authUser.id,
+              email: authUser.email,
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            addLog(`Failed to create user record: ${insertError.message}`)
+            throw new Error(`Failed to create user record: ${insertError.message}`)
+          }
+
+          setUser(newUser)
+          setUserId(authUser.id)
+          setShowLoginForm(false)
+
+          // Check for subscription
+          await checkSubscription(authUser.id)
+          return
+        }
+
+        addLog(`Failed to check user record: ${signupError.message}`)
+        throw new Error(`Failed to check user record: ${signupError.message}`)
+      }
+
+      // User exists in userssignuped table
+      addLog("User found in userssignuped table")
+      setUser(signupUser)
+      setUserId(signupUser.id)
+      setShowLoginForm(false)
+
+      // Check for subscription
+      await checkSubscription(authUser.id)
     } catch (err) {
-      console.error("Error saving blog:", err)
-    } finally {
-      setTimeout(() => setSaving(false), 500)
+      addLog(`Login error: ${err instanceof Error ? err.message : "Unknown error"}`)
+      setError(err instanceof Error ? err.message : "Login failed")
     }
   }
 
-  // Consolidated action handler for all button clicks
-  const handleAction = (action: string) => {
-    switch (action) {
-      case "back":
-        router.push("/dashboard")
-        break
-      case "generateMore":
-        console.log("Generate More clicked")
-        break
-      case "share":
-        console.log("Share clicked")
-        break
-      case "export":
-        console.log("Export as PDF clicked")
-        break
-      case "duplicate":
-        console.log("Duplicate clicked")
-        break
-      case "delete":
-        console.log("Delete clicked")
-        break
-      case "publish":
-        console.log("Publish clicked")
-        break
-      default:
-        break
+  const handlePayNow = () => {
+    addLog("Payment button clicked")
+    // Show pricing section in the same page
+    setShowPricing(true)
+    // Scroll to top when switching to pricing
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleBackToPreview = () => {
+    setShowPricing(false)
+    // Scroll to top when switching back to article
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const toggleLoginForm = () => {
+    setShowLoginForm(!showLoginForm)
+    setError(null)
+  }
+
+  // Function to create checkout URL for a plan
+  const getCheckoutUrl = (plan: Plan) => {
+    if (!user || !user.id) {
+      addLog("No authenticated user for checkout")
+      return "#"
+    }
+
+    addLog(`Creating checkout URL for user: ${user.id}`)
+
+    const redirectUrl = encodeURIComponent(
+      `${window.location.origin}/payment-success?` +
+        `user_id=${user.id}&` +
+        `plan_id=${plan.id}&` +
+        `plan_name=${plan.name}&` +
+        `price=${plan.numericPrice}&` +
+        `currency=USD&` +
+        `billing_cycle=${billingCycle}`,
+    )
+
+    return `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${redirectUrl}`
+  }
+
+  // Split content to show exactly 4 paragraphs
+  const splitContent = () => {
+    // We need to handle this client-side since DOMParser is browser-only
+    if (typeof document !== "undefined" && blogPost) {
+      const tempDiv = document.createElement("div")
+      tempDiv.innerHTML = blogPost.blog_post
+
+      const paragraphs = tempDiv.querySelectorAll("p, h1, h2, h3, h4, h5, h6")
+
+      // Get the first 4 paragraphs
+      const visibleParagraphs = Array.from(paragraphs).slice(0, 4)
+      const blurredParagraphs = Array.from(paragraphs).slice(4)
+
+      // Create containers for visible and blurred content
+      const visibleDiv = document.createElement("div")
+      visibleParagraphs.forEach((p) => visibleDiv.appendChild(p.cloneNode(true)))
+
+      const blurredDiv = document.createElement("div")
+      blurredParagraphs.forEach((p) => blurredDiv.appendChild(p.cloneNode(true)))
+
+      return {
+        visibleContent: visibleDiv.innerHTML,
+        blurredContent: blurredDiv.innerHTML,
+        hasBlurredContent: blurredParagraphs.length > 0,
+      }
+    }
+
+    // Fallback for SSR (though this component is marked as client)
+    return {
+      visibleContent: "",
+      blurredContent: blogPost?.blog_post || "",
+      hasBlurredContent: true,
     }
   }
 
-  const toggleDropdown = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setShowDropdown(!showDropdown)
-  }
+  const { visibleContent, blurredContent, hasBlurredContent } = splitContent()
 
-  // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-16 h-16">
-            <Loader2 className="w-16 h-16 animate-spin text-blue-600 opacity-25" />
-            <Loader2
-              className="w-16 h-16 animate-spin text-blue-600 absolute top-0 left-0"
-              style={{ animationDelay: "-0.5s" }}
-            />
-          </div>
-          <p className="text-slate-600 font-medium text-lg">Loading your blog post...</p>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294fd6] mb-4"></div>
+          <p className="text-gray-600">Loading blog post...</p>
         </div>
       </div>
     )
   }
 
-  // Error state
-  if (error) {
+  if (!blogPost) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="text-center max-w-md p-8 bg-white">
-          <div className="bg-red-50 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-red-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md mx-auto bg-white rounded-xl shadow-md border border-gray-200"
+        >
+          <div className="text-center p-8">
+            <div className="h-12 w-12 text-gray-400 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Blog post not found</h2>
+            <p className="text-gray-600">The blog post you're looking for doesn't exist or has been removed.</p>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-3">{error}</h1>
-          <p className="text-slate-600 mb-8">We couldn't load your blog post. Please try again later.</p>
-          <button
-            onClick={() => handleAction("back")}
-            className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-base font-medium"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Dashboard
-          </button>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
-  // Main content
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top navigation bar */}
-      <header className="sticky top-0 z-10 bg-white w-full">
-        <div className="w-full px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => handleAction("back")}
-              className="p-2 rounded-full hover:bg-slate-100 transition-colors"
-              title="Back to Dashboard"
-            >
-              <ChevronLeft className="h-5 w-5 text-slate-600" />
-              <span className="sr-only">Back to Dashboard</span>
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm font-medium text-slate-500">
-                {saving ? "Saving..." : `Saved at ${lastSaved}`}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Desktop action buttons */}
-
-            {/* Dropdown menu */}
-            <div className="relative">
-              <button
-                onClick={toggleDropdown}
-                className="p-2 rounded-full hover:bg-slate-100 transition-colors"
-                title="More options"
-              >
-                <MoreHorizontal className="h-5 w-5 text-slate-600" />
-                <span className="sr-only">More options</span>
-              </button>
-
-              {showDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white py-1 z-20">
-                  {/* Mobile-only actions */}
-                  <button
-                    onClick={() => handleAction("share")}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center md:hidden"
-                  >
-                    <Share2 className="h-4 w-4 mr-2 text-slate-500" />
-                    Share
-                  </button>
-                  <button
-                    onClick={() => handleAction("generateMore")}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center md:hidden"
-                  >
-                    <Save className="h-4 w-4 mr-2 text-slate-500" />
-                    Generate More
-                  </button>
-                  <hr className="my-1 border-slate-200 md:hidden" />
-
-                  {/* Common actions */}
-                  <button
-                    onClick={() => handleAction("export")}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2 text-slate-500" />
-                    Export as PDF
-                  </button>
-                  <button
-                    onClick={() => handleAction("duplicate")}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
-                  >
-                    <FileText className="h-4 w-4 mr-2 text-slate-500" />
-                    Duplicate
-                  </button>
-                  <hr className="my-1 border-slate-200" />
-                  <button
-                    onClick={() => handleAction("delete")}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100 flex items-center"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </button>
+    <div ref={topRef} className="min-h-screen bg-white py-12 px-4 sm:px-6">
+      <AnimatePresence mode="wait">
+        {!showPricing ? (
+          <motion.div
+            key="blog-post"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+          >
+            <div className="p-6 sm:p-8">
+              {/* Subscription Status Badge - Only show when user has subscription */}
+              {hasActiveSubscription && (
+                <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                  <div>
+                    <p className="text-green-800 font-medium">Premium Content Unlocked</p>
+                    <p className="text-green-600 text-sm">
+                      You're viewing this content with your{" "}
+                      {subscriptionPlan
+                        ? subscriptionPlan.charAt(0).toUpperCase() + subscriptionPlan.slice(1)
+                        : "Premium"}{" "}
+                      plan
+                    </p>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 overflow-auto bg-white">
-          <div className="w-full h-full">
-            {/* Editor section */}
-            <div className="w-full h-full bg-white">
-              <div className="p-4">
-                <CustomEditor
-                  initialValue={blogPost}
-                  onChange={handleContentChange}
-                  images={[]}
-                  onGenerateMore={() => handleAction("generateMore")}
-                  citations={citations}
-                  postId={params.id as string}
-                />
+              <motion.h1
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800"
+              >
+                {blogPost.title}
+              </motion.h1>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-500"
+              >
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <span>
+                    {new Date(blogPost.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span>5 min read</span>
+                </div>
+
+                {blogPost.url && (
+                  <div className="flex items-center">
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    <a
+                      href={blogPost.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#294fd6] hover:text-[#1e3eb8] hover:underline transition-colors duration-200"
+                    >
+                      Source
+                    </a>
+                  </div>
+                )}
+              </motion.div>
+
+              <motion.hr
+                initial={{ opacity: 0, width: "0%" }}
+                animate={{ opacity: 1, width: "100%" }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="my-6 border-gray-200"
+              />
+
+              {/* Visible Content - Always show first 4 paragraphs */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="prose prose-gray prose-headings:text-gray-800 prose-a:text-[#294fd6] max-w-none mb-8"
+                dangerouslySetInnerHTML={{ __html: visibleContent }}
+              />
+
+              {/* Conditional Content Display */}
+              {hasBlurredContent && (
+                <>
+                  {hasActiveSubscription ? (
+                    // Full Content for Subscribers
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6, duration: 0.5 }}
+                      className="prose prose-gray prose-headings:text-gray-800 prose-a:text-[#294fd6] max-w-none"
+                      dangerouslySetInnerHTML={{ __html: blurredContent }}
+                    />
+                  ) : (
+                    // Blurred Content with Paywall for Non-Subscribers
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.5 }}
+                      className="relative mt-8 rounded-xl overflow-hidden border border-gray-200 shadow-md"
+                    >
+                      <div
+                        className="prose prose-gray max-w-none blur-md pointer-events-none p-6 opacity-70"
+                        dangerouslySetInnerHTML={{ __html: blurredContent }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/70 to-white flex flex-col items-center justify-center p-8">
+                        <motion.div
+                          whileHover={{ scale: 1.03 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          className="text-center max-w-md"
+                        >
+                          <div className="bg-blue-100 text-[#294fd6] p-3 rounded-full inline-flex items-center justify-center mb-4 shadow-md">
+                            <Lock className="h-6 w-6" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-gray-800 mb-3">Premium Content Locked</h3>
+                          <p className="text-gray-600 mb-6">
+                            Unlock the full article and get access to our premium content library with expert insights
+                            and analysis.
+                          </p>
+
+                          {/* Direct link to payment page */}
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handlePayNow}
+                            className="bg-[#294fd6] hover:bg-[#1e3eb8] text-white px-8 py-3 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center mx-auto font-medium"
+                          >
+                            <CreditCard className="h-5 w-5 mr-2" />
+                            Unlock Full Article
+                          </motion.button>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
+
+              {/* Citations */}
+              {blogPost.citations && blogPost.citations.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7, duration: 0.5 }}
+                  className="mt-8 pt-6 border-t border-gray-200"
+                >
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Citations</h3>
+                  <ul className="space-y-2">
+                    {blogPost.citations.map((citation: any, index: number) => (
+                      <li key={index} className="text-gray-600">
+                        <span className="text-gray-400">[{index + 1}]</span>{" "}
+                        <a
+                          href={citation.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#294fd6] hover:text-[#1e3eb8] hover:underline transition-colors duration-200"
+                        >
+                          {citation.title || citation.url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {/* Debug Information - Remove in production */}
+              <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Information</h4>
+                <div className="text-xs font-mono text-gray-600">
+                  <p>User ID: {userId || "Not logged in"}</p>
+                  <p>Has Subscription: {hasActiveSubscription ? "Yes" : "No"}</p>
+                  <p>Subscription Plan: {subscriptionPlan || "None"}</p>
+                  <p>Blog Post ID: {blogPost.id}</p>
+                  <details>
+                    <summary>Detailed Logs</summary>
+                    <pre className="whitespace-pre-wrap mt-2 text-xs">{debugInfo}</pre>
+                  </details>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </motion.div>
+        ) : (
+          <motion.div className="text-center mb-8">
+            <button
+              onClick={handleBackToPreview}
+              className="text-[#294fd6] hover:text-[#1e3eb8] font-medium transition-colors duration-200 underline mb-8"
+            >
+              Back to article preview
+            </button>
+            <PaymentPage />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scroll to top button that appears when scrolling */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 bg-[#294fd6] text-white p-3 rounded-full shadow-lg hover:bg-[#1e3eb8] transition-all duration-300 z-50"
+            aria-label="Scroll to top"
+          >
+            <ArrowUp className="h-6 w-6" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
