@@ -954,9 +954,7 @@ async function generateArticleFromScrapedData(
     const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData)
     console.log(`Generated title: ${simpleTitle}`)
 
-    // Add delay
-    console.log("Waiting 15 seconds before generating first part...")
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+  
 
     // Format research data
     const researchData = scrapedData.researchResults || []
@@ -1009,15 +1007,12 @@ async function generateArticleFromScrapedData(
     const firstPartContent = await callAzureOpenAI(firstPartPrompt, 16384)
     console.log(`First part generated (${countWords(firstPartContent)} words).`)
 
-    // Delay before second half
-    console.log("Waiting 20 seconds before generating second part...")
-    await new Promise((resolve) => setTimeout(resolve, 20000))
+
 
     // Dedupe first part
     const firstPartDeduped = await removeRepetitiveContent(firstPartContent, scrapedData.coreTopic)
 
     // Generate second half with FAQs
-    console.log("Generating second part of the article with FAQs")
     const secondPartPrompt = `
       Write the SECOND HALF (remaining sections, FAQs, conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
       
@@ -1059,27 +1054,21 @@ async function generateArticleFromScrapedData(
       Return formatted content for the SECOND HALF only.
     `
     const secondPartContent = await callAzureOpenAI(secondPartPrompt, 16384)
-    console.log(`Second part generated (${countWords(secondPartContent)} words).`)
 
     // Combine parts
-    console.log("Waiting 10 seconds before combining parts...")
     await new Promise((resolve) => setTimeout(resolve, 10000))
     const combinedContent = `${firstPartDeduped}\n\n${secondPartContent}`
 
     // Format content
-    console.log("Waiting 15 seconds before formatting...")
     await new Promise((resolve) => setTimeout(resolve, 15000))
     const formattedContent = await formatContentWithOpenAI(combinedContent, scrapedData.coreTopic, simpleTitle)
 
     // Dedupe combined content
-    console.log("Aggressively checking for repetitive content...")
     const deduplicatedContent = await removeRepetitiveContent(formattedContent, scrapedData.coreTopic)
 
     // Check and ensure FAQs exist (only if missing, but secondPartPrompt already includes them)
-    console.log("Checking if FAQs exist...")
     let contentWithFAQs = deduplicatedContent
     if (!contentWithFAQs.includes("## Frequently Asked Questions")) {
-      console.log("No FAQs found, adding them...")
       const faqPrompt = `
         Add a FAQ section to this blog post about "${scrapedData.coreTopic}".
         Start with "## Frequently Asked Questions"
@@ -1094,7 +1083,6 @@ async function generateArticleFromScrapedData(
     }
 
     // Ensure sufficient links
-    console.log("Checking if content has sufficient links...")
     const externalLinkRegex = /\[([^\]]+)\]\s*$$https?:\/\/[^)]+$$/g
     const internalLinkRegex = /\[([^\]]+)\]\s*$$\/[^)]+$$/g
     const existingExternalLinks = contentWithFAQs.match(externalLinkRegex) || []
@@ -1140,9 +1128,7 @@ async function generateArticleFromScrapedData(
     console.log("Generating tables...")
     const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks)
 
-    // Convert to HTML
-    console.log("Waiting 8 seconds before converting to HTML...")
-    await new Promise((resolve) => setTimeout(resolve, 8000))
+
     let htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks);
     // Insert YouTube video
     if (youtubeEmbed) {
