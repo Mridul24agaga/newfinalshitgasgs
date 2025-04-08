@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Link2,
   AlertCircle,
@@ -14,137 +14,145 @@ import {
   Zap,
   PenTool,
   BookOpen,
-} from "lucide-react"
-import { generateBlog } from "../actions" // Adjust path to your generateBlog function
+} from "lucide-react";
+import { generateBlog } from "../actions"; // Adjust path to your generateBlog function
 
 export default function GenerateBlogContent() {
-  const [url, setUrl] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<boolean>(false)
-  const [generatedBlogId, setGeneratedBlogId] = useState<string | null>(null)
-  const [progress, setProgress] = useState<number>(0)
-  const [currentStep, setCurrentStep] = useState<number>(0)
+  const [url, setUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [generatedBlogId, setGeneratedBlogId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [currentStep, setCurrentStep] = useState<number>(0);
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const generationSteps = [
     { icon: <Sparkles className="text-purple-500" size={24} />, text: "Analyzing website content..." },
     { icon: <PenTool className="text-emerald-500" size={24} />, text: "Crafting compelling headlines..." },
     { icon: <BookOpen className="text-amber-500" size={24} />, text: "Structuring blog sections..." },
     { icon: <Zap className="text-rose-500" size={24} />, text: "Adding AI magic to content..." },
-  ]
+  ];
 
   // Load URL from localStorage or query params on mount
   useEffect(() => {
-    const storedUrl = localStorage.getItem("websiteSummaryUrl")
-    const queryUrl = searchParams.get("url")
-    if (storedUrl) setUrl(storedUrl)
-    else if (queryUrl) setUrl(queryUrl)
-  }, [searchParams])
+    const storedUrl = localStorage.getItem("websiteSummaryUrl");
+    const queryUrl = searchParams.get("url");
+    if (storedUrl) setUrl(storedUrl);
+    else if (queryUrl) setUrl(queryUrl);
+  }, [searchParams]);
 
   // Simulate progress during loading
   useEffect(() => {
     if (isLoading) {
-      // Reset progress
-      setProgress(0)
-      setCurrentStep(0)
+      setProgress(0);
+      setCurrentStep(0);
 
-      // Simulate progress steps
       const progressInterval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 100) {
-            clearInterval(progressInterval)
-            return 100
+            clearInterval(progressInterval);
+            return 100;
           }
-          return prev + 1
-        })
-      }, 300) // Adjust speed as needed
+          return prev + 1;
+        });
+      }, 300);
 
-      // Simulate step changes
       const stepInterval = setInterval(() => {
-        setCurrentStep((prev) => (prev + 1) % generationSteps.length)
-      }, 5000) // Change step every 5 seconds
+        setCurrentStep((prev) => (prev + 1) % generationSteps.length);
+      }, 5000);
 
-      // Cleanup
       return () => {
-        clearInterval(progressInterval)
-        clearInterval(stepInterval)
-      }
+        clearInterval(progressInterval);
+        clearInterval(stepInterval);
+      };
     }
-  }, [isLoading, generationSteps.length])
+  }, [isLoading, generationSteps.length]);
 
   // Warn user if they try to leave during generation
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isLoading) {
-        e.preventDefault()
-        e.returnValue = "Blog generation in progress. Are you sure you want to leave?"
-        return e.returnValue
+        e.preventDefault();
+        e.returnValue = "Blog generation in progress. Are you sure you want to leave?";
+        return e.returnValue;
       }
-    }
+    };
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [isLoading])
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isLoading]);
+
+  // Timeout wrapper using Promise.race
+  const generateBlogWithTimeout = (url: string, mode?: "normal" | "hardcore", timeoutMs: number = 30000) => {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timed out. The server took too long to respond.")), timeoutMs)
+    );
+    return Promise.race([generateBlog(url, mode), timeoutPromise]);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!url.trim()) {
-      setError("Please enter a URL")
-      return
+      setError("Please enter a URL");
+      return;
     }
 
-    setIsLoading(true)
-    setError(null)
-    setSuccess(false)
-    setGeneratedBlogId(null) // Reset previous ID
+    setIsLoading(true);
+    setError(null);
+    setSuccess(false);
+    setGeneratedBlogId(null);
 
     try {
-      console.log("Starting blog generation for URL:", url)
-      const blogPosts = await generateBlog(url) // Call generateBlog from actions
-      console.log("Raw response from generateBlog:", blogPosts)
+      console.log("Starting blog generation for URL:", url);
+      // Assuming "normal" mode as default; adjust if "hardcore" is preferred
+      const blogPosts = await generateBlogWithTimeout(url, "normal", 30000); // 30-second timeout
+      console.log("Raw response from generateBlog:", blogPosts);
 
-      // Robust check for blogPosts
-      if (!blogPosts || !Array.isArray(blogPosts)) {
-        console.error("generateBlog did not return an array:", blogPosts)
-        throw new Error("Invalid response from blog generation")
+      // Robust response validation
+      if (!blogPosts) {
+        console.error("No response received from generateBlog");
+        throw new Error("No response received from the server");
       }
-
+      if (!Array.isArray(blogPosts)) {
+        console.error("generateBlog did not return an array:", blogPosts);
+        throw new Error("Invalid response format from blog generation");
+      }
       if (blogPosts.length === 0) {
-        console.error("generateBlog returned an empty array")
-        throw new Error("No blog posts were generated")
+        console.error("generateBlog returned an empty array");
+        throw new Error("No blog posts were generated");
       }
 
-      const firstBlogPost = blogPosts[0]
+      const firstBlogPost = blogPosts[0];
       if (!firstBlogPost?.id) {
-        console.warn("Generated blog post has no ID:", firstBlogPost)
-        throw new Error("Generated blog post is missing an ID")
+        console.warn("Generated blog post has no ID:", firstBlogPost);
+        throw new Error("Generated blog post is missing an ID");
       }
 
-      console.log(`Successfully generated blog post with ID: ${firstBlogPost.id}`, firstBlogPost)
-      setGeneratedBlogId(firstBlogPost.id)
+      console.log(`Successfully generated blog post with ID: ${firstBlogPost.id}`, firstBlogPost);
+      setGeneratedBlogId(firstBlogPost.id);
+      localStorage.setItem("generatedBlogPosts", JSON.stringify(blogPosts));
+      setSuccess(true);
 
-      // Store in localStorage (optional, for persistence)
-      localStorage.setItem("generatedBlogPosts", JSON.stringify(blogPosts))
-      console.log("Stored blog post in localStorage")
-
-      // Mark as success
-      setSuccess(true)
-
-      // Redirect to /generated/[id] after 3 seconds
       setTimeout(() => {
-        console.log(`Redirecting to /generated/${firstBlogPost.id}`)
-        router.push(`/generated/${firstBlogPost.id}`)
-      }, 3000)
+        console.log(`Redirecting to /generated/${firstBlogPost.id}`);
+        router.push(`/generated/${firstBlogPost.id}`);
+      }, 3000);
     } catch (error: any) {
-      console.error("Error in handleSubmit:", error.message, error.stack)
-      setError(`Failed to generate content: ${error.message || "An unexpected error occurred"}`)
+      console.error("Error in handleSubmit:", error.message, error.stack);
+      if (error.message.includes("timeout")) {
+        setError("The server took too long to respond. Please try again later.");
+      } else if (error.message.includes("Network Error")) {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        setError(`Failed to generate content: ${error.message || "An unexpected error occurred"}`);
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -185,14 +193,9 @@ export default function GenerateBlogContent() {
               </div>
             ) : isLoading ? (
               <div className="py-10 flex flex-col items-center justify-center">
-                {/* Fancy animated loading state */}
                 <div className="relative w-full max-w-md mx-auto mb-12">
-                  {/* Outer glow effect */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-20 blur-xl animate-pulse"></div>
-
-                  {/* Main content card */}
                   <div className="relative bg-white border border-gray-200 rounded-xl p-8 shadow-sm overflow-hidden">
-                    {/* Animated particles */}
                     <div className="absolute inset-0 overflow-hidden">
                       {[...Array(20)].map((_, i) => (
                         <div
@@ -207,8 +210,6 @@ export default function GenerateBlogContent() {
                         ></div>
                       ))}
                     </div>
-
-                    {/* Progress indicator */}
                     <div className="relative z-10 flex flex-col items-center">
                       <div className="w-32 h-32 rounded-full border-8 border-gray-100 flex items-center justify-center mb-6 relative">
                         <svg className="w-full h-full absolute top-0 left-0" viewBox="0 0 100 100">
@@ -236,21 +237,15 @@ export default function GenerateBlogContent() {
                         </svg>
                         <div className="text-2xl font-bold text-gray-800">{progress}%</div>
                       </div>
-
-                      {/* Current step indicator with animation */}
                       <div className="flex items-center justify-center mb-4 animate-bounce">
                         {generationSteps[currentStep].icon}
                       </div>
-
                       <h3 className="text-xl font-bold text-gray-800 mb-2 animate-fadeIn">
                         {generationSteps[currentStep].text}
                       </h3>
-
                       <p className="text-gray-600 text-center max-w-xs animate-fadeIn">
                         Our AI is hard at work creating an amazing blog post for your website.
                       </p>
-
-                      {/* Step indicators */}
                       <div className="flex space-x-2 mt-8">
                         {generationSteps.map((_, index) => (
                           <div
@@ -264,8 +259,6 @@ export default function GenerateBlogContent() {
                     </div>
                   </div>
                 </div>
-
-                {/* Fun facts to keep user engaged */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto animate-slideUp">
                   <h4 className="font-medium text-gray-800 mb-2 flex items-center">
                     <Sparkles className="h-4 w-4 text-amber-500 mr-2" />
@@ -276,9 +269,8 @@ export default function GenerateBlogContent() {
                     suggestions for relevant imagery.
                   </p>
                 </div>
-
                 <div className="mt-8 text-center text-sm text-gray-500 max-w-md animate-fadeIn">
-                  <p>Please don't close this page. You'll be automatically redirected when your blog is ready.</p>
+                  <p>Please don’t close this page. You’ll be automatically redirected when your blog is ready.</p>
                 </div>
               </div>
             ) : (
@@ -312,7 +304,7 @@ export default function GenerateBlogContent() {
                           <h3 className="text-sm font-medium text-gray-800">About Blog Generation</h3>
                           <p className="text-sm text-gray-600 mt-1">
                             Our AI will analyze your website and generate a blog post tailored to your audience. The
-                            generated content will be based on your website's topic, style, and target audience.
+                            generated content will be based on your website’s topic, style, and target audience.
                           </p>
                         </div>
                       </div>
@@ -359,53 +351,78 @@ export default function GenerateBlogContent() {
         </div>
       </main>
 
-      {/* Custom animations */}
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
-        
         @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
-        
         @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-          100% { transform: translateY(0px); }
+          0% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+          100% {
+            transform: translateY(0px);
+          }
         }
-        
         @keyframes pulse {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.1); opacity: 0.8; }
-          100% { transform: scale(1); opacity: 1; }
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
-        
         @keyframes moveParticle {
-          0% { transform: translate(0, 0); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translate(var(--tx, 100px), var(--ty, 100px)); opacity: 0; }
+          0% {
+            transform: translate(0, 0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--tx, 100px), var(--ty, 100px));
+            opacity: 0;
+          }
         }
-        
         .animate-fadeIn {
           animation: fadeIn 0.5s ease-out forwards;
         }
-        
         .animate-slideUp {
-          animation: slideUp 0.5s ease-out forwards;
+          animation: slideUp 0.5s ease-out forwards-especially;
         }
-        
         .animate-float {
           animation: float 3s ease-in-out infinite;
         }
-        
         .animate-pulse {
           animation: pulse 2s ease-in-out infinite;
         }
-        
         .particle {
           --tx: ${Math.random() * 200 - 100}px;
           --ty: ${Math.random() * 200 - 100}px;
@@ -413,6 +430,5 @@ export default function GenerateBlogContent() {
         }
       `}</style>
     </div>
-  )
+  );
 }
-

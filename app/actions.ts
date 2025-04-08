@@ -954,7 +954,9 @@ async function generateArticleFromScrapedData(
     const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData)
     console.log(`Generated title: ${simpleTitle}`)
 
-  
+    // Add delay
+    console.log("Waiting 15 seconds before generating first part...")
+    await new Promise((resolve) => setTimeout(resolve, 15000))
 
     // Format research data
     const researchData = scrapedData.researchResults || []
@@ -1007,12 +1009,15 @@ async function generateArticleFromScrapedData(
     const firstPartContent = await callAzureOpenAI(firstPartPrompt, 16384)
     console.log(`First part generated (${countWords(firstPartContent)} words).`)
 
-
+    // Delay before second half
+    console.log("Waiting 20 seconds before generating second part...")
+    await new Promise((resolve) => setTimeout(resolve, 20000))
 
     // Dedupe first part
     const firstPartDeduped = await removeRepetitiveContent(firstPartContent, scrapedData.coreTopic)
 
     // Generate second half with FAQs
+    console.log("Generating second part of the article with FAQs")
     const secondPartPrompt = `
       Write the SECOND HALF (remaining sections, FAQs, conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
       
@@ -1054,20 +1059,27 @@ async function generateArticleFromScrapedData(
       Return formatted content for the SECOND HALF only.
     `
     const secondPartContent = await callAzureOpenAI(secondPartPrompt, 16384)
+    console.log(`Second part generated (${countWords(secondPartContent)} words).`)
 
     // Combine parts
-   
+    console.log("Waiting 10 seconds before combining parts...")
+    await new Promise((resolve) => setTimeout(resolve, 10000))
     const combinedContent = `${firstPartDeduped}\n\n${secondPartContent}`
 
     // Format content
+    console.log("Waiting 15 seconds before formatting...")
+    await new Promise((resolve) => setTimeout(resolve, 15000))
     const formattedContent = await formatContentWithOpenAI(combinedContent, scrapedData.coreTopic, simpleTitle)
 
     // Dedupe combined content
+    console.log("Aggressively checking for repetitive content...")
     const deduplicatedContent = await removeRepetitiveContent(formattedContent, scrapedData.coreTopic)
 
     // Check and ensure FAQs exist (only if missing, but secondPartPrompt already includes them)
+    console.log("Checking if FAQs exist...")
     let contentWithFAQs = deduplicatedContent
     if (!contentWithFAQs.includes("## Frequently Asked Questions")) {
+      console.log("No FAQs found, adding them...")
       const faqPrompt = `
         Add a FAQ section to this blog post about "${scrapedData.coreTopic}".
         Start with "## Frequently Asked Questions"
@@ -1082,6 +1094,7 @@ async function generateArticleFromScrapedData(
     }
 
     // Ensure sufficient links
+    console.log("Checking if content has sufficient links...")
     const externalLinkRegex = /\[([^\]]+)\]\s*$$https?:\/\/[^)]+$$/g
     const internalLinkRegex = /\[([^\]]+)\]\s*$$\/[^)]+$$/g
     const existingExternalLinks = contentWithFAQs.match(externalLinkRegex) || []
@@ -1127,7 +1140,9 @@ async function generateArticleFromScrapedData(
     console.log("Generating tables...")
     const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks)
 
-
+    // Convert to HTML
+    console.log("Waiting 8 seconds before converting to HTML...")
+    await new Promise((resolve) => setTimeout(resolve, 8000))
     let htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks);
     // Insert YouTube video
     if (youtubeEmbed) {
@@ -1658,7 +1673,7 @@ async function enhanceBlogWithImages(blogContent: string, topic: string, imageCo
   // Sanitize and apply typography
   let finalContent = formatUtils.sanitizeHtml(content);
 
-  // Remove any stray ```html or ``` markers
+  // Remove any stray ```html or ``` markers that might have been introduced
   finalContent = finalContent.replace(/```html\s*|\s*```/g, "").trim();
 
   finalContent = finalContent
@@ -1707,9 +1722,6 @@ async function enhanceBlogWithImages(blogContent: string, topic: string, imageCo
 
   // Remove duplicates after conclusion
   finalContent = await removeDuplicateContentAfterConclusion(finalContent);
-
-  // Ensure consistent typography across all elements
-  finalContent = await ensureConsistentTypography(finalContent);
 
   return finalContent;
 }
@@ -1853,11 +1865,11 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user || !user.id) {
+  if (authError || !user) {
     throw new Error("You need to be authenticated to generate blog posts!");
   }
 
-  const userId: string = user.id;
+  const userId = user.id;
   let blogPosts: BlogPost[] = [];
   const firstRevealDate = new Date();
   const existingContent: string[] = [];
@@ -1905,9 +1917,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
     throw new Error("No subscription found for user. Please sign up again or contact support.");
   }
 
-  // Ensure plan_id is a string; default to an empty string if undefined
-  const planId = subscription.plan_id ?? "";
-  const isPlanActive = ACTIVE_PLANS.includes(planId);
+  const isPlanActive = subscription.plan_id ? ACTIVE_PLANS.includes(subscription.plan_id) : false;
   let isFreeBlog = false;
 
   // Determine if this is a free blog and should be blurred
@@ -1919,6 +1929,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
   } else if (subscription.credits < postsToGenerate) {
     throw new Error(`You have ${subscription.credits} credits left, but need ${postsToGenerate} to generate this blog. Upgrade your plan to get more credits!`);
   }
+
   // Only unblur existing posts if the user has an active plan
   if (isPlanActive) {
     const { error: unlockError } = await supabase
@@ -1941,8 +1952,12 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
 
     for (let i = 0; i < postsToGenerate; i++) {
       try {
+        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`);
 
+        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 10000));
 
+        console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`);
         const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
         if (!scrapedData) {
           console.error(`Failed to scrape data for blog ${i + 1}`);
@@ -1951,6 +1966,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`);
 
         console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 8000));
 
         console.log(`Starting content generation for blog post ${i + 1}...`);
         let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
@@ -1975,6 +1991,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         const coreTopic = result.title || "blog topic";
 
         console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`);
         let enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2);
@@ -2021,7 +2038,9 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
 
     // Save the deduplicated posts to the database
     for (const blogData of blogPosts) {
-     
+      console.log(`Waiting 3 seconds before saving blog post "${blogData.title}" to database...`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       const { data, error: insertError } = await supabase
         .from("blogs")
         .insert({
@@ -3023,93 +3042,7 @@ async function removeDuplicateContentAfterConclusion(content: string): Promise<s
   }
 }
 
-async function ensureConsistentTypography(content: string): Promise<string> {
-  console.log("Ensuring consistent typography across the blog post...");
 
-  let updatedContent = content;
-
-  // Define the expected styles for each element based on the screenshot
-  const expectedStyles = {
-    h1: 'font-saira text-5xl font-bold mt-8 mb-6 text-gray-900 border-b pb-2',
-    h2: 'font-saira text-4xl font-bold mt-10 mb-5 text-gray-900',
-    h3: 'font-saira text-3xl font-bold mt-8 mb-4 text-gray-800',
-    p: 'font-saira text-gray-700 leading-relaxed font-normal my-4',
-    li: 'ml-4 text-gray-700 leading-relaxed font-normal',
-    strong: 'font-bold',
-    aExternal: 'text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200',
-    aInternal: 'text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200',
-    figure: 'my-6 mx-auto max-w-full',
-    figcaption: 'text-sm text-center text-gray-500 mt-2 font-saira',
-  };
-
-  // Helper function to check and update class attributes
-  const updateClass = (tag: string, expectedClass: string, content: string): string => {
-    const regex = new RegExp(`<${tag}(?![^>]*class=)[^>]*>`, 'gi');
-    const regexWithClass = new RegExp(`<${tag}[^>]*class=["'][^"']*["'][^>]*>`, 'gi');
-
-    // Add class if missing
-    let updated = content.replace(regex, (match) => {
-      return match.replace('>', ` class="${expectedClass}">`);
-    });
-
-    // Update existing class if it doesn't match
-    updated = updated.replace(regexWithClass, (match) => {
-      return match.replace(/class=["'][^"']*["']/i, `class="${expectedClass}"`);
-    });
-
-    return updated;
-  };
-
-  // Apply styles to all relevant elements
-  updatedContent = updateClass('h1', expectedStyles.h1, updatedContent);
-  updatedContent = updateClass('h2', expectedStyles.h2, updatedContent);
-  updatedContent = updateClass('h3', expectedStyles.h3, updatedContent);
-  updatedContent = updateClass('p', expectedStyles.p, updatedContent);
-  updatedContent = updateClass('li', expectedStyles.li, updatedContent);
-  updatedContent = updateClass('strong', expectedStyles.strong, updatedContent);
-  updatedContent = updateClass('figure', expectedStyles.figure, updatedContent);
-  updatedContent = updateClass('figcaption', expectedStyles.figcaption, updatedContent);
-
-  // Handle external links
-  updatedContent = updatedContent.replace(
-    /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*class=["'][^"']*["'][^>]*>(.*?)<\/a>/gi,
-    (match, url, text) => {
-      return `<a href="${url}" class="${expectedStyles.aExternal}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    }
-  );
-  updatedContent = updatedContent.replace(
-    /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
-    (match, url, text) => {
-      return `<a href="${url}" class="${expectedStyles.aExternal}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    }
-  );
-
-  // Handle internal links
-  updatedContent = updatedContent.replace(
-    /<a\s+(?:[^>]*?\s+)?href=["'](\/[^"']*)["'][^>]*class=["'][^"']*["'][^>]*>(.*?)<\/a>/gi,
-    (match, url, text) => {
-      return `<a href="${url}" class="${expectedStyles.aInternal}">${text}</a>`;
-    }
-  );
-  updatedContent = updatedContent.replace(
-    /<a\s+(?:[^>]*?\s+)?href=["'](\/[^"']*)["'][^>]*>(.*?)<\/a>/gi,
-    (match, url, text) => {
-      return `<a href="${url}" class="${expectedStyles.aInternal}">${text}</a>`;
-    }
-  );
-
-  // Ensure the wrapping div has the font-saira class
-  if (!updatedContent.includes('<div class="blog-content font-saira">')) {
-    updatedContent = `<div class="blog-content font-saira">${updatedContent.replace(/<div[^>]*>/, '').replace(/<\/div>$/, '')}</div>`;
-  }
-
-  // Remove any empty elements that might disrupt styling
-  updatedContent = updatedContent.replace(/<p[^>]*>\s*<\/p>/g, '');
-  updatedContent = updatedContent.replace(/<li[^>]*>\s*<\/li>/g, '');
-
-  console.log("Typography consistency check completed.");
-  return updatedContent;
-}
 
 // Update the scrapeWebsiteAndSaveToJson function to extract more specific website information:
 
@@ -3357,7 +3290,10 @@ async function checkAndRemoveDuplicatePosts(
       finalPosts.push(newPost);
     }
 
-    
+    // Small delay to avoid rate limiting
+    if (i < generatedPosts.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
   }
 
   return finalPosts;
