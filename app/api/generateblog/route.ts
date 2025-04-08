@@ -1056,10 +1056,11 @@ async function generateArticleFromScrapedData(
     const secondPartContent = await callAzureOpenAI(secondPartPrompt, 16384)
 
     // Combine parts
-   
+    await new Promise((resolve) => setTimeout(resolve, 10000))
     const combinedContent = `${firstPartDeduped}\n\n${secondPartContent}`
 
     // Format content
+    await new Promise((resolve) => setTimeout(resolve, 15000))
     const formattedContent = await formatContentWithOpenAI(combinedContent, scrapedData.coreTopic, simpleTitle)
 
     // Dedupe combined content
@@ -1941,8 +1942,12 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
 
     for (let i = 0; i < postsToGenerate; i++) {
       try {
+        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`);
 
+        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 10000));
 
+        console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`);
         const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
         if (!scrapedData) {
           console.error(`Failed to scrape data for blog ${i + 1}`);
@@ -1951,6 +1956,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`);
 
         console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 8000));
 
         console.log(`Starting content generation for blog post ${i + 1}...`);
         let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
@@ -1975,6 +1981,7 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
         const coreTopic = result.title || "blog topic";
 
         console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`);
         let enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2);
@@ -2021,7 +2028,9 @@ export async function generateBlog(url: string, humanizeLevel: "normal" | "hardc
 
     // Save the deduplicated posts to the database
     for (const blogData of blogPosts) {
-     
+      console.log(`Waiting 3 seconds before saving blog post "${blogData.title}" to database...`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       const { data, error: insertError } = await supabase
         .from("blogs")
         .insert({
@@ -3357,7 +3366,10 @@ async function checkAndRemoveDuplicatePosts(
       finalPosts.push(newPost);
     }
 
-    
+    // Small delay to avoid rate limiting
+    if (i < generatedPosts.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
   }
 
   return finalPosts;
