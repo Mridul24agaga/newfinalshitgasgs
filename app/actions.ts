@@ -1861,124 +1861,248 @@ async function checkContentSimilarity(
 // Define active plans (plans that allow blog generation beyond the free blog)
 const ACTIVE_PLANS = ['growth', 'basic', 'pro'];
 
-// Timeout wrapper with proper typing
-async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> {
-  const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error(errorMsg)), ms));
-  return Promise.race([promise, timeout]);
-}
-
-// Main blog generation function
 export async function generateBlog(url: string, humanizeLevel: "normal" | "hardcore" = "normal"): Promise<BlogPost[]> {
   const supabase = await createClient();
-  
-  // Get user with proper typing
-  const { data: userData, error: authError } = await withTimeout(
-    supabase.auth.getUser(),
-    5000,
-    "Auth check timed out"
-  );
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (authError || !userData?.user?.id) {
-    throw new Error("You gotta be logged in to generate blogs, dude!");
+  if (authError || !user || !user.id) {
+    throw new Error("You need to be authenticated to generate blog posts!");
   }
 
-  const userId: string = userData.user.id;
+  const userId: string = user.id;
   let blogPosts: BlogPost[] = [];
+  const firstRevealDate = new Date();
+  const existingContent: string[] = [];
+  const existingTitles: string[] = [];
 
-  const query = supabase
-  .from("subscriptions")
-  .select("plan_id, credits, free_blogs_generated")
-  .eq("user_id", userId)
-  .single();
+  // Fetch existing posts
+  const { data: existingPosts, error: postsError } = await supabase
+    .from("blogs")
+    .select("title, blog_post, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
-const { data: subscription, error: subError } = await withTimeout(
-  Promise.resolve(query), // convert to real Promise
-  5000,
-  "Subscription check timed out"
-);
-
-
-
-  if (subError || !subscription) {
-    throw new Error("Can’t find your subscription, man. Sign up or hit up support!");
+  if (postsError) {
+    console.error(`Error fetching existing posts: ${postsError.message}`);
   }
 
-  // Type assertion to match Subscription interface
-  const typedSubscription = subscription as Subscription;
-  const planId = typedSubscription.plan_id ?? "";
-  const isPlanActive = ACTIVE_PLANS.includes(planId as any); // 'as any' to appease TS with const array
-  let isFreeBlog = !isPlanActive && typedSubscription.free_blogs_generated === 0;
+  const postCount = existingPosts ? existingPosts.length : 0;
+  console.log(`User ${userId} has ${postCount} existing posts`);
 
-  if (!isPlanActive && typedSubscription.free_blogs_generated > 0) {
-    throw new Error("No active plan, dude. Subscribe to keep going!");
+  if (existingPosts && existingPosts.length > 0) {
+    existingPosts.forEach((post: any) => {
+      existingTitles.push(post.title);
+      const textContent = post.blog_post
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      existingContent.push(textContent);
+    });
   }
-  if (isPlanActive && typedSubscription.credits < 1) {
-    throw new Error(`You’re out of credits (${typedSubscription.credits}). Top up your plan!`);
+
+  // Check subscription and free blog eligibility
+  const postsToGenerate = 1; // Generate 1 blog at a time
+  const { data: subscription, error: subError } = await supabase
+    .from("subscriptions")
+    .select("plan_id, credits, free_blogs_generated")
+    .eq("user_id", userId)
+    .single() as { data: Subscription | null; error: any };
+
+  if (subError) {
+    console.error(`Error fetching subscription for user ${userId}: ${subError.message}`);
+    throw new Error("Failed to fetch subscription data. Please ensure you are signed up.");
   }
+
+  if (!subscription) {
+    throw new Error("No subscription found for user. Please sign up again or contact support.");
+  }
+
+  // Ensure plan_id is a string; default to an empty string if undefined
+  const planId = subscription.plan_id ?? "";
+  const isPlanActive = ACTIVE_PLANS.includes(planId);
+  let isFreeBlog = false;
+
+  // Determine if this is a free blog and should be blurred
+  if (!isPlanActive && subscription.free_blogs_generated === 0) {
+    isFreeBlog = true;
+    console.log("Generating a free blog post - this WILL be blurred until subscription is active.");
+  } else if (!isPlanActive) {
+    throw new Error("You need an active subscription to generate more blog posts. Subscribe to unlock your free blog and generate more!");
+  } else if (subscription.credits < postsToGenerate) {
+    throw new Error(`You have ${subscription.credits} credits left, but need ${postsToGenerate} to generate this blog. Upgrade your plan to get more credits!`);
+  }
+  // Only unblur existing posts if the user has an active plan
+  if (isPlanActive) {
+    const { error: unlockError } = await supabase
+      .from("blogs")
+      .update({ is_blurred: false })
+      .eq("user_id", userId)
+      .eq("is_blurred", true);
+
+    if (unlockError) {
+      console.error(`Error unlocking blurred blogs for user ${userId}: ${unlockError.message}`);
+    } else {
+      console.log(`Unlocked all blurred blog posts for user ${userId}`);
+    }
+  }
+
+  // ... (rest of the reformatExistingPosts function remains unchanged)
 
   try {
-    // Offload the heavy stuff
-    const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
-    if (!scrapedData) {
-      throw new Error("Scraping crapped out, man. Try again.");
+    console.log(`Generating ${postsToGenerate} posts for user ${userId}`);
+
+    for (let i = 0; i < postsToGenerate; i++) {
+      try {
+        console.log(`\n\n========== STARTING BLOG POST ${i + 1} OF ${postsToGenerate} ==========\n\n`);
+
+        console.log(`Waiting 10 seconds before starting blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        console.log(`🔍 Scraping ${url} with Tavily and searching broader topic for blog ${i + 1}`);
+        const scrapedData = await scrapeWebsiteAndSaveToJson(url, userId);
+        if (!scrapedData) {
+          console.error(`Failed to scrape data for blog ${i + 1}`);
+          continue;
+        }
+        console.log(`✅ Scraped ${url} and got ${scrapedData.researchResults.length} extra sources for blog ${i + 1}`);
+
+        console.log(`Waiting 8 seconds after scraping for blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 8000));
+
+        console.log(`Starting content generation for blog post ${i + 1}...`);
+        let result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
+
+        const contentSimilarityCheck = await checkContentSimilarity(
+          result.blogPost
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim(),
+          existingContent,
+          existingTitles,
+        );
+
+        if (contentSimilarityCheck.isTooSimilar) {
+          console.log(
+            `⚠️ Generated content too similar to existing post "${contentSimilarityCheck.similarToTitle}" with similarity score ${contentSimilarityCheck.similarityScore}. Regenerating with more diversity...`
+          );
+          scrapedData.nudge = `IMPORTANT: Make this content COMPLETELY DIFFERENT from your previous post about "${contentSimilarityCheck.similarToTitle}" (similarity score: ${contentSimilarityCheck.similarityScore}). Use different examples, structure, and approach.`;
+          result = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
+        }
+
+        const coreTopic = result.title || "blog topic";
+
+        console.log(`Waiting 5 seconds before adding images to blog post ${i + 1}...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+
+        console.log(`Enhancing blog post ${i + 1} with images related to: ${coreTopic}`);
+        let enhancedBlogPost = await enhanceBlogWithImages(result.blogPost, coreTopic, 2);
+
+        const blogId = uuidv4();
+        const revealDate = new Date(firstRevealDate);
+        revealDate.setDate(revealDate.getDate() + i);
+
+        const blogData: BlogPost = {
+          id: blogId,
+          user_id: userId,
+          blog_post: enhancedBlogPost,
+          citations: result.citations,
+          created_at: new Date().toISOString(),
+          title: result.title,
+          timestamp: result.timestamp,
+          reveal_date: revealDate.toISOString(),
+          url: url,
+          is_blurred: isFreeBlog, // Explicitly set based on free blog status
+        };
+
+        console.log(`Blog post "${blogData.title}" marked with is_blurred: ${blogData.is_blurred}`);
+
+        blogPosts.push(blogData);
+
+        existingTitles.push(result.title);
+        existingContent.push(
+          enhancedBlogPost
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim(),
+        );
+
+        console.log(`\n\n✅ COMPLETED BLOG POST ${i + 1} OF ${postsToGenerate}\n\n`);
+      } catch (error: any) {
+        console.error(`Error generating post ${i + 1}:`, error.message);
+        console.log(`Continuing generation despite error, ${blogPosts.length} posts completed...`);
+      }
     }
 
-    const article = await generateArticleFromScrapedData(scrapedData, userId, humanizeLevel);
-    const enhancedBlogPost = await enhanceBlogWithImages(article.blogPost, scrapedData.coreTopic, 2);
+    // Check for duplicates and regenerate if necessary
+    console.log("Checking for duplicate posts before saving...");
+    blogPosts = await checkAndRemoveDuplicatePosts(blogPosts, existingPosts || [], userId, url, humanizeLevel);
 
-    const blogId = uuidv4();
-    const blogData: BlogPost = {
-      id: blogId,
-      user_id: userId,
-      blog_post: enhancedBlogPost,
-      citations: article.citations,
-      created_at: new Date().toISOString(),
-      title: article.title,
-      timestamp: article.timestamp,
-      reveal_date: new Date().toISOString(),
-      url,
-      is_blurred: isFreeBlog,
-    };
+    // Save the deduplicated posts to the database
+    for (const blogData of blogPosts) {
+      console.log(`Waiting 3 seconds before saving blog post "${blogData.title}" to database...`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    blogPosts.push(blogData);
+      const { data, error: insertError } = await supabase
+        .from("blogs")
+        .insert({
+          id: blogData.id,
+          user_id: blogData.user_id,
+          blog_post: blogData.blog_post,
+          citations: blogData.citations,
+          created_at: blogData.created_at,
+          title: blogData.title,
+          timestamp: blogData.timestamp,
+          reveal_date: blogData.reveal_date,
+          url: blogData.url,
+          is_blurred: blogData.is_blurred, // Ensure this is explicitly included
+        })
+        .select();
 
-    const insertQuery = supabase
-  .from("blogs")
-  .insert(blogData)
-  .select();
+      if (insertError) {
+        console.error(`Failed to save blog "${blogData.title}" to Supabase: ${insertError.message}`);
+        continue;
+      }
 
-const { error: insertError } = await withTimeout(
-  Promise.resolve(await insertQuery), // ensure it's a true Promise
-  5000,
-  "Database save timed out"
-);
+      console.log(`Inserted blog "${blogData.title}" with is_blurred: ${blogData.is_blurred}`);
 
-    
+      // Update subscription based on plan status
+      if (isFreeBlog) {
+        const { error: updateError } = await supabase
+          .from("subscriptions")
+          .update({ free_blogs_generated: 1, last_updated: new Date().toISOString() })
+          .eq("user_id", userId);
+        if (updateError) {
+          console.error(`Error updating free_blogs_generated for user ${userId}: ${updateError.message}`);
+        } else {
+          console.log(`Updated free_blogs_generated to 1 for user ${userId}`);
+        }
+      } else if (isPlanActive) {
+        const { error: deductError } = await supabase
+          .from("subscriptions")
+          .update({
+            credits: subscription.credits - 1,
+            last_updated: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
+        if (deductError) {
+          console.error(`Error deducting credits for user ${userId}: ${deductError.message}`);
+        } else {
+          console.log(`Deducted 1 credit for user ${userId}. New credit balance: ${subscription.credits - 1}`);
+        }
+      }
 
-    if (insertError) {
-      console.error(`Failed to save blog: ${insertError.message}`);
-      throw new Error("Couldn’t save the blog, dude.");
+      console.log(`Successfully saved blog "${blogData.title}" to Supabase with is_blurred: ${blogData.is_blurred}`);
     }
 
-    // Update subscription
-    if (isFreeBlog) {
-      await supabase.from("subscriptions").update({
-        free_blogs_generated: 1,
-        last_updated: new Date().toISOString(),
-      }).eq("user_id", userId);
-    } else if (isPlanActive) {
-      await supabase.from("subscriptions").update({
-        credits: typedSubscription.credits - 1,
-        last_updated: new Date().toISOString(),
-      }).eq("user_id", userId);
-    }
-
-    console.log(`Generated blog "${blogData.title}" successfully!`);
+    const successfulPosts = blogPosts.length;
+    console.log(`✅ Generated ${successfulPosts} blog posts for user ${userId}`);
     return blogPosts;
-
   } catch (error: any) {
-    console.error(`Blog generation bombed: ${error.message}`);
-    throw new Error(`Something went sideways: ${error.message}`);
+    console.error(`Failed to generate blogs: ${error.message}`);
+    throw new Error(`Failed to generate blogs: ${error.message}`);
   }
 }
 
