@@ -17,17 +17,13 @@ interface Plan {
     annually: number
     yearlyTotal: number
   }
-  priceINR: {
-    monthly: number
-    annually: number
-    yearlyTotal: number
-  }
   credits: number
   dodoProductId: string
   features: string[]
   discount?: string
   isBestValue?: boolean
   annualDiscountPercentage?: number
+  showOnAnnual?: boolean
 }
 
 const plans: Plan[] = [
@@ -39,11 +35,6 @@ const plans: Plan[] = [
       monthly: 7,
       annually: 6,
       yearlyTotal: 72,
-    },
-    priceINR: {
-      monthly: 500,
-      annually: 400,
-      yearlyTotal: 4800,
     },
     credits: 2,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
@@ -64,11 +55,6 @@ const plans: Plan[] = [
       annually: 21,
       yearlyTotal: 252,
     },
-    priceINR: {
-      monthly: 1800,
-      annually: 1500,
-      yearlyTotal: 18000,
-    },
     credits: 15,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
     annualDiscountPercentage: 15,
@@ -87,18 +73,14 @@ const plans: Plan[] = [
     priceUSD: {
       monthly: 40,
       annually: 25, // $300/year ÷ 12 months = $25/month
-      yearlyTotal: 300,
-    },
-    priceINR: {
-      monthly: 3000,
-      annually: 2000,
-      yearlyTotal: 24000,
+      yearlyTotal: 66,
     },
     credits: 30,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 38% WITH ANNUAL BILLING",
-    annualDiscountPercentage: 38,
+    discount: "SAVE 78% WITH ANNUAL BILLING",
+    annualDiscountPercentage: 78,
     isBestValue: true,
+    showOnAnnual: true,
     features: [
       "30 professionally written blog posts per month",
       "Advanced SEO optimization",
@@ -115,17 +97,13 @@ const plans: Plan[] = [
     priceUSD: {
       monthly: 70,
       annually: 50, // $600/year ÷ 12 months = $50/month
-      yearlyTotal: 600,
-    },
-    priceINR: {
-      monthly: 5000,
-      annually: 3750,
-      yearlyTotal: 45000,
+      yearlyTotal: 132,
     },
     credits: 60,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 29% WITH ANNUAL BILLING",
-    annualDiscountPercentage: 29,
+    discount: "SAVE 78% WITH ANNUAL BILLING",
+    annualDiscountPercentage: 78,
+    showOnAnnual: true,
     features: [
       "60 professionally written blog posts per month",
       "Premium SEO optimization",
@@ -144,11 +122,6 @@ const plans: Plan[] = [
       monthly: 100,
       annually: 85,
       yearlyTotal: 1020,
-    },
-    priceINR: {
-      monthly: 7500,
-      annually: 6250,
-      yearlyTotal: 75000,
     },
     credits: 120,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
@@ -172,7 +145,6 @@ export default function PaymentPage() {
   const [error, setError] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly")
-  const [currency, setCurrency] = useState<"USD" | "INR">("USD")
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -306,7 +278,7 @@ export default function PaymentPage() {
       }
 
       // Get price information based on currency and billing cycle
-      const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
+      const prices = plan.priceUSD
       const price = billingCycle === "annually" ? prices.annually : prices.monthly
       const monthlyPrice = prices.monthly
       const annualPrice = prices.annually
@@ -333,8 +305,7 @@ export default function PaymentPage() {
           `billing_cycle=${billingCycleValue}&` +
           `monthly_price=${monthlyPrice}&` +
           `annual_price=${annualPrice}&` +
-          `annual_discount=${annualDiscountPercentage}&` +
-          `currency=${currency}`,
+          `annual_discount=${annualDiscountPercentage}`,
       )
       const checkoutUrl = `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${successUrl}`
 
@@ -358,126 +329,105 @@ export default function PaymentPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    if (currency === "USD") {
-      return `$${amount}`
-    } else {
-      return `₹${amount >= 1000 ? `${amount / 1000}K` : amount}`
-    }
+    return `${amount}`
   }
 
   const getPriceDisplay = (plan: Plan) => {
-    const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
-
     if (billingCycle === "monthly") {
-      return formatCurrency(prices.monthly)
+      return formatCurrency(plan.priceUSD.monthly)
     } else {
-      return formatCurrency(prices.annually)
+      return formatCurrency(plan.priceUSD.annually)
     }
   }
 
   const getYearlyTotal = (plan: Plan) => {
-    const prices = currency === "USD" ? plan.priceUSD : plan.priceINR
-    return formatCurrency(prices.yearlyTotal)
+    return formatCurrency(plan.priceUSD.yearlyTotal)
   }
 
+  // Filter plans based on billing cycle
+  const filteredPlans = billingCycle === "annually" ? plans.filter((plan) => plan.showOnAnnual) : plans
+
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-3 text-gray-900">We've got a plan that's perfect for you.</h1>
+    <div className="w-full mx-auto px-6 py-12 bg-white min-h-screen">
+      <div className="text-center mb-16">
+        <h1 className="text-4xl font-bold mb-4 text-gray-900">We've got a plan that's perfect for you.</h1>
       </div>
 
-      {/* Currency and Billing Toggle */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10">
-        <div className="inline-flex rounded-full bg-gray-100 p-1 shadow-sm">
-          <button
-            onClick={() => setCurrency("USD")}
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              currency === "USD" ? "bg-[#294fd6] text-white" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            USD
-          </button>
-          <button
-            onClick={() => setCurrency("INR")}
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              currency === "INR" ? "bg-[#294fd6] text-white" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            INR
-          </button>
-        </div>
-
-        <div className="inline-flex rounded-full bg-gray-100 p-1 shadow-sm">
+      {/* Billing Toggle */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-12">
+        <div className="inline-flex rounded-full bg-gray-100 p-1.5 shadow-sm">
           <button
             onClick={() => setBillingCycle("monthly")}
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              billingCycle === "monthly" ? "bg-[#294fd6] text-white" : "text-gray-600 hover:text-gray-900"
+            className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+              billingCycle === "monthly" ? "bg-[#294fd6] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Monthly
           </button>
           <button
             onClick={() => setBillingCycle("annually")}
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              billingCycle === "annually" ? "bg-[#294fd6] text-white" : "text-gray-600 hover:text-gray-900"
+            className={`px-6 py-2.5 rounded-full font-medium transition-all ${
+              billingCycle === "annually" ? "bg-[#294fd6] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Annually
           </button>
           {billingCycle === "annually" && (
-            <span className="ml-2 text-[#294fd6] font-medium self-center">SAVE UP TO 38%</span>
+            <span className="ml-2 bg-blue-50 text-[#294fd6] text-xs font-medium px-2 py-1 rounded-full self-center">
+              SAVE UP TO 78%
+            </span>
           )}
         </div>
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
-        {plans.map((plan) => (
+      <div
+        className={`grid grid-cols-1 ${billingCycle === "annually" ? "md:grid-cols-2" : "md:grid-cols-3 lg:grid-cols-5"} gap-6 max-w-[1400px] mx-auto px-4`}
+      >
+        {filteredPlans.map((plan) => (
           <div
             key={plan.id}
-            className={`border rounded-lg overflow-hidden ${
-              plan.isBestValue ? "border-[#294fd6] relative" : "border-gray-200"
-            }`}
+            className={`border border-gray-200 rounded-md overflow-hidden min-w-[280px] ${plan.isBestValue ? "relative" : ""}`}
           >
             {plan.isBestValue && (
-              <div className="absolute top-0 right-0 bg-[#294fd6] text-white text-xs font-bold px-3 py-1 rotate-45 translate-x-8 -translate-y-1 w-36 text-center">
-                BEST VALUE
-              </div>
+              <div className="bg-[#294fd6] text-white text-center py-1 font-medium text-sm">BEST VALUE</div>
             )}
 
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-center mb-1">{plan.name}</h2>
-              <p className="text-gray-600 text-center text-sm mb-6 h-12">{plan.description}</p>
-
-              {plan.discount && billingCycle === "annually" && (
-                <div className="text-center mb-2">
-                  <span className="text-[#294fd6] text-sm font-medium">{plan.discount}</span>
-                </div>
-              )}
-
-              <div className="text-center mb-2">
-                <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
-                <span className="text-gray-500 text-sm">/{billingCycle === "monthly" ? "month" : "month"}</span>
+            <div className={`p-6 ${plan.isBestValue ? "" : "pt-7"}`}>
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
+                <p className="text-gray-600 text-sm mb-4 h-10">{plan.description}</p>
               </div>
 
               {billingCycle === "annually" && (
-                <div className="text-center mb-4">
-                  <span className="text-sm text-gray-600">{getYearlyTotal(plan)} billed yearly</span>
+                <div className="bg-blue-50 rounded-md py-1.5 px-2 mb-4 flex items-center justify-center">
+                  <Check className="h-4 w-4 text-[#294fd6] mr-1.5" />
+                  <span className="text-[#294fd6] text-xs font-medium">
+                    SAVE {plan.annualDiscountPercentage}% ANNUALLY
+                  </span>
                 </div>
               )}
 
-              {billingCycle === "monthly" && (
-                <div className="text-center mb-4">
-                  <span className="text-sm text-gray-600">Billed monthly, cancel anytime</span>
+              <div className="text-center mb-1">
+                <div className="flex items-center justify-center">
+                  <span className="text-3xl font-bold">$</span>
+                  <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
+                </div>
+                <div className="text-gray-500 text-sm">/month</div>
+              </div>
+
+              {billingCycle === "annually" && (
+                <div className="text-center mb-4 text-sm text-gray-600">
+                  ${getYearlyTotal(plan)} billed yearly ({plan.annualDiscountPercentage}% off)
                 </div>
               )}
 
-              <div className="text-center mb-4">
-                <span className="text-lg font-semibold text-[#294fd6]">{plan.credits} credits/month</span>
+              <div className="bg-blue-50 rounded-md py-2 px-2 mb-4 text-center">
+                <span className="text-[#294fd6] font-medium">{plan.credits} credits/month</span>
               </div>
 
               <button
-                className={`w-full py-3 rounded-lg font-medium mb-6 ${
+                className={`w-full py-2.5 rounded-md font-medium mb-6 transition-all ${
                   plan.isBestValue
                     ? "bg-[#294fd6] text-white hover:bg-[#1e3eb8]"
                     : "border border-[#294fd6] text-[#294fd6] hover:bg-blue-50"
@@ -490,10 +440,10 @@ export default function PaymentPage() {
 
               <div>
                 <p className="font-medium mb-3">Includes:</p>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start">
-                      <Check className="h-5 w-5 text-[#294fd6] mr-2 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-[#294fd6] mr-2 flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-gray-700">{feature}</span>
                     </li>
                   ))}
@@ -504,29 +454,29 @@ export default function PaymentPage() {
         ))}
       </div>
 
-      <div className="max-w-3xl mx-auto bg-gray-50 rounded-xl p-8 border border-gray-200 mt-12">
-        <h3 className="text-xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h3>
-        <div className="space-y-4">
+      <div className="max-w-3xl mx-auto bg-gray-50 rounded-xl p-8 border border-gray-200 mt-16 shadow-sm">
+        <h3 className="text-xl font-bold mb-6 text-gray-900">Frequently Asked Questions</h3>
+        <div className="space-y-6">
           <div>
-            <h4 className="font-medium text-gray-900 mb-1">What happens when I run out of credits?</h4>
-            <p className="text-gray-600 text-sm">
+            <h4 className="font-medium text-gray-900 mb-2">What happens when I run out of credits?</h4>
+            <p className="text-gray-600">
               You can purchase additional credits at any time or upgrade to a higher plan for more credits.
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900 mb-1">Can I cancel my subscription?</h4>
-            <p className="text-gray-600 text-sm">
+            <h4 className="font-medium text-gray-900 mb-2">Can I cancel my subscription?</h4>
+            <p className="text-gray-600">
               Yes, you can cancel your subscription at any time. Your plan will remain active until the end of your
               billing period.
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900 mb-1">
+            <h4 className="font-medium text-gray-900 mb-2">
               What's the difference between monthly and annual billing?
             </h4>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600">
               Annual billing offers significant savings compared to monthly billing. You'll be charged once per year
-              instead of monthly, with discounts of up to 38% depending on the plan.
+              instead of monthly, with discounts of up to 78% depending on the plan.
             </p>
           </div>
         </div>
@@ -546,4 +496,3 @@ export default function PaymentPage() {
     </div>
   )
 }
-

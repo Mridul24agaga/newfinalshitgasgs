@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Sidebar } from "@/app/components/sidebar"
+import { Sidebar } from "@/app/components/layout/sidebar"
 import { createClient } from "@/utitls/supabase/client"
 import {
   Menu,

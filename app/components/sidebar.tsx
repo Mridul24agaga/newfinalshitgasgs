@@ -3,22 +3,23 @@
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import { createClient } from "@/utitls/supabase/client"
 import {
   FileText,
   Lightbulb,
   Sparkles,
   ChevronRight,
   PlusCircle,
-  CreditCard,
   Globe,
   ChevronDown,
   PenLine,
   Home,
+  Star,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AppSidebarProps {
-  user: any
+  user?: any
   subscription?: {
     plan_id: string
     credits: number
@@ -54,6 +55,9 @@ export function AppSidebar({
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState("Blog Idea Generation")
   const pathname = usePathname()
+  const [showCreditAlert, setShowCreditAlert] = useState(false)
+  const [creditAlertMessage, setCreditAlertMessage] = useState("")
+  const supabase = createClient()
 
   // Format plan name function
   const formatPlanName = (planId: string | undefined) => {
@@ -72,17 +76,16 @@ export function AppSidebar({
   // Navigation items
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Content Planner", href: "/dashboard/summarizer", icon: PenLine },
-    { name: "Blogs", href: "/dashboard/summarizer", icon: FileText },
-    { name: "Sitemap Generator", href: "/dashboard/sitemap", icon: Globe },
+    { name: "Content Planner", href: "/dashboard/blogs", icon: PenLine },
+    { name: "Blogs Generation", href: "/dashboard/blogs", icon: FileText },
+    { name: "Sitemap Generator", href: "/sitemap-generator", icon: Globe },
     {
       name: "Blog Idea Generation",
       icon: Lightbulb,
       subItems: [
-        { name: "Headline to Blog Generation", href: "/blog-ideas/headlines", icon: Sparkles },
-        { name: "Blog Ideas Generation", href: "/blog-ideas/ideas", icon: FileText },
+        { name: "Headline to Blog Generation", href: "/headlinetoblog", icon: Sparkles },
         { name: "Headline Generator", href: "/blog-ideas/ideas", icon: FileText },
-
+        { name: "Integration", href: "/api-key", icon: Star },
       ],
     },
   ]
@@ -96,6 +99,168 @@ export function AppSidebar({
     professional: 60,
     enterprise: 120,
   }
+
+  // Add this function after the planCreditsMap
+  const getPlanTotalCredits = (planId: string, billingCycle?: string): number => {
+    const normalizedPlanId = planId.toLowerCase()
+    // All plans have the same number of credits regardless of billing cycle
+    return planCreditsMap[normalizedPlanId] || 0
+  }
+
+  const setupRealtimeSubscription = async () => {
+    if (!user?.id) return
+
+    // Listen for changes to the subscriptions table
+    const subscriptionChannel = supabase
+      .channel("sidebar-subscription-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "subscriptions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("Subscription updated (sidebar):", payload)
+
+          // Refresh subscription data
+          const { data, error } = await supabase.from("subscriptions").select("*").eq("user_id", user.id).single()
+
+          if (data && !error) {
+            // Show credit alert if this was triggered by a blog post creation
+            if (payload.old && payload.new && payload.old.credits !== payload.new.credits) {
+              setCreditAlertMessage(`1 credit has been deducted. You have ${data.credits} credits remaining.`)
+              setShowCreditAlert(true)
+
+              // Hide the alert after 5 seconds
+              setTimeout(() => setShowCreditAlert(false), 5000)
+            }
+          }
+        },
+      )
+      .subscribe()
+
+    // Listen for new blog posts
+    const blogsChannel = supabase
+      .channel("sidebar-blogs-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "blogs",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("New blog post created (sidebar):", payload)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel)
+      supabase.removeChannel(blogsChannel)
+    }
+  }
+
+  // Add this function after the setupRealtimeSubscription function
+  const fetchBlogsCount = async () => {
+    try {
+      if (!user?.id) return { count: 0, creditsDeducted: 0 }
+
+      const { data, error } = await supabase.from("blogs").select("id, credit_deducted").eq("user_id", user.id)
+
+      if (error) {
+        console.error("Error fetching blogs count:", error.message)
+        return { count: 0, creditsDeducted: 0 }
+      }
+
+      const count = data?.length || 0
+      console.log(`Fetched ${count} blogs for user ${user.id}`)
+
+      // Count blogs with credit_deducted = true
+      const creditsDeducted = data?.filter((blog) => blog.credit_deducted).length || 0
+
+      return { count, creditsDeducted }
+    } catch (err) {
+      console.error("Error in fetchBlogsCount:", err)
+      return { count: 0, creditsDeducted: 0 }
+    }
+  }
+
+  // Set up a subscription to listen for changes to the user's subscription
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Listen for changes to the subscriptions table
+    const subscriptionChannel = supabase
+      .channel("sidebar-subscription-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "subscriptions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Subscription updated (sidebar):", payload)
+
+          // Show credit alert if this was triggered by a blog post creation
+          if (payload.old && payload.new && payload.old.credits !== payload.new.credits) {
+            const newCredits = payload.new.credits
+            setCreditAlertMessage(`1 credit has been deducted. You have ${newCredits} credits remaining.`)
+            setShowCreditAlert(true)
+
+            // Hide the alert after 5 seconds
+            setTimeout(() => setShowCreditAlert(false), 5000)
+          }
+        },
+      )
+      .subscribe()
+
+    // Listen for new blog posts
+    const blogsChannel = supabase
+      .channel("sidebar-blogs-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "blogs",
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          console.log("New blog post created (sidebar):", payload)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel)
+      supabase.removeChannel(blogsChannel)
+    }
+  }, [user?.id, supabase])
+
+  // Add this effect after the existing useEffect hooks
+  useEffect(() => {
+    const initializeCreditSystem = async () => {
+      if (!user?.id) return
+
+      try {
+        // Fetch blogs to get credit usage
+        const { count, creditsDeducted } = await fetchBlogsCount()
+
+        // Set up realtime subscription
+        setupRealtimeSubscription()
+      } catch (error) {
+        console.error("Error initializing credit system:", error)
+      }
+    }
+
+    initializeCreditSystem()
+  }, [user?.id])
 
   // Handle responsive sidebar
   useEffect(() => {
@@ -133,11 +298,6 @@ export function AppSidebar({
     }
   }
 
-  // Calculate credits
-  const totalCredits = subscription ? planCreditsMap[subscription.plan_id.toLowerCase()] || 0 : 0
-  const creditsRemaining = subscription?.credits || 0
-  const creditsUsed = totalCredits - creditsRemaining > 0 ? totalCredits - creditsRemaining : 0
-
   return (
     <div
       className={`fixed inset-y-0 left-0 z-50 w-72 h-screen ${
@@ -147,14 +307,24 @@ export function AppSidebar({
       <div className="w-72 bg-white flex flex-col h-screen text-gray-800 border border-gray-200">
         <div className="flex items-center justify-center p-6 border-b border-gray-100">
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-md bg-[#294fd6] flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#294fd6] to-[#6284e4] bg-clip-text text-transparent">
-              Blogosocial
-            </h1>
+           
+            {/* Placeholder logo image - replace with your actual logo */}
+            <img src="/getmoreseo.png" alt="Logo" className="h-8 w-32 object-contain" />
           </div>
         </div>
+
+        {/* Replace the existing credit deduction alert with this */}
+        {showCreditAlert && (
+          <div className="mx-4 mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center">
+              {/* <CreditCard className="h-4 w-4 text-blue-500 mr-2" /> */}
+              <p className="text-blue-800 text-sm font-medium">{creditAlertMessage}</p>
+              <button onClick={() => setShowCreditAlert(false)} className="ml-2 text-blue-600 hover:text-blue-800">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="px-5 mt-8 mb-8">
           <Link href="/dashboard/summarizer">
@@ -286,49 +456,30 @@ export function AppSidebar({
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <CreditCard className="w-4 h-4 mr-2 text-[#294fd6]" />
-                <p className="text-sm font-medium text-gray-800">Credits</p>
+                <Globe className="w-4 h-4 mr-2 text-[#294fd6]" />
+                <p className="text-sm font-medium text-gray-800">API Support</p>
               </div>
-              <div className="flex items-center">
-                <span className="text-sm font-bold text-[#294fd6]">{creditsRemaining}</span>
-                <span className="text-xs text-gray-500 ml-1">remaining</span>
-              </div>
+              <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">New</span>
             </div>
 
-            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-[#294fd6] h-2 rounded-full transition-all duration-300"
-                style={{ width: `${totalCredits > 0 ? (stats.creditsUsed / totalCredits) * 100 : 0}%` }}
-              ></div>
+            <div className="mb-3 flex items-center text-green-600 text-xs bg-green-50 p-2 rounded-lg">
+              <Sparkles className="w-3 h-3 mr-1.5" />
+              <span>API integration now available!</span>
             </div>
 
-            <div className="flex justify-between text-xs text-gray-500 mt-2 mb-3">
-              <span>{stats.creditsUsed} used</span>
-              <span>{totalCredits} total</span>
-            </div>
+            <p className="text-sm text-gray-600 mb-3">
+              Connect your applications directly to our platform with our new API endpoints.
+            </p>
 
             <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-              <div className="flex items-center">
-                {subscription && (planName === "Professional" || planName === "Enterprise") ? (
-                  <div className="flex items-center">
-                    <Sparkles className="w-4 h-4 mr-1.5 text-[#294fd6]" />
-                    <span className="text-sm font-semibold text-[#294fd6]">{planName}</span>
-                  </div>
-                ) : (
-                  <span className="text-sm font-medium text-gray-700">{planName}</span>
-                )}
-              </div>
-              {subscription &&
-                subscription.plan_id.toLowerCase() !== "professional" &&
-                subscription.plan_id.toLowerCase() !== "enterprise" && (
-                  <Link
-                    href="/upgrade"
-                    className="bg-[#294fd6] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 flex items-center gap-1"
-                  >
-                    <ChevronRight className="w-3 h-3" />
-                    Upgrade
-                  </Link>
-                )}
+              <span className="text-sm font-medium text-gray-700">Developer Tools</span>
+              <Link
+                href="/api-key"
+                className="bg-[#294fd6] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 flex items-center gap-1"
+              >
+                <ChevronRight className="w-3 h-3" />
+                View Docs
+              </Link>
             </div>
           </div>
         </div>
@@ -336,4 +487,3 @@ export function AppSidebar({
     </div>
   )
 }
-

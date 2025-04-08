@@ -1,18 +1,18 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { createClient } from "@/utitls/supabase/client"
-import { ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react"
-import { Saira } from "next/font/google"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
+import { Inter } from "next/font/google"
 
-const saira = Saira({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-saira",
+  variable: "--font-inter",
 })
 
 export default function SignUpPage() {
@@ -142,30 +142,37 @@ export default function SignUpPage() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
-  // Rest of the component remains the same
   return (
-    <div className={`${saira.className} h-screen flex bg-gray-50 overflow-hidden`}>
-      {/* Component UI remains unchanged */}
-      <div className="flex-1 flex flex-col p-6 md:p-8 lg:p-10">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 group transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-1 group-hover:-translate-x-1 transition-transform" />
-          <span>Back</span>
-        </button>
+    <div className={`${inter.className} flex h-screen`}>
+      {/* Left side - Dark background with testimonial */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-between p-12">
+        <div>
+          <h2 className="text-xl font-semibold">GetMoreSeo</h2>
+        </div>
+        <div className="space-y-6">
+          <p className="text-2xl font-medium leading-relaxed">
+          Generate, publish, syndicate and update articles automatically.
 
-        <div className="w-full max-w-md mx-auto flex flex-col justify-center flex-grow">
-          <div className="flex items-center justify-center mb-5">
-            <Image src="/logo.png" alt="Blogosocial Logo" width={140} height={48} className="h-auto" priority />
+
+          </p>
+         
+        </div>
+        <div></div> {/* Spacer */}
+      </div>
+
+      {/* Right side - Sign up form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold">Create an account</h1>
+            <p className="text-gray-500">
+              You are just 2 clicks away from creating your blogging account!
+            </p>
           </div>
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Create Your Account</h2>
-          <p className="text-gray-600 mb-4">Join Blogosocial and start your blogging journey!</p>
 
           {error && (
             <div
-              className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-xl mb-4 flex items-start"
+              className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-md mb-4 flex items-start"
               role="alert"
             >
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
@@ -173,8 +180,8 @@ export default function SignUpPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="space-y-1">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
@@ -184,16 +191,14 @@ export default function SignUpPage() {
                 type="text"
                 autoComplete="username"
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
                 placeholder="Choose a username"
-                aria-label="Username"
-                disabled={isLoading}
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+                Email address
               </label>
               <input
                 id="email"
@@ -201,14 +206,12 @@ export default function SignUpPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
-                placeholder="Enter your email"
-                aria-label="Email Address"
-                disabled={isLoading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
+                placeholder="name@example.com"
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
@@ -219,21 +222,23 @@ export default function SignUpPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
-                  className="w-full px-4 pr-11 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
-                  placeholder="Create a strong password"
-                  aria-label="Password"
+                  className="w-full px-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
+              </div>
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700">
+                  forgot password?
+                </Link>
               </div>
             </div>
 
@@ -268,37 +273,34 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] mt-2"
+              className="w-full py-2 px-4 bg-[#294fd6] hover:bg-[#1e3eb8] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294fd6] disabled:opacity-50 transition-colors"
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? "Creating account..." : "Sign up with Email"}
             </button>
+
+            {/* Google sign-in removed as requested */}
+
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                Already have an account?{" "}
+                <Link href="/login" className="font-medium text-[#294fd6] hover:text-[#1e3eb8]">
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </form>
 
-          <div className="mt-4 text-center text-xs text-gray-600">
-            By signing up, you agree to our{" "}
-            <Link href="/terms" className="font-medium text-orange-500 hover:text-orange-600">
-              Terms
+          <div className="text-center text-xs text-gray-500">
+            By clicking continue, you agree to our{" "}
+            <Link href="/terms" className="text-[#294fd6] hover:text-[#1e3eb8]">
+              Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="font-medium text-orange-500 hover:text-orange-600">
+            <Link href="/privacy" className="text-[#294fd6] hover:text-[#1e3eb8]">
               Privacy Policy
             </Link>
             .
           </div>
-
-          <p className="mt-3 text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-orange-500 hover:text-orange-600 transition-colors">
-              Log in
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      <div className="hidden lg:block lg:flex-1">
-        {/* Sidebar content remains unchanged */}
-        <div className="h-full bg-gradient-to-br from-orange-600 via-orange-500 to-orange-700 p-8 flex flex-col justify-center text-white relative overflow-hidden">
-          {/* Sidebar content */}
         </div>
       </div>
     </div>

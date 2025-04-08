@@ -1,126 +1,277 @@
-import { Facebook, Twitter, Linkedin } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
+import { ArrowRight, Check } from 'lucide-react'
 
 export default function Footer() {
-  const sections = {
-    COMPANY: [
-      { name: "Homepage", href: "https://www.blogosocial.com/" },
-      { name: "Talk to founders", href: "https://www.blogosocial.com/talk-to-founders" },
-      { name: "Team", href: "https://www.blogosocial.com/team" },
-      { name: "Mission", href: "https://www.blogosocial.com/mission" },
-      { name: "Vision", href: "https://www.blogosocial.com/vision" },
-      { name: "Pricing", href: "#pricing" },
-      { name: "Affiliate program", href: "/affilate-program" },
-      { name: "Contact", href: "/contact" },
-      { name: "Career", href: "/career" },
-      { name: "Term & Conditions", href: "/terms" },
-      { name: "Privacy Policy", href: "/privacy-policy" },
-      { name: "Refund Policy", href: "/refund-policy" },
-      { name: "Getmorebacklinks", href: "http://getmorebacklinks.org/" },
-      { name: "Foundertoolkit", href: "https://foundertoolkit.org/" },
-      { name: "NextjS Boilerplate", href: "https://www.nextboilerplate.com/" },
-      { name: "EverythingSEO", href: "https://getmoreseo.org/" },
-      { name: "Convert to Blog", href: "https://convertoblog.com/" },
-    ],
-    "USE CASES": [
-      { name: "Real Estate Blog Automation", href: "/real-estate-blog-automation" },
-      { name: "Fashion Brand Blog Automation", href: "/fashion-brand-blog-automation" },
-      { name: "Startup Blog Automation", href: "/startup-blog-automation" },
-      { name: "E Commerce Blog Automation", href: "/ecommerce-blog-automation" },
-      { name: "Local Business Blog Automation", href: "/local-business-blog-automation" },
-      { name: "Small Business Blog Automation", href: "/small-business-blog-automation" },
-      { name: "Technology Company Blog Automation", href: "/technology-company-blog-automation" },
-      { name: "Saas Company Blog Automation", href: "/saas-company-blog-automation" },
-      { name: "Medical Blog Automation", href: "/medical-blog-automation" },
-      { name: "Marketing Agency Blog Automation", href: "/marketing-agency-blog-automation" },
-      { name: "Dentist Blog Automation", href: "/dentist-blog-automation" },
-      { name: "Travel Agency Blog Automation", href: "/travel-agency-blog-automation" },
-      { name: "Education Business Blog Automation", href: "/education-business-blog-automation" },
-      { name: "Health And Wellness Blog Automation", href: "/health-and-wellness-blog-automation" },
-      { name: "Freelance Professional Blog Automation", href: "/freelance-professional-blog-automation" },
-      { name: "Law Firm Blog Automation", href: "/law-firm-blog-automation" },
-      { name: "Manufacturing Company Blog Automation", href: "/manufacturing-company-blog-automation" },
-    ],
-    "FREE TOOLS": [
-      { name: "Letter Generator", href: "/letter-generator" },
-      { name: "Academic Article Generator", href: "/academic-article-generator" },
-      { name: "Real Estate Blog Generator", href: "/real-estate-blog-generator" },
-      { name: "Marketing Blog Generator", href: "/marketing-blog-generator" },
-      { name: "Health & Wellness Blog Generator", href: "/health-and-wellness-blog-generator" },
-      { name: "Fitness Blog Generator", href: "/fitness-blog-generator" },
-      { name: '"How to" Blog Generator', href: "/how-to-blog-generator" },
-      { name: "eCommerce Blog Generator", href: "/ecommerce-blog-generator" },
-      { name: "Paraphraser", href: "/paraphraser" },
-      { name: "Real Estate Listing Property Generator", href: "/real-estate-listing-property-generator" },
-      { name: "LinkedIn Profile Headline Generator", href: "/linkedin-profile-headline-generator" },
-      { name: "LinkedIn Ads Generator", href: "/linkedin-ads-generator" },
-      { name: "Lifestyle Blog Generator", href: "/lifestyle-blog-generator" },
-      { name: "Marketing Strategy Generator", href: "/marketing-strategy-generator" },
-      { name: "LinkedIn Profile Summary Generator", href: "/linkedin-profile-summary-generator" },
-      { name: "Paragraph Generator", href: "/paragrapher-generator" },
-      { name: "Microcopy Generator", href: "/microcopy-generator" },
-    ],
-    LEARN: [
-      { name: "Blogs", href: "#blogs" },
-      { name: "Free SEO Course", href: "https://www.getmoreseo.org/courses" },
-      { name: "Free SEO Academy", href: "https://www.getmoreseo.org/b2b-seo-guide" },
-      { name: "Free SEO checklist", href: "https://www.getmoreseo.org/seo-checklist-free-guide" },
-    ],
-    COMPARE: [
-      { name: "Blogosocial vs SurferSEO", href: "/blogosocial-vs-surferseo" },
-      
-    ],
-  }
-
   return (
-    <footer className="bg-white py-12 border-t">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
-          {Object.entries(sections).map(([title, items]) => (
-            <div key={title} className="space-y-4">
-              <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wider">{title}</h3>
+    <footer className="border-t border-gray-200">
+      {/* CTA Section */}
+      <div className="bg-gray-50 py-16 text-center">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
+            Grow Faster, Rank Higher
+            <span className="block text-[#294df6]">With GetMoreSEO</span>
+          </h2>
+          <p className="text-gray-600 mb-8">Don't miss out on more traffic, higher rankings, and better results.</p>
+
+          <div className="flex justify-center mb-12">
+            <Link
+              href="/get-started"
+              className="bg-[#294df6] hover:bg-[#1e3fd0] text-white px-6 py-3 rounded-md font-medium inline-flex items-center"
+            >
+              Try GetMoreSEO free for 7 days
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16">
+            <div className="flex items-center">
+              <Check className="h-5 w-5 text-[#294df6] mr-2" />
+              <span className="text-gray-700">No Credit Card</span>
+            </div>
+            <div className="flex items-center">
+              <Check className="h-5 w-5 text-[#294df6] mr-2" />
+              <span className="text-gray-700">Full Access</span>
+            </div>
+            <div className="flex items-center">
+              <Check className="h-5 w-5 text-[#294df6] mr-2" />
+              <span className="text-gray-700">7-Day Free Trial</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Logo and Quick Links */}
+      <div className="border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center mb-6 md:mb-0">
+            <Image 
+              src="/getmoreseo.png" 
+              alt="GetMoreSEO Logo" 
+              width={120} 
+              height={40} 
+              className="h-10 w-auto"
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link href="/free-seo-course" className="text-gray-600 hover:text-[#294df6] text-sm">
+              Free SEO Course
+            </Link>
+            <Link href="/seo-academy" className="text-gray-600 hover:text-[#294df6] text-sm">
+              Free SEO Academy
+            </Link>
+            <Link href="/ai-translator" className="text-gray-600 hover:text-[#294df6] text-sm">
+              Free AI Translator
+            </Link>
+            <Link href="/tools" className="text-gray-600 hover:text-[#294df6] text-sm">
+              Free Tools
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Footer Links */}
+      <div className="border-t border-gray-200 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+            {/* Company */}
+            <div>
+              <h3 className="font-bold text-gray-900 mb-4">Company</h3>
               <ul className="space-y-2">
-                {items.map((item) => (
-                  <li key={item.name}>
-                    <a href={item.href} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
+                <li>
+                  <Link href="/" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Homepage
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/affiliate" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Affiliate Program
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/careers" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Career
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Term & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/refund" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Refund Policy
+                  </Link>
+                </li>
               </ul>
             </div>
-          ))}
+
+            {/* Product */}
+            <div>
+              <h3 className="font-bold text-gray-900 mb-4">Product</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/topic-explorer" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Topic Explorer
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/ai-writer" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    AI Article Writer
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/keyword-tracker" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Keyword Tracker
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog-automation" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Blog Automation
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/integrations" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Integrations
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/feature-request" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Feature Request
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/roadmap" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Roadmap
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Free SEO Tools */}
+            <div>
+              <h3 className="font-bold text-gray-900 mb-4">Free SEO Tools</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/ai-outline-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    AI Outline Generator
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/active-to-passive" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Active To Passive Voice
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/ai-paraphraser" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    AI Paraphraser
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/ai-paragraph-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    AI Paragraph Generator
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/brand-voice-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Brand Voice Generator
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/free-tools" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    View All Free Tools
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Learn */}
+            <div>
+              <h3 className="font-bold text-gray-900 mb-4">Learn</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/blog" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/free-seo-course" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Free SEO Course
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/seo-academy" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Free SEO Academy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/community" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    Community
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Comparison */}
+            <div>
+              <h3 className="font-bold text-gray-900 mb-4">Comparison</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/vs-surfer-seo" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    GetMoreSEO vs SurferSEO
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/vs-clearscope" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    GetMoreSEO vs Clearscope
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/vs-semrush" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    GetMoreSEO vs Semrush
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/vs-scalenut" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    GetMoreSEO vs Scalenut
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/vs-dashword" className="text-gray-600 hover:text-[#294df6] text-sm">
+                    GetMoreSEO vs Dashword
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Bottom footer section */}
-        <div className="mt-16 pt-8 border-t border-gray-200">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div className="flex flex-col space-y-4">
-              <div className="flex items-center">
-                <img
-                  src="/logo.png"
-                  alt="Blogosocial Logo"
-                  width={150}
-                  height={40}
-                  className="h-10 w-auto"
-                />
-              </div>
-              <p className="text-xs text-gray-700 max-w-md">
-                COPYRIGHT BY MARKUPX BRANDS TECHNOLOGIES PRIVATE LIMITED. ALL RIGHTS RESERVED 2025
-              </p>
-            </div>
-
-            <div className="flex space-x-4">
-              <a href="https://x.com/Blogosocial_com" className="text-gray-800 hover:text-gray-600">
-                <Twitter className="w-6 h-6" />
-              </a>
-              <a href="https://www.linkedin.com/company/blogosocial/" className="text-gray-800 hover:text-gray-600">
-                <Linkedin className="w-6 h-6" />
-              </a>
-            </div>
+      {/* Copyright */}
+      <div className="border-t border-gray-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+          <div className="text-sm text-gray-500 mb-4 md:mb-0">© 2024 GetMoreSEO Inc. All rights reserved.</div>
+          <div className="text-sm text-gray-500 flex items-center">
+            Made with <span className="text-red-500 mx-1">❤</span>
           </div>
         </div>
       </div>
     </footer>
   )
 }
-

@@ -22,7 +22,7 @@ import {
   ArrowLeft,
   Info,
 } from "lucide-react"
-import { Sidebar } from "@/app/components/sidebar"
+import { Sidebar } from "@/app/components/layout/sidebar"
 import { Saira } from "next/font/google"
 
 // Initialize the Saira font

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Sidebar } from "@/app/components/sidebar"
+import { Sidebar } from "@/app/components/layout/sidebar"
+
 import { Copy, Check, Key, Menu, X, Code, Terminal, FileText, ExternalLink, AlertCircle } from "lucide-react"
 
 interface SubscriptionData {

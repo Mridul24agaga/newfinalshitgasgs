@@ -1,7 +1,7 @@
 import Script from "next/script"
 import { Navbar } from "@/app/components/navbar"
 import  Hero  from "@/app/components/hero"
-import FAQ from "./components/faq"
+import { FAQSection } from "./components/faq"
 import { ProblemSolution } from "./components/video-section"
 import ContentProblems from "./components/frustration"
 import BlogsocialStats from "./components/blogosocial"
@@ -12,10 +12,11 @@ import LanguageScroll from "./components/language"
 import EarlyBirdOffer from "./components/offer"
 import BlogSection from "./components/blogpost"
 import CTASection from "./components/cta"
-import Footer from "./components/footer"
+import  Footer  from "./components/footer"
 import AnnouncementBanner from "./components/navit"
 import StructuredData from "./components/structured-data"
 import type { Metadata } from "next"
+import { HowItWorks } from "./components/howitworks"
 import TrustedBySection from "./components/trusted"
 import AIWritingSection from "./components/ai-writing-section"
 import FeatureSection from "./components/features"
@@ -23,7 +24,12 @@ import WhyHireSection from "./components/hire"
 import ComparisonTable from "./components/comparison"
 import TestimonialsSection from "./components/testimonials"
 import OurProcessSection from "./components/newtext"
+import { ComparisonSection } from "./components/comparison-section"
 import ScrollingResults from "./components/moving"
+import { PricingCTA } from "./components/pricecta"
+import { FeatureBentoGrid } from "./components/feature-grid"
+import { ContentFeaturesSection } from "./components/contentfeatures"
+import PaymentPage from "./components/payment-page"
 
 export const metadata: Metadata = {
   title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
@@ -78,78 +84,21 @@ export default function Page() {
 
       {/* Hero Section with gradient background */}
         <Hero />
-      <AIWritingSection/>
+        <HowItWorks/>
+        <PricingCTA/>
+        <FeatureBentoGrid/>
+        <ContentFeaturesSection/>
+        <ComparisonSection/>
 
 
-      <div>
-      </div>
-      <OurProcessSection/>
-      <div>
-        <BlogsocialStats />
-      </div>
-
-      {/* Content Problems Section */}
-      <div>
-        <ContentProblems />
-      </div>
-
-       {/* Blog Section */}
-       <div>
-        <BlogSection />
-      </div>
-
-      {/* <FeatureSection */}
-      <FeatureSection/>
-
-      <WhyHireSection/>
-
-      <ComparisonTable/>
-
-      <TestimonialsSection/>
-
-
-
-      {/* Trusted By Section */}
-      <div>
-        <TrustedBySection />
-      </div>
-
-    
-      {/* Blogosocial Stats Section */}
-   
-
-     
-      {/* Pricing Section */}
-      <div>
-        <PricingSection />
-      </div>
-
-      {/* Flow Section */}
-     
-      {/* Integrations Section */}
-      <div>
-        <IntegrationsSection />
-      </div>
-
-      {/* Language Scroll Section */}
-      <div>
-        <LanguageScroll />
-      </div>
-
-      {/* Early Bird Offer Section */}
-      <div>
-        <EarlyBirdOffer />
-      </div>
+      
 
       {/* FAQ Section */}
       <div>
-        <FAQ />
+        < FAQSection />
       </div>
 
-      {/* CTA Section */}
-      <div>
-        <CTASection />
-      </div>
+    
 
       <Footer />
     </main>

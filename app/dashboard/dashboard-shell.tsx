@@ -45,6 +45,18 @@ interface Subscription {
   website_onboarding_completed?: boolean | null
 }
 
+interface BlogPost {
+  id: string
+  user_id: string
+  blog_post: string
+  citations?: any
+  created_at: string
+  title: string
+  timestamp: string
+  reveal_date?: string
+  credit_deducted: boolean
+}
+
 export function DashboardShell({ user }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -69,6 +81,8 @@ export function DashboardShell({ user }: DashboardShellProps) {
   const pathname = usePathname()
   const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
+  const [showCreditAlert, setShowCreditAlert] = useState(false)
+  const [creditAlertMessage, setCreditAlertMessage] = useState("")
 
   const formatPlanName = (planId: string | undefined) => {
     if (!planId) return "No Plan"
@@ -137,6 +151,81 @@ export function DashboardShell({ user }: DashboardShellProps) {
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
+
+  // Set up a subscription to listen for changes to the user's subscription
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Listen for changes to the subscriptions table
+    const subscriptionChannel = supabase
+      .channel("subscription-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "subscriptions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("Subscription updated:", payload)
+
+          // Refresh subscription data
+          const { data, error } = await supabase.from("subscriptions").select("*").eq("user_id", user.id).single()
+
+          if (data && !error) {
+            setSubscription(data)
+
+            // Update credits used stat
+            const totalCredits = getPlanTotalCredits(data.plan_id)
+            const creditsUsed = totalCredits - data.credits
+
+            setStats((prev) => ({
+              ...prev,
+              creditsUsed: creditsUsed > 0 ? creditsUsed : 0,
+            }))
+
+            // Show credit alert if this was triggered by a blog post creation
+            if (payload.old && payload.new && payload.old.credits !== payload.new.credits) {
+              setCreditAlertMessage(`1 credit has been deducted. You have ${data.credits} credits remaining.`)
+              setShowCreditAlert(true)
+
+              // Hide the alert after 5 seconds
+              setTimeout(() => setShowCreditAlert(false), 5000)
+            }
+          }
+        },
+      )
+      .subscribe()
+
+    // Listen for new blog posts
+    const blogsChannel = supabase
+      .channel("blogs-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "blogs",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("New blog post created:", payload)
+
+          // Update posts created count
+          setStats((prev) => ({
+            ...prev,
+            postsCreated: prev.postsCreated + 1,
+          }))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscriptionChannel)
+      supabase.removeChannel(blogsChannel)
+    }
+  }, [user?.id, supabase])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -245,15 +334,29 @@ export function DashboardShell({ user }: DashboardShellProps) {
     }
   }
 
+  // Update fetchBlogsCount to also check for credit_deducted status
   const fetchBlogsCount = async () => {
     try {
-      const { data, error } = await supabase.from("blogs").select("id", { count: "exact" }).eq("user_id", user.id)
+      const { data, error } = await supabase.from("blogs").select("id, credit_deducted").eq("user_id", user.id)
+
       if (error) {
         console.error("Error fetching blogs count:", error.message)
         return 0
       }
+
       const count = data?.length || 0
       console.log(`Fetched ${count} blogs for user ${user.id}`)
+
+      // Count blogs with credit_deducted = true
+      const creditsDeducted = data?.filter((blog) => blog.credit_deducted).length || 0
+
+      // Update stats with the blog count and credits used
+      setStats((prev) => ({
+        ...prev,
+        postsCreated: count,
+        creditsUsed: creditsDeducted,
+      }))
+
       return count
     } catch (err) {
       console.error("Error in fetchBlogsCount:", err)
@@ -345,11 +448,8 @@ export function DashboardShell({ user }: DashboardShellProps) {
 
       const hasCompletedWebsiteOnboarding = summaries && summaries.length > 0
 
-      // Fetch blogs count
-      const blogsCount = await fetchBlogsCount().catch((err) => {
-        console.error("Error fetching blogs count:", err)
-        return 0
-      })
+      // Fetch blogs count and update stats
+      await fetchBlogsCount()
 
       if (subscriptionData) {
         console.log(`Subscription data found:`, subscriptionData)
@@ -372,8 +472,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
         setSubscription(subscriptionData)
         setStats((prev) => ({
           ...prev,
-          postsCreated: blogsCount,
-          creditsUsed: blogsCount,
           websiteSummaries: summaries?.length || 0,
         }))
 
@@ -400,8 +498,6 @@ export function DashboardShell({ user }: DashboardShellProps) {
         setSubscription(defaultSubscription)
         setStats((prev) => ({
           ...prev,
-          postsCreated: blogsCount,
-          creditsUsed: blogsCount,
           websiteSummaries: summaries?.length || 0,
         }))
 
@@ -861,6 +957,19 @@ export function DashboardShell({ user }: DashboardShellProps) {
             </div>
           )}
 
+          {/* Credit deduction alert */}
+          {showCreditAlert && (
+            <div className="bg-blue-50 border-b border-blue-200 p-3 text-center">
+              <div className="flex items-center justify-center">
+                <CreditCard className="h-5 w-5 text-blue-500 mr-2" />
+                <p className="text-blue-800 font-medium">{creditAlertMessage}</p>
+                <button onClick={() => setShowCreditAlert(false)} className="ml-4 text-blue-600 hover:text-blue-800">
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Welcome Banner */}
             <div className="relative overflow-hidden bg-gradient-to-r from-[#294fd6] to-[#6284e4] rounded-2xl p-8 text-white mb-8 shadow-xl">
@@ -964,16 +1073,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-gray-900">{planName}</p>
-                <div className="mt-2 flex items-center text-xs">
-                  {subscription &&
-                    subscription.plan_id.toLowerCase() !== "professional" &&
-                    subscription.plan_id.toLowerCase() !== "enterprise" && (
-                      <Link href="/upgrade" className="text-[#294fd6] font-medium flex items-center">
-                        Upgrade your plan
-                        <ChevronRight className="h-3 w-3 ml-1" />
-                      </Link>
-                    )}
-                </div>
+                
               </div>
             </div>
 
@@ -986,12 +1086,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
                       <span className="text-[#294fd6] mr-2">★</span>
                       Your Subscription
                     </h2>
-                    <button
-                      onClick={() => router.push("/upgrade")}
-                      className="px-4 py-2 bg-[#294fd6] text-white rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 text-sm font-medium shadow-md shadow-[#294fd6]/10"
-                    >
-                      Upgrade Plan
-                    </button>
+                    
                   </div>
                 </div>
                 <div className="p-6">

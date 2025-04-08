@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
+import { AppSidebar } from "../components/sidebar"
 import {
   Link2,
   AlertCircle,
@@ -25,9 +26,9 @@ export default function GenerateBlogContent() {
   const [generatedBlogId, setGeneratedBlogId] = useState<string | null>(null)
   const [progress, setProgress] = useState<number>(0)
   const [currentStep, setCurrentStep] = useState<number>(0)
+  const [isUrlValid, setIsUrlValid] = useState<boolean>(true)
 
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const generationSteps = [
     { icon: <Sparkles className="text-purple-500" size={24} />, text: "Analyzing website content..." },
@@ -36,22 +37,33 @@ export default function GenerateBlogContent() {
     { icon: <Zap className="text-rose-500" size={24} />, text: "Adding AI magic to content..." },
   ]
 
-  // Load URL from localStorage or query params on mount
+  // Validate URL as user types
+  const validateUrl = (input: string) => {
+    const urlPattern = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w-]*)*\/?$/
+    const isValid = urlPattern.test(input)
+    setIsUrlValid(isValid || input === "")
+    return isValid
+  }
+
+  // Handle URL input change
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value
+    setUrl(newUrl)
+    validateUrl(newUrl)
+    localStorage.setItem("websiteSummaryUrl", newUrl) // Persist URL
+  }
+
+  // Clear stored URL on mount if starting fresh
   useEffect(() => {
-    const storedUrl = localStorage.getItem("websiteSummaryUrl")
-    const queryUrl = searchParams.get("url")
-    if (storedUrl) setUrl(storedUrl)
-    else if (queryUrl) setUrl(queryUrl)
-  }, [searchParams])
+    localStorage.removeItem("websiteSummaryUrl")
+  }, [])
 
   // Simulate progress during loading
   useEffect(() => {
     if (isLoading) {
-      // Reset progress
       setProgress(0)
       setCurrentStep(0)
 
-      // Simulate progress steps
       const progressInterval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 100) {
@@ -60,14 +72,12 @@ export default function GenerateBlogContent() {
           }
           return prev + 1
         })
-      }, 300) // Adjust speed as needed
+      }, 300)
 
-      // Simulate step changes
       const stepInterval = setInterval(() => {
         setCurrentStep((prev) => (prev + 1) % generationSteps.length)
-      }, 5000) // Change step every 5 seconds
+      }, 5000)
 
-      // Cleanup
       return () => {
         clearInterval(progressInterval)
         clearInterval(stepInterval)
@@ -92,21 +102,27 @@ export default function GenerateBlogContent() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!url.trim()) {
-      setError("Please enter a URL")
+      setError("Please enter a website URL")
       return
     }
+    if (!isUrlValid) {
+      setError("Please enter a valid URL (e.g., https://example.com)")
+      return
+    }
+
+    // Ensure URL has protocol
+    const formattedUrl = url.startsWith("http") ? url : `https://${url}`
 
     setIsLoading(true)
     setError(null)
     setSuccess(false)
-    setGeneratedBlogId(null) // Reset previous ID
+    setGeneratedBlogId(null)
 
     try {
-      console.log("Starting blog generation for URL:", url)
-      const blogPosts = await generateBlog(url) // Call generateBlog from actions
+      console.log("Starting blog generation for URL:", formattedUrl)
+      const blogPosts = await generateBlog(formattedUrl)
       console.log("Raw response from generateBlog:", blogPosts)
 
-      // Robust check for blogPosts
       if (!blogPosts || !Array.isArray(blogPosts)) {
         console.error("generateBlog did not return an array:", blogPosts)
         throw new Error("Invalid response from blog generation")
@@ -126,14 +142,11 @@ export default function GenerateBlogContent() {
       console.log(`Successfully generated blog post with ID: ${firstBlogPost.id}`, firstBlogPost)
       setGeneratedBlogId(firstBlogPost.id)
 
-      // Store in localStorage (optional, for persistence)
       localStorage.setItem("generatedBlogPosts", JSON.stringify(blogPosts))
       console.log("Stored blog post in localStorage")
 
-      // Mark as success
       setSuccess(true)
 
-      // Redirect to /generated/[id] after 3 seconds
       setTimeout(() => {
         console.log(`Redirecting to /generated/${firstBlogPost.id}`)
         router.push(`/generated/${firstBlogPost.id}`)
@@ -148,6 +161,8 @@ export default function GenerateBlogContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+        <AppSidebar/>
+
       <header className="p-4 sm:p-6 bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <button
@@ -178,21 +193,15 @@ export default function GenerateBlogContent() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Blog Post Generated!</h2>
                 <p className="text-gray-600 mb-6 max-w-md">
-                  Successfully generated a blog post based on your website content. Redirecting you to your new blog
-                  post...
+                  Successfully generated a blog post based on your website content. Redirecting you to your new blog post...
                 </p>
                 <div className="w-16 h-1 bg-[#2563eb] animate-pulse rounded-full"></div>
               </div>
             ) : isLoading ? (
               <div className="py-10 flex flex-col items-center justify-center">
-                {/* Fancy animated loading state */}
                 <div className="relative w-full max-w-md mx-auto mb-12">
-                  {/* Outer glow effect */}
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-20 blur-xl animate-pulse"></div>
-
-                  {/* Main content card */}
                   <div className="relative bg-white border border-gray-200 rounded-xl p-8 shadow-sm overflow-hidden">
-                    {/* Animated particles */}
                     <div className="absolute inset-0 overflow-hidden">
                       {[...Array(20)].map((_, i) => (
                         <div
@@ -207,8 +216,6 @@ export default function GenerateBlogContent() {
                         ></div>
                       ))}
                     </div>
-
-                    {/* Progress indicator */}
                     <div className="relative z-10 flex flex-col items-center">
                       <div className="w-32 h-32 rounded-full border-8 border-gray-100 flex items-center justify-center mb-6 relative">
                         <svg className="w-full h-full absolute top-0 left-0" viewBox="0 0 100 100">
@@ -236,21 +243,15 @@ export default function GenerateBlogContent() {
                         </svg>
                         <div className="text-2xl font-bold text-gray-800">{progress}%</div>
                       </div>
-
-                      {/* Current step indicator with animation */}
                       <div className="flex items-center justify-center mb-4 animate-bounce">
                         {generationSteps[currentStep].icon}
                       </div>
-
                       <h3 className="text-xl font-bold text-gray-800 mb-2 animate-fadeIn">
                         {generationSteps[currentStep].text}
                       </h3>
-
                       <p className="text-gray-600 text-center max-w-xs animate-fadeIn">
                         Our AI is hard at work creating an amazing blog post for your website.
                       </p>
-
-                      {/* Step indicators */}
                       <div className="flex space-x-2 mt-8">
                         {generationSteps.map((_, index) => (
                           <div
@@ -264,8 +265,6 @@ export default function GenerateBlogContent() {
                     </div>
                   </div>
                 </div>
-
-                {/* Fun facts to keep user engaged */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto animate-slideUp">
                   <h4 className="font-medium text-gray-800 mb-2 flex items-center">
                     <Sparkles className="h-4 w-4 text-amber-500 mr-2" />
@@ -276,7 +275,6 @@ export default function GenerateBlogContent() {
                     suggestions for relevant imagery.
                   </p>
                 </div>
-
                 <div className="mt-8 text-center text-sm text-gray-500 max-w-md animate-fadeIn">
                   <p>Please don't close this page. You'll be automatically redirected when your blog is ready.</p>
                 </div>
@@ -287,32 +285,42 @@ export default function GenerateBlogContent() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-3">
                       <label htmlFor="url" className="block text-sm font-semibold text-gray-700">
-                        Website URL
+                        Your Website URL
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                           <Link2 className="h-5 w-5 text-[#2563eb]" />
                         </div>
                         <input
-                          type="url"
+                          type="text" // Changed from type="url" to allow more flexible input
                           id="url"
                           value={url}
-                          onChange={(e) => setUrl(e.target.value)}
-                          placeholder="https://example.com"
+                          onChange={handleUrlChange}
+                          placeholder="Enter your website (e.g., https://example.com)"
                           disabled={isLoading}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 placeholder:text-gray-300"
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 placeholder:text-gray-400 ${
+                            isUrlValid
+                              ? "border-gray-200 focus:ring-[#2563eb] focus:border-[#2563eb]"
+                              : "border-red-300 focus:ring-red-500 focus:border-red-500"
+                          } disabled:bg-gray-50 disabled:text-gray-400`}
                         />
+                        {!isUrlValid && url && (
+                          <p className="mt-1 text-sm text-red-600">Please enter a valid URL (e.g., https://example.com)</p>
+                        )}
                       </div>
+                      <p className="text-sm text-gray-500">
+                        Enter your website URL to generate a blog post based on its content.
+                      </p>
                     </div>
 
                     <div className="bg-gray-50 border border-gray-200 p-5 rounded-lg">
                       <div className="flex items-start">
                         <AlertCircle className="h-5 w-5 text-[#2563eb] mr-3 flex-shrink-0 mt-0.5" />
                         <div>
-                          <h3 className="text-sm font-medium text-gray-800">About Blog Generation</h3>
+                          <h3 className="text-sm font-medium text-gray-800">How It Works</h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            Our AI will analyze your website and generate a blog post tailored to your audience. The
-                            generated content will be based on your website's topic, style, and target audience.
+                            Simply provide your website URL, and our AI will analyze its content to create a unique,
+                            engaging blog post tailored to your site’s audience and style.
                           </p>
                         </div>
                       </div>
@@ -333,11 +341,11 @@ export default function GenerateBlogContent() {
                     <button
                       type="submit"
                       className={`w-full px-6 py-3 rounded-lg text-white font-bold flex items-center justify-center transition-all duration-300 border ${
-                        isLoading
+                        isLoading || !isUrlValid
                           ? "bg-blue-400 border-blue-500 cursor-not-allowed"
                           : "bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2"
                       }`}
-                      disabled={isLoading}
+                      disabled={isLoading || !isUrlValid}
                     >
                       {isLoading ? (
                         <>
@@ -359,7 +367,6 @@ export default function GenerateBlogContent() {
         </div>
       </main>
 
-      {/* Custom animations */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -415,4 +422,3 @@ export default function GenerateBlogContent() {
     </div>
   )
 }
-

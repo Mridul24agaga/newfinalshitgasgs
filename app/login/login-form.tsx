@@ -4,15 +4,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
-import { createClient } from "@/utitls/supabase/client" // Fixed typo in import path
-import { ArrowLeft, Star, Users, Zap, Eye, EyeOff, AlertCircle, Loader2, BarChart3 } from "lucide-react"
-import { Saira } from "next/font/google"
+import { createClient } from "@/utitls/supabase/client"
+import { ArrowLeft, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
+import { Inter } from "next/font/google"
 
-const saira = Saira({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-saira",
+  variable: "--font-inter",
 })
 
 export default function LoginForm() {
@@ -44,7 +43,9 @@ export default function LoginForm() {
 
     // Check existing session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (session) {
         router.push("/dashboard")
       }
@@ -135,27 +136,42 @@ export default function LoginForm() {
   const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
   return (
-    <div className={`${saira.className} h-screen flex bg-gray-50 overflow-hidden`}>
-      <div className="flex-1 flex flex-col p-6 md:p-8 lg:p-10">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 group transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-1 group-hover:-translate-x-1 transition-transform" />
-          <span>Back</span>
-        </button>
+    <div className={`${inter.className} flex h-screen`}>
+      {/* Left side - Dark background with testimonial */}
+      <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-between p-12">
+        <div>
+          <h2 className="text-xl font-semibold">GetMoreSeo</h2>
+        </div>
+        <div className="space-y-6">
+          <p className="text-2xl font-medium leading-relaxed">
+          Generate, publish, syndicate and update articles automatically.
 
-        <div className="w-full max-w-md mx-auto flex flex-col justify-center flex-grow">
-          <div className="flex items-center justify-center mb-6">
-            <Image src="/logo.png" alt="Blogosocial Logo" width={140} height={48} className="h-auto" priority />
+
+          </p>
+         
+        </div>
+        <div></div> {/* Spacer */}
+      </div>
+
+      {/* Right side - Login form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 group transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-1 group-hover:-translate-x-1 transition-transform" />
+            <span>Back</span>
+          </button>
+
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold">Welcome back!</h1>
+            <p className="text-gray-500">Sign in to continue to your dashboard</p>
           </div>
-
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Welcome back!</h2>
-          <p className="text-gray-600 mb-6">Sign in to continue to your dashboard</p>
 
           {error && (
             <div
-              className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-4 flex items-start"
+              className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-md mb-4 flex items-start"
               role="alert"
             >
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
@@ -163,10 +179,10 @@ export default function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+                Email address
               </label>
               <input
                 id="email"
@@ -176,14 +192,13 @@ export default function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
                 placeholder="name@example.com"
-                aria-label="Email Address"
                 disabled={isLoading}
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
@@ -196,18 +211,16 @@ export default function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  className="w-full px-4 pr-11 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
+                  className="w-full px-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
                   placeholder="••••••••"
-                  aria-label="Password"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -220,7 +233,7 @@ export default function LoginForm() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-[#294fd6] focus:ring-[#294fd6] border-gray-300 rounded"
                   disabled={isLoading}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
@@ -229,10 +242,7 @@ export default function LoginForm() {
               </div>
 
               <div className="text-sm">
-                <Link
-                  href="/reset-password/request"
-                  className="font-medium text-orange-500 hover:text-orange-600 transition-colors"
-                >
+                <Link href="/reset-password/request" className="font-medium text-[#294fd6] hover:text-[#1e3eb8]">
                   Forgot password?
                 </Link>
               </div>
@@ -241,7 +251,7 @@ export default function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full flex justify-center items-center py-2 px-4 bg-[#294fd6] hover:bg-[#1e3eb8] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294fd6] disabled:opacity-50 transition-colors"
             >
               {isLoading ? (
                 <>
@@ -254,112 +264,17 @@ export default function LoginForm() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <Link href="/signup" className="font-medium text-orange-500 hover:text-orange-600 transition-colors">
-              Sign up
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      <div className="hidden lg:block lg:flex-1">
-        <div className="h-full bg-gradient-to-br from-orange-600 via-orange-500 to-orange-700 p-8 flex flex-col justify-center text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-radial from-orange-400/30 to-transparent rounded-full -translate-y-1/3 translate-x-1/3"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-radial from-orange-800/40 to-transparent rounded-full translate-y-1/3 -translate-x-1/3"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-black"></div>
-
-          <div className="relative z-10">
-            <div className="mb-8">
-              <div className="bg-black/20 backdrop-blur-sm p-3 rounded-lg inline-flex shadow-lg border-2 border-white/30">
-                <Star className="w-8 h-8 text-white" />
-              </div>
-            </div>
-
-            <h2 className="text-2xl xl:text-3xl font-bold mb-4 leading-tight">
-              Professional <span className="text-black">Blogging</span> Platform
-            </h2>
-            <p className="text-base xl:text-lg mb-6 text-white/80 leading-relaxed">
-              Enterprise-grade tools to elevate your content strategy.
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              Don't have an account?{" "}
+              <Link href="/signup" className="font-medium text-[#294fd6] hover:text-[#1e3eb8]">
+                Sign up
+              </Link>
             </p>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-4 bg-black/10 backdrop-blur-sm p-3 rounded-lg border-l-4 border-black">
-                <div className="bg-white/10 p-1.5 rounded-md border border-white/30">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Professional SEO Writers</h3>
-                  <p className="text-sm text-white/70">Expert writers work for you</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-black/10 backdrop-blur-sm p-3 rounded-lg border-l-4 border-black">
-                <div className="bg-white/10 p-1.5 rounded-md border border-white/30">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Team Collaboration</h3>
-                  <p className="text-sm text-white/70">Seamless workflow for content teams</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-black/10 backdrop-blur-sm p-3 rounded-lg border-l-4 border-black">
-                <div className="bg-white/10 p-1.5 rounded-md border border-white/30">
-                  <BarChart3 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Analytics Dashboard</h3>
-                  <p className="text-sm text-white/70">Data-driven content optimization</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/20">
-              <div className="bg-black/20 backdrop-blur-sm p-4 rounded-lg border border-white/20">
-                <h3 className="text-lg font-bold text-white mb-1">"Autopilot Blogging That Works!"</h3>
-                <p className="text-white/80 text-sm mb-3">
-                  "I wanted to grow my blog but didn't have time. BlogoSocial took over and now I get custom SEO
-                  keywords, targeted keywords, and an advanced content plan—without lifting a finger. It's 100%
-                  autopilot, and my traffic is soaring!"
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full overflow-hidden mr-3 border border-white/50">
-                    <Image src="/abc5.jpg" alt="Testimonial" width={40} height={40} className="object-cover" />
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium">Anjali Singh</p>
-                    <p className="text-white/60 text-xs">Business Consultant</p>
-                  </div>
-                  <div className="ml-auto flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-3 h-3 text-white" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <div className="relative w-8 h-8 rounded-full border-2 border-white/70 overflow-hidden">
-                    <Image src="/abc3.jpg" alt="User 1" width={32} height={32} className="object-cover" />
-                  </div>
-                  <div className="relative w-8 h-8 rounded-full border-2 border-white/70 overflow-hidden">
-                    <Image src="/abc2.jpg" alt="User 2" width={32} height={32} className="object-cover" />
-                  </div>
-                  <div className="relative w-8 h-8 rounded-full border-2 border-white/70 overflow-hidden">
-                    <Image src="/abc6.jpg" alt="User 3" width={32} height={32} className="object-cover" />
-                  </div>
-                  <div className="relative w-8 h-8 rounded-full border-2 border-white/70 overflow-hidden">
-                    <Image src="/abc1.jpg" alt="User 4" width={32} height={32} className="object-cover" />
-                  </div>
-                </div>
-                <p className="text-sm text-white/80">Join 40,000+ professionals</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
+
