@@ -34,4 +34,4 @@ export async function POST(request: Request) {
 }
 
 export const runtime = "nodejs";
-export const maxDuration = 300; // 5 minutes timeout
+export const maxDuration = 60; // 5 minutes timeout
