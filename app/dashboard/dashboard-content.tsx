@@ -76,5 +76,5 @@ export default function DashboardContent() {
     return null // This should rarely happen as we redirect in the useEffect
   }
 
-  return <BlogsPage user={user} />
+  return <BlogsPage  />
 }

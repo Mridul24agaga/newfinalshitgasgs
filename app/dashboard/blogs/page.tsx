@@ -16,11 +16,7 @@ interface BlogPost {
   tags?: string[]
 }
 
-interface BlogsPageProps {
-  user?: SupabaseUser
-}
-
-export default function BlogsPage({ user: propUser }: BlogsPageProps) {
+export default function BlogsPage() {
   const [blogs, setBlogs] = useState<BlogPost[]>([])
   const [filteredBlogs, setFilteredBlogs] = useState<BlogPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -43,13 +39,6 @@ export default function BlogsPage({ user: propUser }: BlogsPageProps) {
 
   useEffect(() => {
     const fetchUser = async () => {
-      // If user is passed as prop, use it
-      if (propUser) {
-        setUser(propUser)
-        return
-      }
-
-      // Otherwise fetch the user
       try {
         const {
           data: { user },
@@ -69,7 +58,7 @@ export default function BlogsPage({ user: propUser }: BlogsPageProps) {
     }
 
     fetchUser()
-  }, [propUser, supabase, router])
+  }, [supabase, router])
 
   useEffect(() => {
     const fetchBlogs = async () => {

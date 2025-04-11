@@ -850,7 +850,7 @@ export function DashboardShell({ user }: DashboardShellProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
-      <AppSidebar user={user} subscription={subscription} stats={stats} onSignOut={handleSignOut} />
+      <AppSidebar  />
 
       <div className="flex flex-col flex-1 w-full lg:pl-72">
         <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
