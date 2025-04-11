@@ -44,7 +44,7 @@ const formatUtils = {
     html = html.replace(
       /^(\d+\.\s+[^:\n]+):\s*(.+)$/gim,
       (match, heading, content) => {
-        return `<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800 inline">${heading}: <span class="font-normal">${content}</span></h3>`;
+        return `<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800 inline">${heading}: <span class="font-saira font-normal">${content}</span></h3>`;
       }
     );
 
@@ -58,19 +58,19 @@ const formatUtils = {
       .replace(/^## (.*$)/gim, '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">$1</h2>')
       .replace(/^# (.*$)/gim, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900 border-b pb-2">$1</h1>')
 
-      // Bold and italic text handling
-      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
-      .replace(/\*(.*?)\*/gim, '<em class="italic font-normal">$1</em>')
+      // Bold and italic text handling with font-saira
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-saira font-bold">$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em class="font-saira italic font-normal">$1</em>')
 
       // Convert bullet points to single-line format with bold term and colon
       .replace(
         /^-\s*\*\*([^:]+)\*\*:\s*(.*)$/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong>: $2</li>'
+        '<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal"><strong class="font-saira font-bold">$1</strong>: $2</li>'
       )
       // Handle bullet points that might have been split (fallback)
       .replace(
         /^-\s*([^:\n]+)\n?:\s*(.*)$/gim,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong>: $2</li>'
+        '<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal"><strong class="font-saira font-bold">$1</strong>: $2</li>'
       );
 
     // Wrap consecutive list items in <ul> tags
@@ -97,7 +97,6 @@ const formatUtils = {
     return html;
   },
 
-  // Rest of the formatUtils object remains the same
   sanitizeHtml: (html: string) => {
     // First, directly handle any remaining markdown-style links
     let sanitized = aggressivelyFixMarkdownLinks(html);
@@ -109,19 +108,19 @@ const formatUtils = {
       // Updated list styling
       .replace(/<ul[^>]*>/g, '<ul class="pl-4 my-4">')
 
-      // Ensure list items are properly styled
-      .replace(/<li[^>]*>([^<]*)<\/li>/g, '<li class="ml-4 text-gray-700 leading-relaxed font-normal">$1</li>')
+      // Ensure list items are properly styled with font-saira
+      .replace(/<li[^>]*>([^<]*)<\/li>/g, '<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal">$1</li>')
 
       // Special handling for list items with bold terms
       .replace(
         /<li[^>]*><strong[^>]*>([^<]+)<\/strong>:\s*([^<]*)<\/li>/g,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong>: $2</li>',
+        '<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal"><strong class="font-saira font-bold">$1</strong>: $2</li>',
       )
 
       // Handle list items with just a bold term (no colon)
       .replace(
         /<li[^>]*><strong[^>]*>([^<:]+)<\/strong><\/li>/g,
-        '<li class="ml-4 text-gray-700 leading-relaxed font-normal"><strong class="font-bold">$1</strong></li>',
+        '<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal"><strong class="font-saira font-bold">$1</strong></li>',
       )
 
       // Ensure all headings have better typography, font family, and proper spacing
@@ -144,15 +143,21 @@ const formatUtils = {
         '<a href="$1" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">',
       )
 
-      // Ensure all internal links have blue styling with hover effect
+      // Ensure all internal links have blue styling with hover effect and font-saira
       .replace(
         /<a[^>]*href=["'](\/[^"']+)["'][^>]*>/g,
-        '<a href="$1" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">',
+        '<a href="$1" class="text-blue-600 hover:text-blue-800 font-saira font-normal transition-colors duration-200">',
       )
 
       // Ensure all figures have consistent styling with better spacing
       .replace(/<figure[^>]*>/g, '<figure class="my-6">')
       .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">');
+
+    // Ensure inline elements have font-saira
+    sanitized = sanitized
+      .replace(/<strong[^>]*>/g, '<strong class="font-saira font-bold">')
+      .replace(/<em[^>]*>/g, '<em class="font-saira italic font-normal">')
+      .replace(/<span[^>]*>/g, '<span class="font-saira">');
 
     // Remove any empty paragraphs
     sanitized = sanitized.replace(/<p[^>]*>\s*<\/p>/g, "");
@@ -842,7 +847,7 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
   `;
   const randomIntro = await callAzureOpenAI(introPrompt, 300);
 
-  // Create a more detailed humanization prompt with explicit bullet point instructions
+  // Create a more detailed humanization prompt with explicit FAQ preservation
   const prompt = `
     Start with this hook: "${randomIntro}". 
     
@@ -873,8 +878,15 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
     - When you see <INLINE_CONTENT>...</INLINE_CONTENT>, preserve the content inside and keep it inline with the preceding heading
     - DO NOT include a call-to-action at the end of each major section; only include a final call-to-action at the very end of the blog
 
+    FAQ SECTION (MANDATORY):
+    - You MUST preserve the FAQ section with the EXACT heading "## Frequently Asked Questions"
+    - The FAQ section MUST have EXACTLY 5-7 questions, each as a ### heading (e.g., ### What is X?)
+    - Preserve all existing FAQ questions and answers, but rewrite them in the same casual, humanized tone as the rest of the content
+    - Ensure each FAQ answer remains 100-150 words and retains its external link
+    - If the FAQ section is missing, generate a new one with 5-7 questions following the same requirements
+
     BULLET POINT REQUIREMENTS:
-    - For all bullet points (lines starting with "-"), format them as a single line with the term followed by a colon and description, like "- Quality Assurance: GetMoreBacklinks gives you the proof you need..."
+    - For all bullet points (lines starting with "-"), format them as a single line with the term followed by a colon and description, like "- **Term**: Description"
     - DO NOT split bullet points into multiple lines with a newline and colon (e.g., "- Term\n: Description")
     - Keep the term bold using **Term** syntax, followed by a colon and the description on the same line
     
@@ -882,6 +894,7 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
     - The H1 title (# Title)
     - All H2 headings (## Heading)
     - All H3 subheadings (### Subheading)
+    - The FAQ section with 5-7 questions and detailed answers
     - All bullet points and lists - IMPORTANT: Format bullet points as "- **Term**: Description" with the term in bold
     - All links and references
     - The overall structure and information
@@ -936,6 +949,18 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
     .replace(/markdown/gi, "content")
     .trim();
 
+  // Final check to ensure FAQs exist
+  if (!humanizedContent.includes("## Frequently Asked Questions")) {
+    console.warn("FAQ section missing after humanization; adding it back...");
+    const faqs = await generateFAQsWithExternalLinks(humanizedContent, coreTopic);
+    const conclusionMatch = humanizedContent.match(/## (Conclusion|Final Thoughts|Wrapping Up|In Summary)/i);
+    if (conclusionMatch) {
+      const conclusionIndex = humanizedContent.indexOf(conclusionMatch[0]);
+      return `${humanizedContent.slice(0, conclusionIndex)}\n\n${faqs}\n\n${humanizedContent.slice(conclusionIndex)}`;
+    }
+    return `${humanizedContent}\n\n${faqs}`;
+  }
+
   return humanizedContent;
 }
 
@@ -944,34 +969,34 @@ async function generateArticleFromScrapedData(
   userId: string,
   humanizeLevel: "normal" | "hardcore" = "normal",
 ): Promise<ArticleResult> {
-  console.log(`Generating article from scraped data for topic: ${scrapedData.coreTopic}`)
-  const now = new Date().toISOString().split("T")[0]
-  const tempFileName = uuidv4() + ".md"
+  console.log(`Generating article from scraped data for topic: ${scrapedData.coreTopic}`);
+  const now = new Date().toISOString().split("T")[0];
+  const tempFileName = uuidv4() + ".md";
 
   try {
     // Generate title
-    console.log("Generating simple title based on scraped data")
-    const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData)
-    console.log(`Generated title: ${simpleTitle}`)
+    console.log("Generating simple title based on scraped data");
+    const simpleTitle = await generateEnhancedTitle(scrapedData.coreTopic, userId, scrapedData);
+    console.log(`Generated title: ${simpleTitle}`);
 
     // Add delay
-    console.log("Waiting 15 seconds before generating first part...")
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+    console.log("Waiting 15 seconds before generating first part...");
+    await new Promise((resolve) => setTimeout(resolve, 15000));
 
     // Format research data
-    const researchData = scrapedData.researchResults || []
+    const researchData = scrapedData.researchResults || [];
     const formattedResearch = researchData
       .map((item, index) => `Source ${index + 1}: ${item.url}\nContent: ${item.content.slice(0, 300)}...`)
       .join("\n\n")
-      .slice(0, 15000)
-    console.log(`Using ${researchData.length} research sources`)
+      .slice(0, 15000);
+    console.log(`Using ${researchData.length} research sources`);
 
     // Get external links
-    const externalLinks = await findAuthorityExternalLinks(scrapedData.coreTopic, 10)
-    const formattedExternalLinks = externalLinks.join(", ")
+    const externalLinks = await findAuthorityExternalLinks(scrapedData.coreTopic, 10);
+    const formattedExternalLinks = externalLinks.join(", ");
 
     // Generate first half
-    console.log("Generating first part of the article")
+    console.log("Generating first part of the article");
     const firstPartPrompt = `
       Write the FIRST HALF (introduction and first 3-4 sections) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
       
@@ -990,7 +1015,7 @@ async function generateArticleFromScrapedData(
       - External Links to Include: ${formattedExternalLinks}
       
       CRITICAL REQUIREMENTS:
-      - Target word count: 700-750 words for this FIRST HALF
+      - Target word count: 1000-1250 words for this FIRST HALF
       - Focus primarily on the main topic from the scraped website
       - Occasionally mix in related topics or industry insights
       - ABSOLUTELY NO REPETITION - each paragraph must contain unique information
@@ -1005,105 +1030,102 @@ async function generateArticleFromScrapedData(
       - INCLUDE A CLEAR CALL-TO-ACTION at the end of each major section
       
       Return formatted content for the FIRST HALF only.
-    `
-    const firstPartContent = await callAzureOpenAI(firstPartPrompt, 16384)
-    console.log(`First part generated (${countWords(firstPartContent)} words).`)
+    `;
+    const firstPartContent = await callAzureOpenAI(firstPartPrompt, 16384);
+    console.log(`First part generated (${countWords(firstPartContent)} words).`);
 
     // Delay before second half
-    console.log("Waiting 20 seconds before generating second part...")
-    await new Promise((resolve) => setTimeout(resolve, 20000))
+    console.log("Waiting 20 seconds before generating second part...");
+    await new Promise((resolve) => setTimeout(resolve, 20000));
 
     // Dedupe first part
-    const firstPartDeduped = await removeRepetitiveContent(firstPartContent, scrapedData.coreTopic)
+    const firstPartDeduped = await removeRepetitiveContent(firstPartContent, scrapedData.coreTopic);
 
     // Generate second half with FAQs
-    console.log("Generating second part of the article with FAQs")
-    const secondPartPrompt = `
-      Write the SECOND HALF (remaining sections, FAQs, conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
-      
-      FIRST HALF:
-      ${firstPartDeduped.slice(0, 500)}...
-      
-      USE THIS RESEARCH DATA:
-      - Core Topic: ${scrapedData.coreTopic}
-      - Keywords to Include: ${scrapedData.extractedKeywords
-        .slice(5, 10)
-        .map((k) => k.keyword)
-        .join(", ")}
-      - Research Sources: ${scrapedData.researchResults
-        .map((r) => r.url)
-        .slice(0, 3)
-        .join(", ")}
-      - Brand Info: ${scrapedData.brandInfo}
-      - YouTube Video to Reference: ${scrapedData.youtubeVideo || "None"}
-      - Research Details: ${formattedResearch}
-      - External Links to Include: ${formattedExternalLinks}
-      
-      CRITICAL REQUIREMENTS:
-      - Target word count: 700-750 words for this SECOND HALF
-      - Focus primarily on the main topic from the scraped website
-      - Occasionally mix in related topics or industry insights
-      - ABSOLUTELY NO REPETITION from first half - each paragraph must be unique
-      - Include specific examples and data points from the research
-      - Cite at least 3 different sources from the research data
-      - Include at least 2-3 aggressive facts or shocking statistics
-      - INCLUDE AT LEAST 3-4 MORE EXTERNAL LINKS: [text](https://example.com)
-      - INCLUDE AT LEAST 2-3 MORE INTERNAL LINKS: [text](/blog/another-post)
-      - Structure: 3-4 H2 sections, FAQs (## Frequently Asked Questions) with 5 questions (### Question?), conclusion
-      - FAQs: Each question must have a detailed answer (2-3 sentences) with at least one external link
-      - Use natural, conversational language
-      - NEVER use phrases like "In this section we will discuss"
-      - INCLUDE A CLEAR CALL-TO-ACTION at the end of each major section
-      - End with a strong conclusion and final call-to-action
-      
-      Return formatted content for the SECOND HALF only.
-    `
-    const secondPartContent = await callAzureOpenAI(secondPartPrompt, 16384)
-    console.log(`Second part generated (${countWords(secondPartContent)} words).`)
+    // Inside generateArticleFromScrapedData function
+// Generate second half with FAQs
+console.log("Generating second part of the article with FAQs");
+const secondPartPrompt = `
+  Write the SECOND HALF (remaining sections, FAQs, conclusion) of a comprehensive blog post about "${scrapedData.coreTopic}" with title "${simpleTitle}".
+  
+  FIRST HALF:
+  ${firstPartDeduped.slice(0, 500)}...
+  
+  USE THIS RESEARCH DATA:
+  - Core Topic: ${scrapedData.coreTopic}
+  - Keywords to Include: ${scrapedData.extractedKeywords
+    .slice(5, 10)
+    .map((k) => k.keyword)
+    .join(", ")}
+  - Research Sources: ${scrapedData.researchResults
+    .map((r) => r.url)
+    .slice(0, 3)
+    .join(", ")}
+  - Brand Info: ${scrapedData.brandInfo}
+  - YouTube Video to Reference: ${scrapedData.youtubeVideo || "None"}
+  - Research Details: ${formattedResearch}
+  - External Links to Include: ${formattedExternalLinks}
+  
+  CRITICAL REQUIREMENTS:
+  - Target word count: 1000-1200 words for this SECOND HALF
+  - Focus primarily on the main topic from the scraped website
+  - Occasionally mix in related topics or industry insights
+  - ABSOLUTELY NO REPETITION from first half - each paragraph must be unique
+  - Include specific examples and data points from the research
+  - Cite at least 3 different sources from the research data
+  - Include at least 2-3 aggressive facts or shocking statistics
+  - INCLUDE AT LEAST 3-4 MORE EXTERNAL LINKS: [text](https://example.com)
+  - INCLUDE AT LEAST 2-3 MORE INTERNAL LINKS: [text](/blog/another-post)
+  - Structure: 3-4 H2 sections, FAQs (## Frequently Asked Questions), conclusion
+  
+  FAQ SECTION (MANDATORY):
+  - You MUST include an FAQ section with the EXACT heading "## Frequently Asked Questions"
+  - The FAQ section MUST have EXACTLY 5-7 questions, each as a ### heading (e.g., ### What is X?)
+  - Each question MUST have a detailed answer (100-150 words each)
+  - Each answer MUST include at least one external link to an authoritative source using the format [text](https://example.com)
+  - Questions should cover common concerns, misconceptions, or practical applications related to "${scrapedData.coreTopic}"
+  - Answers must be unique, not repeating earlier content
+  - Place the FAQ section AFTER the main content sections but BEFORE the conclusion
+  
+  - Use natural, conversational language
+  - NEVER use phrases like "In this section we will discuss"
+  - INCLUDE A CLEAR CALL-TO-ACTION at the end of each major section (EXCEPT the FAQ section)
+  - End with a strong conclusion (3-5 sentences) and final call-to-action
+  
+  Return formatted content for the SECOND HALF only.
+`;
+const secondPartContent = await callAzureOpenAI(secondPartPrompt, 16384);
+console.log(`Second part generated (${countWords(secondPartContent)} words).`);
 
     // Combine parts
-    console.log("Waiting 10 seconds before combining parts...")
-    await new Promise((resolve) => setTimeout(resolve, 10000))
-    const combinedContent = `${firstPartDeduped}\n\n${secondPartContent}`
+    console.log("Waiting 10 seconds before combining parts...");
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    const combinedContent = `${firstPartDeduped}\n\n${secondPartContent}`;
 
     // Format content
-    console.log("Waiting 15 seconds before formatting...")
-    await new Promise((resolve) => setTimeout(resolve, 15000))
-    const formattedContent = await formatContentWithOpenAI(combinedContent, scrapedData.coreTopic, simpleTitle)
+    console.log("Waiting 15 seconds before formatting...");
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    const formattedContent = await formatContentWithOpenAI(combinedContent, scrapedData.coreTopic, simpleTitle);
 
     // Dedupe combined content
-    console.log("Aggressively checking for repetitive content...")
-    const deduplicatedContent = await removeRepetitiveContent(formattedContent, scrapedData.coreTopic)
+    console.log("Aggressively checking for repetitive content...");
+    const deduplicatedContent = await removeRepetitiveContent(formattedContent, scrapedData.coreTopic);
 
-    // Check and ensure FAQs exist (only if missing, but secondPartPrompt already includes them)
-    console.log("Checking if FAQs exist...")
-    let contentWithFAQs = deduplicatedContent
-    if (!contentWithFAQs.includes("## Frequently Asked Questions")) {
-      console.log("No FAQs found, adding them...")
-      const faqPrompt = `
-        Add a FAQ section to this blog post about "${scrapedData.coreTopic}".
-        Start with "## Frequently Asked Questions"
-        Include 5 questions as "### Question?" with detailed answers (2-3 sentences each)
-        Each answer MUST include at least one external link: [text](https://example.com)
-        Use these links: ${formattedExternalLinks}
-        Blog content: ${contentWithFAQs.slice(0, 5000)}...
-        Insert FAQs before the conclusion (last H2 section).
-        Return the full blog post with FAQs added.
-      `
-      contentWithFAQs = await callAzureOpenAI(faqPrompt, 16384)
-    }
+    // Ensure FAQs exist with stricter enforcement
+    console.log("Ensuring FAQs are present with 5-7 questions...");
+    const contentWithFAQs = await ensureFAQsExist(deduplicatedContent, scrapedData.coreTopic);
 
     // Ensure sufficient links
-    console.log("Checking if content has sufficient links...")
-    const externalLinkRegex = /\[([^\]]+)\]\s*$$https?:\/\/[^)]+$$/g
-    const internalLinkRegex = /\[([^\]]+)\]\s*$$\/[^)]+$$/g
-    const existingExternalLinks = contentWithFAQs.match(externalLinkRegex) || []
-    const internalLinks = contentWithFAQs.match(internalLinkRegex) || []
-    let contentWithLinks = contentWithFAQs
+    console.log("Checking if content has sufficient links...");
+    const externalLinkRegex = /\[([^\]]+)\]\s*\((https?:\/\/[^)]+)\)/g;
+    const internalLinkRegex = /\[([^\]]+)\]\s*\(\/[^)]+\)/g;
+    const existingExternalLinks = contentWithFAQs.match(externalLinkRegex) || [];
+    const internalLinks = contentWithFAQs.match(internalLinkRegex) || [];
+    let contentWithLinks = contentWithFAQs;
     if (existingExternalLinks.length < 7 || internalLinks.length < 5) {
       console.log(
         `Found ${existingExternalLinks.length} external links and ${internalLinks.length} internal links. Adding more...`,
-      )
+      );
       const linksPrompt = `
         Add more links to this blog post about "${scrapedData.coreTopic}".
         Current: ${existingExternalLinks.length} external (need 7), ${internalLinks.length} internal (need 5)
@@ -1113,61 +1135,61 @@ async function generateArticleFromScrapedData(
         Insert naturally where relevant, no new sections.
         Blog content: ${contentWithLinks}
         Return the full blog post with additional links.
-      `
-      contentWithLinks = await callAzureOpenAI(linksPrompt, 16384)
+      `;
+      contentWithLinks = await callAzureOpenAI(linksPrompt, 16384);
     }
 
     // Remove leading colons
-    console.log("Removing any leading colons...")
-    const contentWithoutColons = removeLeadingColons(contentWithLinks)
+    console.log("Removing any leading colons...");
+    const contentWithoutColons = removeLeadingColons(contentWithLinks);
 
     // Humanize content
-    console.log("Applying deep humanization...")
+    console.log("Applying deep humanization...");
     const humanizedContent = humanizeLevel === "hardcore"
       ? await hardcoreHumanizeContent(contentWithoutColons, scrapedData.coreTopic)
-      : await deepHumanizeContent(contentWithoutColons, scrapedData.coreTopic)
+      : await deepHumanizeContent(contentWithoutColons, scrapedData.coreTopic);
 
     // Fix markdown links
-    console.log("Fixing markdown link formatting...")
-    const fixedMarkdownLinks = fixMarkdownLinks(humanizedContent)
+    console.log("Fixing markdown link formatting...");
+    const fixedMarkdownLinks = fixMarkdownLinks(humanizedContent);
 
     // Add YouTube video
-    console.log("Finding a YouTube video...")
-    const youtubeVideo = await findYouTubeVideo(scrapedData.coreTopic, fixedMarkdownLinks)
-    let youtubeEmbed = youtubeVideo ? createYouTubeEmbed(youtubeVideo) : ""
+    console.log("Finding a YouTube video...");
+    const youtubeVideo = await findYouTubeVideo(scrapedData.coreTopic, fixedMarkdownLinks);
+    let youtubeEmbed = youtubeVideo ? createYouTubeEmbed(youtubeVideo) : "";
 
     // Generate tables
-    console.log("Generating tables...")
-    const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks)
+    console.log("Generating tables...");
+    const contentTables = await generateContentTables(scrapedData.coreTopic, fixedMarkdownLinks);
 
     // Convert to HTML
-    console.log("Waiting 8 seconds before converting to HTML...")
-    await new Promise((resolve) => setTimeout(resolve, 8000))
+    console.log("Waiting 8 seconds before converting to HTML...");
+    await new Promise((resolve) => setTimeout(resolve, 8000));
     let htmlContent = formatUtils.convertMarkdownToHtml(fixedMarkdownLinks);
     // Insert YouTube video
     if (youtubeEmbed) {
-      const headingMatches = htmlContent.match(/<h[23][^>]*>.*?<\/h[23]>/gi) || []
+      const headingMatches = htmlContent.match(/<h[23][^>]*>.*?<\/h[23]>/gi) || [];
       const insertPos = headingMatches.length >= 2
         ? htmlContent.indexOf(headingMatches[1]) + headingMatches[1].length
         : headingMatches.length === 1
           ? htmlContent.indexOf(headingMatches[0]) + headingMatches[0].length
-          : htmlContent.indexOf("</p>") + 4
-      htmlContent = htmlContent.slice(0, insertPos) + youtubeEmbed + htmlContent.slice(insertPos)
+          : htmlContent.indexOf("</p>") + 4;
+      htmlContent = htmlContent.slice(0, insertPos) + youtubeEmbed + htmlContent.slice(insertPos);
     }
 
     // Insert tables
     if (contentTables.length > 0) {
-      const paragraphs = htmlContent.match(/<\/p>/g) || []
+      const paragraphs = htmlContent.match(/<\/p>/g) || [];
       if (paragraphs.length >= 6 && contentTables[0]) {
-        const thirdParagraphPos = findNthOccurrence(htmlContent, "</p>", 3)
+        const thirdParagraphPos = findNthOccurrence(htmlContent, "</p>", 3);
         if (thirdParagraphPos !== -1) {
-          htmlContent = htmlContent.slice(0, thirdParagraphPos + 4) + contentTables[0] + htmlContent.slice(thirdParagraphPos + 4)
+          htmlContent = htmlContent.slice(0, thirdParagraphPos + 4) + contentTables[0] + htmlContent.slice(thirdParagraphPos + 4);
         }
       }
       if (paragraphs.length >= 10 && contentTables[1]) {
-        const eighthParagraphPos = findNthOccurrence(htmlContent, "</p>", 8)
+        const eighthParagraphPos = findNthOccurrence(htmlContent, "</p>", 8);
         if (eighthParagraphPos !== -1) {
-          htmlContent = htmlContent.slice(0, eighthParagraphPos + 4) + contentTables[1] + htmlContent.slice(eighthParagraphPos + 4)
+          htmlContent = htmlContent.slice(0, eighthParagraphPos + 4) + contentTables[1] + htmlContent.slice(eighthParagraphPos + 4);
         }
       }
     }
@@ -1175,18 +1197,18 @@ async function generateArticleFromScrapedData(
     // Final cleanup
     let finalHtmlContent = htmlContent
       .replace(/<p[^>]*>\s*:\s*/g, '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
-      .replace(/<li[^>]*>\s*:\s*/g, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">')
-    finalHtmlContent = await styleExternalLinks(finalHtmlContent)
-    finalHtmlContent = processContentBeforeSaving(finalHtmlContent)
+      .replace(/<li[^>]*>\s*:\s*/g, '<li class="ml-6 pl-2 list-disc text-gray-700 mb-2">');
+    finalHtmlContent = await styleExternalLinks(finalHtmlContent);
+    finalHtmlContent = processContentBeforeSaving(finalHtmlContent);
 
     // Prepare result
-    const headings = formattedContent.match(/^#{1,3}\s+(.+)$/gm)?.map((h) => h.replace(/^#{1,3}\s+/, "")) || []
+    const headings = formattedContent.match(/^#{1,3}\s+(.+)$/gm)?.map((h) => h.replace(/^#{1,3}\s+/, "")) || [];
     const keywords = scrapedData.extractedKeywords
       .slice(0, 5)
       .map((k) => ({
         keyword: k.keyword,
         difficulty: k.relevance > 7 ? "High" : k.relevance > 4 ? "Medium" : "Low",
-      }))
+      }));
 
     return {
       blogPost: finalHtmlContent,
@@ -1197,10 +1219,10 @@ async function generateArticleFromScrapedData(
       tempFileName,
       title: simpleTitle,
       timestamp: now,
-    }
+    };
   } catch (error: any) {
-    console.error(`Error generating article: ${error.message}`)
-    throw new Error(`Article generation failed: ${error.message}`)
+    console.error(`Error generating article: ${error.message}`);
+    throw new Error(`Article generation failed: ${error.message}`);
   }
 }
 
@@ -1250,49 +1272,44 @@ async function generateFAQsWithExternalLinks(content: string, topic: string): Pr
   return `\n\n${faqs.trim()}`
 }
 
-// Modify the ensureFAQsExist function to use our new function with external links
 async function ensureFAQsExist(content: string, topic: string): Promise<string> {
-  console.log("Ensuring FAQs with external links are properly included...")
+  console.log("Ensuring FAQs with external links are properly included...");
 
-  // Check if FAQs already exist in the content
-  if (content.includes("## Frequently Asked Questions") || content.includes("## FAQ") || content.includes("## FAQs")) {
-    console.log("FAQs already exist in content, ensuring they're properly formatted...")
-
-    // Ensure the existing FAQs are properly formatted
-    const faqCheckPrompt = `
-      Review the FAQ section in this content about "${topic}".
-      
-      CRITICAL REQUIREMENTS:
-      - There MUST be at least 4-5 high-quality, relevant FAQs with clear answers
-      - Each FAQ question MUST be formatted as a proper markdown heading with ## prefix
-      - Each question must be followed by a comprehensive answer (2-3 paragraphs)
-      - If the FAQ section exists but is inadequate, improve it
-      - If questions aren't properly formatted as ## headings, fix them
-      - Ensure proper spacing between questions and answers
-      - Do NOT use colons at the beginning of paragraphs in the answers
-      - Include at least 1-2 external links to authoritative sources in the FAQ answers
-      - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
-      
-      Content: ${content}
-      
-      Return the full content with properly formatted FAQs included.
-      Make sure the FAQ section starts with "## Frequently Asked Questions" as the main heading.
-    `
-
-    try {
-      const checkedContent = await callAzureOpenAI(faqCheckPrompt, 16384)
-      return checkedContent
-    } catch (error) {
-      console.error("Error checking existing FAQs:", error)
-      // If error, generate new FAQs and append
-      const newFAQs = await generateFAQsWithExternalLinks(content, topic)
-      return `${content}\n\n${newFAQs}`
+  // Check if FAQ section exists
+  if (!hasFAQSection(content)) {
+    console.log("No FAQs found, generating and adding them...");
+    const faqs = await generateFAQsWithExternalLinks(content, topic);
+    // Append FAQs before the conclusion, or at the end if no conclusion exists
+    const conclusionMatch = content.match(/<h2[^>]*>(Conclusion|Final Thoughts|Wrapping Up|In Summary)[^<]*<\/h2>/i);
+    if (conclusionMatch) {
+      const conclusionIndex = content.indexOf(conclusionMatch[0]);
+      return `${content.slice(0, conclusionIndex)}\n\n${faqs}\n\n${content.slice(conclusionIndex)}`;
     }
-  } else {
-    console.log("No FAQs found, generating and adding them...")
-    const faqs = await generateFAQsWithExternalLinks(content, topic)
-    return `${content}\n\n${faqs}`
+    return `${content}\n\n${faqs}`;
   }
+
+  console.log("FAQs already exist, verifying quality...");
+  const faqPrompt = `
+    Verify and enhance the FAQ section in this content about "${topic}".
+    
+    REQUIREMENTS:
+    - Ensure the FAQ section has the EXACT heading "## Frequently Asked Questions"
+    - Ensure there are EXACTLY 5-7 FAQs
+    - Each FAQ must be a ### heading (e.g., ### What is X?)
+    - Each answer must be 100-150 words with at least one external link [text](https://example.com)
+    - Answers must be unique, not repeating earlier content
+    - If fewer than 5 FAQs exist, add more to reach at least 5
+    - If more than 7 FAQs exist, keep only the first 7
+    - If answers are too short or lack links, expand and enhance them
+    - Keep existing FAQ structure unless improving it
+    - Preserve the placement of the FAQ section (e.g., before the conclusion)
+    
+    Content: ${content}
+    
+    Return the full content with an improved FAQ section starting with "## Frequently Asked Questions".
+  `;
+  const enhancedContent = await callAzureOpenAI(faqPrompt, 16384);
+  return enhancedContent;
 }
 
 // Add a new function to add external links to specific sections
@@ -1664,36 +1681,77 @@ async function styleExternalLinksEnhanced(htmlContent: string): Promise<string> 
   return updatedContent
 }
 
+function fixImagesInTables(content: string): string {
+  console.log("Checking for images inside tables and moving them outside...");
+  const tableWithImageRegex = /<table[^>]*>([\s\S]*?<figure[\s\S]*?<\/figure>[\s\S]*?)<\/table>/gi;
+  let updatedContent = content;
+  let match;
+  while ((match = tableWithImageRegex.exec(content)) !== null) {
+    const tableContent = match[0];
+    const innerContent = match[1];
+    const figureMatch = innerContent.match(/<figure[\s\S]*?<\/figure>/i);
+    if (!figureMatch) continue;
+    const figureTag = figureMatch[0];
+    const tableWithoutImage = tableContent.replace(figureTag, "");
+    updatedContent = updatedContent.replace(tableContent, `${tableWithoutImage}\n${figureTag}`);
+  }
+  return updatedContent;
+}
+
+
+
 async function enhanceBlogWithImages(blogContent: string, topic: string, imageCount = 2): Promise<string> {
   console.log(`Enhancing blog post with ${imageCount} images related to: ${topic}`);
 
   // Determine image placements and insert images
-  const { content } = await determineImagePlacements(blogContent, topic, imageCount);
+  let { content } = await determineImagePlacements(blogContent, topic, imageCount);
+  console.log("Content after image placement (first 500 chars):", content.slice(0, 500));
+
+  // Check if images were added
+  const hasImages = content.includes("<figure");
+  if (!hasImages) {
+    console.warn("No images detected from determineImagePlacements, adding fallback images...");
+    // Fallback: Add dummy images after the first two paragraphs
+    const paragraphs = content.split("</p>").filter(p => p.trim());
+    if (paragraphs.length >= 2) {
+      content = `${paragraphs[0]}</p>
+<figure class="my-6 mx-auto max-w-full"><img src="https://via.placeholder.com/600x400" alt="${topic} image 1"><figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">Placeholder for ${topic}</figcaption></figure>
+${paragraphs[1]}</p>${paragraphs.slice(2).join("</p>")}`;
+    }
+  }
+
+  // Check for images inside tables and move them outside
+  content = fixImagesInTables(content);
 
   // Sanitize and apply typography
   let finalContent = formatUtils.sanitizeHtml(content);
+  console.log("Content after sanitization (first 500 chars):", finalContent.slice(0, 500));
 
-  // Remove any stray ```html or ``` markers that might have been introduced
-  finalContent = finalContent.replace(/```html\s*|\s*```/g, "").trim();
-
+  // Robust removal of ```html, ```, and any variations at start/end or within
   finalContent = finalContent
-    .replace(/>\s+</g, "><")
-    .replace(/\s{2,}/g, " ")
-    .replace(/<\/figure><p/g, "</figure><p")
-    .replace(/<h1[^>]*>/g, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900">')
+    .replace(/^```html\s*([\s\S]*?)\s*```$/g, "$1")
+    .replace(/```html\s*|\s*```/g, "")
+    .replace(/^```[\s\S]*?```$/gm, "")
+    .trim();
+
+  // Apply font-saira to all text-containing elements
+  finalContent = finalContent
+    .replace(/<h1[^>]*>/g, '<h1 class="font-saira text-5xl font-bold mt-8 mb-6 text-gray-900 border-b pb-2">')
     .replace(/<h2[^>]*>/g, '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">')
     .replace(/<h3[^>]*>/g, '<h3 class="font-saira text-3xl font-bold mt-8 mb-4 text-gray-800">')
     .replace(/<p[^>]*>/g, '<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">')
     .replace(/<ul[^>]*>/g, '<ul class="pl-6 my-6 space-y-1">')
     .replace(
       /<li[^>]*>([^<]*)<\/li>/g,
-      '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div>$1</div></li>',
+      '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2 font-saira">•</span><div class="font-saira">$1</div></li>',
     )
     .replace(
       /<li[^>]*><strong[^>]*>([^<]+)<\/strong>:\s*([^<]*)<\/li>/g,
-      '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2">•</span><div><strong class="font-bold">$1</strong>: $2</div></li>',
+      '<li class="flex items-start mb-4"><span class="text-gray-800 mr-2 font-saira">•</span><div class="font-saira"><strong class="font-saira font-bold">$1</strong>: $2</div></li>',
     )
-    .replace(/<strong[^>]*>/g, '<strong class="font-bold">')
+    .replace(/<strong[^>]*>/g, '<strong class="font-saira font-bold">')
+    .replace(/<em[^>]*>/g, '<em class="font-saira italic font-normal">')
+    .replace(/<span[^>]*>/g, '<span class="font-saira">')
     .replace(/<figure[^>]*>/g, '<figure class="my-6 mx-auto max-w-full">')
     .replace(/<figcaption[^>]*>/g, '<figcaption class="text-sm text-center text-gray-500 mt-2 font-saira">');
 
@@ -1723,9 +1781,14 @@ async function enhanceBlogWithImages(blogContent: string, topic: string, imageCo
   // Remove duplicates after conclusion
   finalContent = await removeDuplicateContentAfterConclusion(finalContent);
 
+  // One last check for any lingering markers
+  finalContent = finalContent
+    .replace(/^```html\s*([\s\S]*?)\s*```$/g, "$1")
+    .replace(/```html\s*|\s*```/g, "")
+    .trim();
+
   return finalContent;
 }
-
 function processContentBeforeSaving(content: string): string {
   let processedContent = content;
 
@@ -1740,26 +1803,26 @@ function processContentBeforeSaving(content: string): string {
     if (cleanUrl.startsWith("http") || cleanUrl.startsWith("https")) {
       return `<a href="${cleanUrl}" class="text-orange-600 underline hover:text-orange-700 font-saira font-normal transition-colors duration-200" target="_blank" rel="noopener noreferrer">${cleanText}</a>`;
     } else if (cleanUrl.startsWith("/")) {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-saira font-normal transition-colors duration-200">${cleanText}</a>`;
     } else {
-      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-normal transition-colors duration-200">${cleanText}</a>`;
+      return `<a href="${cleanUrl}" class="text-blue-600 hover:text-blue-800 font-saira font-normal transition-colors duration-200">${cleanText}</a>`;
     }
   });
 
-  // Replace list items with paragraphs, avoiding $1 issues
+  // Replace list items with paragraphs, ensuring font-saira is preserved
   processedContent = processedContent.replace(
     /<li[^>]*>(?:<span[^>]*>•<\/span>)?<div>(.*?)<\/div><\/li>/g,
     (_, content) => {
       // Check if this is part of a numbered heading with inline content
       if (content.includes(":") && /^\d+\./.test(content)) {
-        return `<li class="ml-4 text-gray-700 leading-relaxed font-normal">${content}</li>`;
+        return `<li class="ml-4 text-gray-700 leading-relaxed font-saira font-normal">${content}</li>`;
       }
       return `<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">${content}</p>`;
     }
   );
 
-  // Ensure bold text is properly rendered
-  processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
+  // Ensure bold text is properly rendered with font-saira
+  processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, '<strong class="font-saira font-bold">$1</strong>');
 
   // Remove any ul/ol tags
   processedContent = processedContent.replace(/<\/?ul[^>]*>/g, "").replace(/<\/?ol[^>]*>/g, "");
@@ -2501,23 +2564,35 @@ async function formatContentWithOpenAI(content: string, coreTopic: string, simpl
 
 async function removeRepetitiveContent(content: string, coreTopic: string, existingPosts: string = ""): Promise<string> {
   const prompt = `
-    Remove any repetitive content from this blog post about "${coreTopic}".
-    Ensure that each paragraph contains unique information and that there is no duplication of ideas, examples, or phrases within the blog post itself.
+    Remove only EXACT repetitive content from this blog post about "${coreTopic}".
+    Keep the word count close to the original (${countWords(content)} words) by rewriting rather than deleting where possible.
     
-    Additionally, compare this blog post against existing posts to ensure it doesn't repeat ideas, examples, or topics already covered in those posts.
+    - Remove only identical sentences or phrases within the blog post itself
+    - Compare against existing posts and rewrite any overlapping ideas with new examples or angles
+    - Do NOT reduce length significantly; maintain 1500-2000 words
+    - Preserve all FAQs, headings, and structure
     
     Existing posts:
     ${existingPosts.slice(0, 5000) || "No existing posts available"}
     
-    If any section of the blog post repeats ideas from the existing posts, rewrite that section to cover a different aspect of "${coreTopic}" while maintaining the overall structure.
-    
     Content: ${content}
     
-    Return the content with all repetitive sections removed or rewritten to be unique.
-    Ensure the revised content maintains a natural, conversational tone and adheres to the original structure.
+    Return the content with exact repetitions removed or rewritten, maintaining length and structure.
   `;
   const deduplicatedContent = await callAzureOpenAI(prompt, 16384);
-  console.log(`Deduplicated content (first 200 chars): ${deduplicatedContent.slice(0, 200)}...`);
+  console.log(`Deduplicated content (${countWords(deduplicatedContent)} words).`);
+  
+  // Pad content if too short
+  if (countWords(deduplicatedContent) < 1500) {
+    console.log("Content too short, padding with additional details...");
+    const paddingPrompt = `
+      Add 300-500 words of unique, relevant content about "${coreTopic}" to this blog post.
+      Insert naturally within existing sections, avoiding repetition.
+      Content: ${deduplicatedContent}
+      Return the full content.
+    `;
+    return await callAzureOpenAI(paddingPrompt, 16384);
+  }
   return deduplicatedContent;
 }
 
@@ -2531,14 +2606,22 @@ async function hardcoreHumanizeContent(content: string, coreTopic: string): Prom
     - The blog should primarily focus on the main topic (${coreTopic}) from the scraped website
     - Occasionally mix in related topics or industry insights to make content feel more natural
     - These tangents should always connect back to the main topic naturally
-    - STRICTLY ENSURE there is NO repetitive content - each paragraph must contain unique information
     - Include at least 3-5 aggressive facts or shocking statistics that will grab attention
-    - Make sure the total word count is around 1500 words maximum
+    - Aim for a total word count around 1500-2000 words to allow full coverage
     - INCLUDE AT LEAST 5-7 EXTERNAL LINKS to authoritative sources throughout the content
     - Use natural anchor text for links that flows with the conversation
     - INCLUDE AT LEAST 3-4 INTERNAL LINKS to other pages on the same website (use relative URLs like "/blog/another-post")
     - NEVER include meta-commentary like "Here's the revised blog post..." or similar text
-    - DO NOT include a call-to-action at the end of each major section; only include a final call-to-action at the very end of the blog
+    - DO NOT include a call-to-action at the end of each major section; only include a final call-to-action at the very end
+    - KEEP ALL 5-7 FAQs INTACT with detailed, unique answers (even if they relate to earlier points)
+    - ENSURE THE CONCLUSION IS 3-5 SENTENCES summarizing key points with a personal twist
+
+    FAQ SECTION (MANDATORY):
+    - You MUST preserve the FAQ section with the EXACT heading "## Frequently Asked Questions"
+    - The FAQ section MUST have EXACTLY 5-7 questions, each as a ### heading (e.g., ### What is X?)
+    - Preserve all existing FAQ questions and answers, but rewrite them in the same raw, sarcastic tone as the rest of the content
+    - Ensure each FAQ answer remains 100-150 words and retains its external link
+    - If the FAQ section is missing, generate a new one with 5-7 questions following the same requirements
 
     HUMANIZATION REQUIREMENTS:
     1. Add personal anecdotes and stories that feel genuine (like "reminds me of that time I...")
@@ -2558,6 +2641,8 @@ async function hardcoreHumanizeContent(content: string, coreTopic: string): Prom
     - All H3 subheadings (### Subheading)
     - All bullet points and lists
     - All links and references
+    - The FAQ section with 5-7 questions and detailed answers
+    - The conclusion with 3-5 sentences
     - The overall structure and information
 
     FORMAT REQUIREMENTS:
@@ -2574,11 +2659,24 @@ async function hardcoreHumanizeContent(content: string, coreTopic: string): Prom
 
     Return pure content, no HTML or extra bolding, and NEVER use the word "markdown" anywhere.
     AVOID AI-FLAGGED WORDS like "unleash" or similar marketing jargon.
-    STRICTLY ENSURE there is NO repetition of content within the blog post.
+    ALLOW MINOR REPETITION IN FAQs AND CONCLUSION to preserve their full structure—focus on keeping them unique in tone and examples, not identical to earlier content.
   `;
 
   const hardcoreHumanizedContent = await callAzureOpenAI(prompt, 16384);
   console.log(`Hardcore humanized content (first 200 chars): ${hardcoreHumanizedContent.slice(0, 200)}...`);
+
+  // Final check to ensure FAQs exist
+  if (!hardcoreHumanizedContent.includes("## Frequently Asked Questions")) {
+    console.warn("FAQ section missing after hardcore humanization; adding it back...");
+    const faqs = await generateFAQsWithExternalLinks(hardcoreHumanizedContent, coreTopic);
+    const conclusionMatch = hardcoreHumanizedContent.match(/## (Conclusion|Final Thoughts|Wrapping Up|In Summary)/i);
+    if (conclusionMatch) {
+      const conclusionIndex = hardcoreHumanizedContent.indexOf(conclusionMatch[0]);
+      return `${hardcoreHumanizedContent.slice(0, conclusionIndex)}\n\n${faqs}\n\n${hardcoreHumanizedContent.slice(conclusionIndex)}`;
+    }
+    return `${hardcoreHumanizedContent}\n\n${faqs}`;
+  }
+
   return hardcoreHumanizedContent;
 }
 
@@ -2587,17 +2685,20 @@ function removeLeadingColons(content: string): string {
 }
 
 function hasFAQSection(content: string): boolean {
-  // Check if content already has a FAQ section
-  return (
-    content.includes("<h2>Frequently Asked Questions</h2>") ||
-    content.includes(
-      '<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">Frequently Asked Questions</h2>',
-    ) ||
-    content.includes("<h2>FAQ</h2>") ||
-    content.includes('<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">FAQ</h2>') ||
-    content.includes("<h2>FAQs</h2>") ||
-    content.includes('<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">FAQs</h2>')
-  )
+  // Check if content already has a FAQ section with various possible headings
+  const faqVariations = [
+    "Frequently Asked Questions",
+    "FAQ",
+    "FAQs",
+    "Common Questions",
+    "Questions and Answers",
+    "Q&A",
+  ];
+
+  return faqVariations.some((variation) => {
+    const regex = new RegExp(`<h2[^>]*>${variation}[^<]*</h2>`, "i");
+    return regex.test(content);
+  });
 }
 
 // Add a function to validate links in the content
@@ -2989,55 +3090,66 @@ async function removeDuplicateContentAfterConclusion(content: string): Promise<s
   console.log("Checking for duplicate content after the conclusion...");
 
   const prompt = `
-    I have a blog post in HTML format, and I need to ensure there's no duplicated content after the conclusion section.
+    I have a blog post in HTML format, and I need to ensure there's no duplicated content after the conclusion section, while preserving both the FAQ section and the conclusion itself.
     "Duplicated content" means repeating ideas, examples, phrases, or topics that already appear earlier in the blog post, even if the wording is slightly different.
     
     INSTRUCTIONS:
-    1. Identify the conclusion section by finding the last H2 heading (e.g., <h2 class="...">Conclusion</h2> or similar variations like "Wrapping Up", "Final Thoughts", etc.).
+    1. Identify the FAQ section by finding the H2 heading "<h2[^>]*>Frequently Asked Questions[^<]*</h2>" (case-insensitive).
+    2. Identify the conclusion section by finding the last H2 heading (e.g., <h2 class="...">Conclusion</h2> or similar variations like "Wrapping Up", "Final Thoughts", etc.).
        - If no clear "Conclusion" heading exists, treat the last H2 section as the conclusion.
-    2. Analyze all content AFTER this conclusion heading (including paragraphs, lists, or any text following it).
-    3. Compare this post-conclusion content with EVERYTHING that appears BEFORE the conclusion.
-    4. Detect any repetition of:
+    3. Analyze all content AFTER the conclusion heading (including paragraphs, lists, or any text following it).
+    4. Compare this post-conclusion content with EVERYTHING that appears BEFORE the conclusion.
+    5. Detect any repetition of:
        - Specific ideas or arguments
        - Examples or anecdotes
        - Key phrases or sentences (even if slightly rephrased)
        - Topics or subtopics already covered
-    5. REMOVE any duplicated content found after the conclusion while:
+    6. REMOVE any duplicated content found AFTER the conclusion paragraphs while:
+       - Preserving the FAQ section (including all its questions and answers) in its entirety
        - Preserving the conclusion heading itself
+       - KEEPING THE FULL CONCLUSION (3-5 sentences) even if it summarizes earlier points
        - Keeping any unique content after the conclusion (if it introduces new ideas not mentioned earlier)
        - Maintaining the original HTML structure and styling
        - Ensuring the final paragraph (if present) remains a strong call-to-action
-    6. If no duplicates are found, return the content unchanged.
-    7. If the post-conclusion content is entirely duplicative, remove it all except the heading and a single call-to-action paragraph (if present).
-    8. DO NOT add meta-commentary like "Here's the revised content..."—return only the cleaned-up HTML.
-    9. DO NOT alter content BEFORE the conclusion unless it's part of removing duplicates after it.
+    7. If no duplicates are found, return the content unchanged.
+    8. If the post-conclusion content (beyond the conclusion itself) is entirely duplicative, remove it all except the FAQ section, conclusion heading, conclusion, and call-to-action paragraph.
+    9. DO NOT add meta-commentary like "Here's the revised content..."—return only the cleaned-up HTML.
+    10. DO NOT alter content BEFORE or WITHIN the FAQ section or conclusion unless it's part of removing duplicates after the conclusion.
 
     Blog post content:
-    ${content.slice(0, 15000)}  <!-- Limiting size to avoid token issues, adjust as needed -->
+    ${content.slice(0, 15000)}
     
-    Return the full blog post in HTML format with any duplicated content after the conclusion removed.
+    Return the full blog post in HTML format with any duplicated content after the conclusion removed, but the FAQ section and conclusion itself fully intact.
   `;
 
   try {
     const cleanedContent = await callAzureOpenAI(prompt, 16384);
     console.log(`Content after removing duplicates post-conclusion (first 200 chars): ${cleanedContent.slice(0, 200)}...`);
 
-    // Final cleanup to ensure no stray artifacts
     const finalContent = cleanedContent
-      .replace(/<p[^>]*>\s*<\/p>/g, "") // Remove empty paragraphs
-      .replace(/\n{2,}/g, "\n\n") // Normalize line breaks
+      .replace(/<p[^>]*>\s*<\/p>/g, "")
+      .replace(/\n{2,}/g, "\n\n")
       .trim();
 
-    // Validate that we still have a conclusion
     if (!finalContent.match(/<h2[^>]*>(Conclusion|Final Thoughts|Wrapping Up|In Summary)[^<]*<\/h2>/i)) {
       console.warn("No conclusion found after cleaning; appending a basic one...");
       return `${finalContent}\n\n<h2 class="font-saira text-4xl font-bold mt-10 mb-5 text-gray-900">Conclusion</h2>\n\n<p class="font-saira text-gray-700 leading-relaxed font-normal my-4">Thanks for sticking with me—now go make it happen!</p>`;
     }
 
+    if (!hasFAQSection(finalContent)) {
+      console.warn("FAQ section missing after cleaning; re-adding it...");
+      const faqs = await generateFAQsWithExternalLinks(finalContent, topic);
+      const conclusionMatch = finalContent.match(/<h2[^>]*>(Conclusion|Final Thoughts|Wrapping Up|In Summary)[^<]*<\/h2>/i);
+      if (conclusionMatch) {
+        const conclusionIndex = finalContent.indexOf(conclusionMatch[0]);
+        return `${finalContent.slice(0, conclusionIndex)}\n\n${faqs}\n\n${finalContent.slice(conclusionIndex)}`;
+      }
+      return `${finalContent}\n\n${faqs}`;
+    }
+
     return finalContent;
   } catch (error: any) {
     console.error(`Error removing duplicate content after conclusion: ${error.message}`);
-    // Fallback: Return original content if OpenAI fails
     return content;
   }
 }

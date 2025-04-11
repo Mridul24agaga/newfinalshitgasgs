@@ -89,6 +89,7 @@ export default function Page() {
         <FeatureBentoGrid/>
         <ContentFeaturesSection/>
         <ComparisonSection/>
+        <PaymentPage/>
 
 
       

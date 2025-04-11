@@ -77,8 +77,8 @@ const plans: Plan[] = [
     },
     credits: 30,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 78% WITH ANNUAL BILLING",
-    annualDiscountPercentage: 78,
+    discount: "SAVE 68% WITH ANNUAL BILLING",
+    annualDiscountPercentage: 68,
     isBestValue: true,
     showOnAnnual: true,
     features: [
@@ -101,8 +101,8 @@ const plans: Plan[] = [
     },
     credits: 60,
     dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 78% WITH ANNUAL BILLING",
-    annualDiscountPercentage: 78,
+    discount: "SAVE 68% WITH ANNUAL BILLING",
+    annualDiscountPercentage: 68,
     showOnAnnual: true,
     features: [
       "60 professionally written blog posts per month",
@@ -374,84 +374,90 @@ export default function PaymentPage() {
           </button>
           {billingCycle === "annually" && (
             <span className="ml-2 bg-blue-50 text-[#294fd6] text-xs font-medium px-2 py-1 rounded-full self-center">
-              SAVE UP TO 78%
+              SAVE UP TO 68%
             </span>
           )}
         </div>
       </div>
 
       {/* Pricing Cards */}
-      <div
-        className={`grid grid-cols-1 ${billingCycle === "annually" ? "md:grid-cols-2" : "md:grid-cols-3 lg:grid-cols-5"} gap-6 max-w-[1400px] mx-auto px-4`}
-      >
-        {filteredPlans.map((plan) => (
-          <div
-            key={plan.id}
-            className={`border border-gray-200 rounded-md overflow-hidden min-w-[280px] ${plan.isBestValue ? "relative" : ""}`}
-          >
-            {plan.isBestValue && (
-              <div className="bg-[#294fd6] text-white text-center py-1 font-medium text-sm">BEST VALUE</div>
-            )}
-
-            <div className={`p-6 ${plan.isBestValue ? "" : "pt-7"}`}>
-              <div className="text-center">
-                <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
-                <p className="text-gray-600 text-sm mb-4 h-10">{plan.description}</p>
-              </div>
-
-              {billingCycle === "annually" && (
-                <div className="bg-blue-50 rounded-md py-1.5 px-2 mb-4 flex items-center justify-center">
-                  <Check className="h-4 w-4 text-[#294fd6] mr-1.5" />
-                  <span className="text-[#294fd6] text-xs font-medium">
-                    SAVE {plan.annualDiscountPercentage}% ANNUALLY
-                  </span>
-                </div>
+      <div className="max-w-[1400px] mx-auto px-4">
+        <div
+          className={`grid grid-cols-1 ${
+            billingCycle === "annually"
+              ? "md:grid-cols-2 max-w-[700px] mx-auto gap-6"
+              : "md:grid-cols-3 lg:grid-cols-5 gap-6"
+          }`}
+        >
+          {filteredPlans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`border border-gray-200 rounded-md overflow-hidden ${plan.isBestValue ? "relative" : ""}`}
+            >
+              {plan.isBestValue && (
+                <div className="bg-[#294fd6] text-white text-center py-1 font-medium text-sm">BEST VALUE</div>
               )}
 
-              <div className="text-center mb-1">
-                <div className="flex items-center justify-center">
-                  <span className="text-3xl font-bold">$</span>
-                  <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
+              <div className={`p-6 ${plan.isBestValue ? "" : "pt-7"}`}>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
+                  <p className="text-gray-600 text-sm mb-4 h-10">{plan.description}</p>
                 </div>
-                <div className="text-gray-500 text-sm">/month</div>
-              </div>
 
-              {billingCycle === "annually" && (
-                <div className="text-center mb-4 text-sm text-gray-600">
-                  ${getYearlyTotal(plan)} billed yearly ({plan.annualDiscountPercentage}% off)
+                {billingCycle === "annually" && (
+                  <div className="bg-blue-50 rounded-md py-1.5 px-2 mb-4 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-[#294fd6] mr-1.5" />
+                    <span className="text-[#294fd6] text-xs font-medium">
+                      SAVE {plan.annualDiscountPercentage}% ANNUALLY
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-center mb-1">
+                  <div className="flex items-center justify-center">
+                    <span className="text-3xl font-bold">$</span>
+                    <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
+                  </div>
+                  <div className="text-gray-500 text-sm">/month</div>
                 </div>
-              )}
 
-              <div className="bg-blue-50 rounded-md py-2 px-2 mb-4 text-center">
-                <span className="text-[#294fd6] font-medium">{plan.credits} credits/month</span>
-              </div>
+                {billingCycle === "annually" && (
+                  <div className="text-center mb-4 text-sm text-gray-600">
+                    ${getYearlyTotal(plan)} billed yearly ({plan.annualDiscountPercentage}% off)
+                  </div>
+                )}
 
-              <button
-                className={`w-full py-2.5 rounded-md font-medium mb-6 transition-all ${
-                  plan.isBestValue
-                    ? "bg-[#294fd6] text-white hover:bg-[#1e3eb8]"
-                    : "border border-[#294fd6] text-[#294fd6] hover:bg-blue-50"
-                }`}
-                onClick={() => handleSubscribe(plan)}
-                disabled={loading && selectedPlan === plan.id}
-              >
-                {loading && selectedPlan === plan.id ? "Processing..." : `Choose ${plan.name}`}
-              </button>
+                <div className="bg-blue-50 rounded-md py-2 px-2 mb-4 text-center">
+                  <span className="text-[#294fd6] font-medium">{plan.credits} credits/month</span>
+                </div>
 
-              <div>
-                <p className="font-medium mb-3">Includes:</p>
-                <ul className="space-y-2.5">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start">
-                      <Check className="h-4 w-4 text-[#294fd6] mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                <button
+                  className={`w-full py-2.5 rounded-md font-medium mb-6 transition-all ${
+                    plan.isBestValue
+                      ? "bg-[#294fd6] text-white hover:bg-[#1e3eb8]"
+                      : "border border-[#294fd6] text-[#294fd6] hover:bg-blue-50"
+                  }`}
+                  onClick={() => handleSubscribe(plan)}
+                  disabled={loading && selectedPlan === plan.id}
+                >
+                  {loading && selectedPlan === plan.id ? "Processing..." : `Choose ${plan.name}`}
+                </button>
+
+                <div>
+                  <p className="font-medium mb-3">Includes:</p>
+                  <ul className="space-y-2.5">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start">
+                        <Check className="h-4 w-4 text-[#294fd6] mr-2 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="max-w-3xl mx-auto bg-gray-50 rounded-xl p-8 border border-gray-200 mt-16 shadow-sm">
@@ -476,7 +482,7 @@ export default function PaymentPage() {
             </h4>
             <p className="text-gray-600">
               Annual billing offers significant savings compared to monthly billing. You'll be charged once per year
-              instead of monthly, with discounts of up to 78% depending on the plan.
+              instead of monthly, with discounts of up to 68% depending on the plan.
             </p>
           </div>
         </div>

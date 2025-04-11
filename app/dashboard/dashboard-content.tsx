@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { DashboardShell } from "./dashboard-shell"
 import { Loader2 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+import BlogsPage from "./blogs/page"
 
 export default function DashboardContent() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -71,11 +71,10 @@ export default function DashboardContent() {
     )
   }
 
-  // Only render dashboard if we have a user
+  // Only render blogs page if we have a user
   if (!user) {
     return null // This should rarely happen as we redirect in the useEffect
   }
 
-  return <DashboardShell user={user} />
+  return <BlogsPage user={user} />
 }
-
