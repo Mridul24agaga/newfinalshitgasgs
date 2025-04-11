@@ -879,7 +879,7 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
     - DO NOT include a call-to-action at the end of each major section; only include a final call-to-action at the very end of the blog
 
     FAQ SECTION (MANDATORY):
-    - You MUST preserve the FAQ section with the EXACT heading "## Frequently Asked Questions"
+    - You MUST preserve the FAQ section with the EXACT heading "<h2 class=\"font-saira text-3xl font-bold mt-10 mb-5 text-gray-900\">Frequently Asked Questions</h2>"
     - The FAQ section MUST have EXACTLY 5-7 questions, each as a ### heading (e.g., ### What is X?)
     - Preserve all existing FAQ questions and answers, but rewrite them in the same casual, humanized tone as the rest of the content
     - Ensure each FAQ answer remains 100-150 words and retains its external link
@@ -950,7 +950,7 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
     .trim();
 
   // Final check to ensure FAQs exist
-  if (!humanizedContent.includes("## Frequently Asked Questions")) {
+  if (!humanizedContent.includes("Frequently Asked Questions")) {
     console.warn("FAQ section missing after humanization; adding it back...");
     const faqs = await generateFAQsWithExternalLinks(humanizedContent, coreTopic);
     const conclusionMatch = humanizedContent.match(/## (Conclusion|Final Thoughts|Wrapping Up|In Summary)/i);
@@ -958,7 +958,7 @@ async function deepHumanizeContent(content: string, coreTopic: string): Promise<
       const conclusionIndex = humanizedContent.indexOf(conclusionMatch[0]);
       return `${humanizedContent.slice(0, conclusionIndex)}\n\n${faqs}\n\n${humanizedContent.slice(conclusionIndex)}`;
     }
-    return `${humanizedContent}\n\n${faqs}`;
+    return `${humanizedContent}\n\n${faqs}\n\n`;
   }
 
   return humanizedContent;
@@ -1236,12 +1236,11 @@ function findNthOccurrence(text: string, searchString: string, n: number): numbe
   return index
 }
 
-// Add a new function to generate FAQs with external links
 async function generateFAQsWithExternalLinks(content: string, topic: string): Promise<string> {
-  console.log(`Generating comprehensive FAQs with external links for topic: ${topic}`)
+  console.log(`Generating comprehensive FAQs with external links for topic: ${topic}`);
 
   // First, get authoritative external links for the topic
-  const externalLinks = await findAuthorityExternalLinks(topic, 8)
+  const externalLinks = await findAuthorityExternalLinks(topic, 8);
 
   const prompt = `
     Generate 5-7 frequently asked questions (FAQs) related to the content about "${topic}".
@@ -1251,25 +1250,30 @@ async function generateFAQsWithExternalLinks(content: string, topic: string): Pr
     - Questions should address common concerns, misconceptions, or interests
     - Answers must be detailed, informative, and valuable (at least 2-3 sentences each)
     - Include a mix of basic and advanced questions
-    - Format each question as a markdown heading (## Question) followed by a comprehensive answer
+    - Format each question as a markdown heading (### Question) followed by a comprehensive answer
     - IMPORTANT: Each answer MUST include at least one external link to an authoritative source
-    - Use these authoritative external links in your answers: ${externalLinks.join(", ")}
-    - Make sure each question is properly formatted with ## prefix
+    - Use these authoritative external links: ${externalLinks.join(", ")}
+    - Make sure each question is properly formatted with ### prefix
     - Ensure the questions are properly spaced with blank lines between them
     
     Content: ${content.slice(0, 5000)}
     
     Return a complete FAQ section with 5-7 questions and detailed answers.
-    Start with "## Frequently Asked Questions" as the main heading.
-  `
-  const faqs = await callAzureOpenAI(prompt, 16384)
+    Start with "## Frequently Asked Questions" as the main heading with text-3xl font size.
+  `;
 
-  // Ensure the FAQ section starts with the proper heading if it doesn't already
+  const faqs = await callAzureOpenAI(prompt, 16384);
+
+  // Ensure the FAQ section has proper spacing and size
   if (!faqs.trim().startsWith("## Frequently Asked Questions")) {
-    return `\n\n## Frequently Asked Questions\n\n${faqs.trim()}`
+    return `\n\n## Frequently Asked Questions\n\n${faqs.trim()}\n\n`;
   }
 
-  return `\n\n${faqs.trim()}`
+  // Add spacing and enforce H3 size for questions
+  return `\n\n${faqs.trim().replace(
+    "## Frequently Asked Questions",
+    '<h2 class="font-saira text-3xl font-bold mt-10 mb-5 text-gray-900">Frequently Asked Questions</h2>'
+  )}\n\n`;
 }
 
 async function ensureFAQsExist(content: string, topic: string): Promise<string> {
@@ -1285,7 +1289,7 @@ async function ensureFAQsExist(content: string, topic: string): Promise<string> 
       const conclusionIndex = content.indexOf(conclusionMatch[0]);
       return `${content.slice(0, conclusionIndex)}\n\n${faqs}\n\n${content.slice(conclusionIndex)}`;
     }
-    return `${content}\n\n${faqs}`;
+    return `${content}\n\n${faqs}\n\n`;
   }
 
   console.log("FAQs already exist, verifying quality...");
@@ -1293,7 +1297,7 @@ async function ensureFAQsExist(content: string, topic: string): Promise<string> 
     Verify and enhance the FAQ section in this content about "${topic}".
     
     REQUIREMENTS:
-    - Ensure the FAQ section has the EXACT heading "## Frequently Asked Questions"
+    - Ensure the FAQ section has the EXACT heading "<h2 class=\"font-saira text-3xl font-bold mt-10 mb-5 text-gray-900\">Frequently Asked Questions</h2>"
     - Ensure there are EXACTLY 5-7 FAQs
     - Each FAQ must be a ### heading (e.g., ### What is X?)
     - Each answer must be 100-150 words with at least one external link [text](https://example.com)
@@ -1306,7 +1310,7 @@ async function ensureFAQsExist(content: string, topic: string): Promise<string> 
     
     Content: ${content}
     
-    Return the full content with an improved FAQ section starting with "## Frequently Asked Questions".
+    Return the full content with an improved FAQ section starting with "<h2 class=\"font-saira text-3xl font-bold mt-10 mb-5 text-gray-900\">Frequently Asked Questions</h2>".
   `;
   const enhancedContent = await callAzureOpenAI(faqPrompt, 16384);
   return enhancedContent;
@@ -1779,7 +1783,7 @@ ${paragraphs[1]}</p>${paragraphs.slice(2).join("</p>")}`;
   finalContent = processContentBeforeSaving(finalContent);
 
   // Remove duplicates after conclusion
-  finalContent = await removeDuplicateContentAfterConclusion(finalContent);
+  finalContent = await removeDuplicateContentAfterConclusion(finalContent, topic);
 
   // One last check for any lingering markers
   finalContent = finalContent
@@ -2616,13 +2620,6 @@ async function hardcoreHumanizeContent(content: string, coreTopic: string): Prom
     - KEEP ALL 5-7 FAQs INTACT with detailed, unique answers (even if they relate to earlier points)
     - ENSURE THE CONCLUSION IS 3-5 SENTENCES summarizing key points with a personal twist
 
-    FAQ SECTION (MANDATORY):
-    - You MUST preserve the FAQ section with the EXACT heading "## Frequently Asked Questions"
-    - The FAQ section MUST have EXACTLY 5-7 questions, each as a ### heading (e.g., ### What is X?)
-    - Preserve all existing FAQ questions and answers, but rewrite them in the same raw, sarcastic tone as the rest of the content
-    - Ensure each FAQ answer remains 100-150 words and retains its external link
-    - If the FAQ section is missing, generate a new one with 5-7 questions following the same requirements
-
     HUMANIZATION REQUIREMENTS:
     1. Add personal anecdotes and stories that feel genuine (like "reminds me of that time I...")
     2. Include casual phrases like "man, you know what I mean?", "like, seriously though", "I'm not even kidding"
@@ -2664,19 +2661,6 @@ async function hardcoreHumanizeContent(content: string, coreTopic: string): Prom
 
   const hardcoreHumanizedContent = await callAzureOpenAI(prompt, 16384);
   console.log(`Hardcore humanized content (first 200 chars): ${hardcoreHumanizedContent.slice(0, 200)}...`);
-
-  // Final check to ensure FAQs exist
-  if (!hardcoreHumanizedContent.includes("## Frequently Asked Questions")) {
-    console.warn("FAQ section missing after hardcore humanization; adding it back...");
-    const faqs = await generateFAQsWithExternalLinks(hardcoreHumanizedContent, coreTopic);
-    const conclusionMatch = hardcoreHumanizedContent.match(/## (Conclusion|Final Thoughts|Wrapping Up|In Summary)/i);
-    if (conclusionMatch) {
-      const conclusionIndex = hardcoreHumanizedContent.indexOf(conclusionMatch[0]);
-      return `${hardcoreHumanizedContent.slice(0, conclusionIndex)}\n\n${faqs}\n\n${hardcoreHumanizedContent.slice(conclusionIndex)}`;
-    }
-    return `${hardcoreHumanizedContent}\n\n${faqs}`;
-  }
-
   return hardcoreHumanizedContent;
 }
 
@@ -3086,7 +3070,7 @@ function generatePlaceholderImages(count: number, topic: string): string[] {
   return placeholderImages;
 }
 
-async function removeDuplicateContentAfterConclusion(content: string): Promise<string> {
+async function removeDuplicateContentAfterConclusion(content: string, topic: string): Promise<string> {
   console.log("Checking for duplicate content after the conclusion...");
 
   const prompt = `
