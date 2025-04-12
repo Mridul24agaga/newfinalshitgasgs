@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu } from 'lucide-react'
+import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu } from "lucide-react"
 import { AppSidebar } from "@/app/components/sidebar"
 import { ProfileDropdown } from "@/app/components/profile-dropdown"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -68,19 +68,36 @@ export default function BlogsPage() {
 
         if (!user) return
 
-        // Fetch blogs for the current user
-        const { data, error } = await supabase
+        // Fetch blogs from the blogs table for the current user
+        const { data: blogsData, error: blogsError } = await supabase
           .from("blogs")
           .select("*")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (error) {
-          throw new Error(error.message)
+        if (blogsError) {
+          throw new Error(blogsError.message)
         }
 
-        setBlogs(data || [])
-        setFilteredBlogs(data || [])
+        // Fetch blogs from the headlinetoblog table for the current user
+        const { data: headlineToBlogData, error: headlineToBlogError } = await supabase
+          .from("headlinetoblog")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        if (headlineToBlogError) {
+          throw new Error(headlineToBlogError.message)
+        }
+
+        // Combine both datasets
+        const combinedBlogs = [...(blogsData || []), ...(headlineToBlogData || [])]
+
+        // Sort by created_at date (newest first)
+        combinedBlogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+        setBlogs(combinedBlogs)
+        setFilteredBlogs(combinedBlogs)
       } catch (err: any) {
         console.error("Error fetching blogs:", err)
         setError(err.message || "Failed to load blogs")
