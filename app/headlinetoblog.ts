@@ -313,7 +313,6 @@ const openai = new OpenAI({
   defaultHeaders: { "api-key": "***API_KEY_HIDDEN***" },
 })
 
-// Helper Functions
 async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<string> {
   try {
     console.log(`Calling OpenAI: ${prompt.slice(0, 100)}${prompt.length > 100 ? "..." : ""}`);
@@ -324,7 +323,12 @@ async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<strin
       temperature: 0.9,
       n: 1,
     });
-    const result = completion.choices[0]?.message?.content || "";
+    let result = completion.choices[0]?.message?.content || "";
+    // Remove markdown code block markers
+    result = result
+      .replace(/```html\s*\n?|\n?```/g, "")
+      .replace(/```.*?\n/g, "") // Catch any other code block types
+      .trim();
     // Sanitize any stray $1 references
     const sanitizedResult = result.replace(/\$1/g, "").trim();
     if (sanitizedResult !== result) {
