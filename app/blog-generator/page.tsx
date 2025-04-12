@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+
+import { useState, useRef } from "react"
 import {
   Sparkles,
   Zap,
@@ -18,15 +19,9 @@ import {
   Link2,
   ArrowLeft,
 } from "lucide-react"
-// Import the AppSidebar component
 import { AppSidebar } from "../components/sidebar"
 
-interface BlogGeneratorProps {
-  onGenerate: (url: string, humanizeLevel: "normal" | "hardcore") => void
-  loading: boolean
-}
-
-const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading }) => {
+export default function BlogGeneratorPage() {
   const [url, setUrl] = useState("")
   const [humanizeLevel, setHumanizeLevel] = useState<"normal" | "hardcore">("normal")
   const [progress, setProgress] = useState(0)
@@ -37,11 +32,12 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading }) =>
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [iframeError, setIframeError] = useState(false)
   const [isUrlValid, setIsUrlValid] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [loadingDots, setLoadingDots] = useState(0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const progressRef = useRef<NodeJS.Timeout | null>(null)
   const stepRef = useRef<NodeJS.Timeout | null>(null)
-  const [loadingDots, setLoadingDots] = useState(0)
 
   const generationSteps = [
     { icon: <Search className="w-5 h-5 text-blue-500" />, text: "Extracting website content" },
@@ -82,67 +78,59 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading }) =>
 
     setUrlEntered(true)
     setGenerationStarted(true)
-    onGenerate(formattedUrl, humanizeLevel)
+    setLoading(true)
+
+    // Simulate the generation process
+    generateBlogPost(formattedUrl, humanizeLevel)
   }
 
-  // Animate loading dots
-  useEffect(() => {
-    const dotsInterval = setInterval(() => {
-      setLoadingDots((prev) => (prev >= 3 ? 0 : prev + 1))
-    }, 500)
+  // Function to handle blog post generation
+  const generateBlogPost = (url: string, humanizeLevel: "normal" | "hardcore") => {
+    // Reset states when loading starts
+    setProgress(0)
+    setTimeRemaining(300)
+    setCurrentStep(0)
 
-    return () => clearInterval(dotsInterval)
-  }, [])
+    // Update progress every 3 seconds
+    progressRef.current = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = Math.min(prev + 1, 100)
+        if (newProgress === 100) {
+          // When progress reaches 100%, stop loading
+          setLoading(false)
+          clearAllIntervals()
+        }
+        return newProgress
+      })
+    }, 3000)
 
-  // Handle progress and timer during loading
-  useEffect(() => {
-    // Clear any existing intervals when loading state changes
+    // Update timer every second
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        const newTime = prev <= 0 ? 0 : prev - 1
+        return newTime
+      })
+    }, 1000)
+
+    // Update current step based on progress
+    stepRef.current = setInterval(() => {
+      setProgress((currentProgress) => {
+        if (currentProgress < 20) setCurrentStep(0)
+        else if (currentProgress < 40) setCurrentStep(1)
+        else if (currentProgress < 60) setCurrentStep(2)
+        else if (currentProgress < 80) setCurrentStep(3)
+        else setCurrentStep(4)
+        return currentProgress
+      })
+    }, 5000)
+  }
+
+  // Clear all intervals
+  const clearAllIntervals = () => {
     if (timerRef.current) clearInterval(timerRef.current)
     if (progressRef.current) clearInterval(progressRef.current)
     if (stepRef.current) clearInterval(stepRef.current)
-
-    if (loading) {
-      // Reset states when loading starts
-      setProgress(0)
-      setTimeRemaining(300)
-      setCurrentStep(0)
-
-      // Update progress every 3 seconds
-      progressRef.current = setInterval(() => {
-        setProgress((prev) => {
-          const newProgress = Math.min(prev + 1, 100)
-          return newProgress
-        })
-      }, 3000)
-
-      // Update timer every second
-      timerRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
-          const newTime = prev <= 0 ? 0 : prev - 1
-          return newTime
-        })
-      }, 1000)
-
-      // Update current step based on progress
-      stepRef.current = setInterval(() => {
-        setProgress((currentProgress) => {
-          if (currentProgress < 20) setCurrentStep(0)
-          else if (currentProgress < 40) setCurrentStep(1)
-          else if (currentProgress < 60) setCurrentStep(2)
-          else if (currentProgress < 80) setCurrentStep(3)
-          else setCurrentStep(4)
-          return currentProgress
-        })
-      }, 5000)
-    }
-
-    // Cleanup function
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      if (progressRef.current) clearInterval(progressRef.current)
-      if (stepRef.current) clearInterval(stepRef.current)
-    }
-  }, [loading]) // Only depend on loading state
+  }
 
   // Handle iframe loading and errors
   const handleIframeLoad = () => {
@@ -626,5 +614,3 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading }) =>
     </div>
   )
 }
-
-export default BlogGenerator
