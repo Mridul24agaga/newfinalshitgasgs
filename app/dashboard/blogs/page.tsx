@@ -184,7 +184,7 @@ export default function BlogsPage() {
       <AppSidebar />
 
       <div className="flex flex-col flex-1 w-full lg:pl-72">
-        <header className="sticky top-0 z-30 bg-gray-50 border-b border-gray-200">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
               <button
