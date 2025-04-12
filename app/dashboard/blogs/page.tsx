@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu } from "lucide-react"
+import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu } from 'lucide-react'
 import { AppSidebar } from "@/app/components/sidebar"
 import { ProfileDropdown } from "@/app/components/profile-dropdown"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+import Link from "next/link"
 
 interface BlogPost {
   id: string
@@ -183,7 +184,7 @@ export default function BlogsPage() {
       <AppSidebar />
 
       <div className="flex flex-col flex-1 w-full lg:pl-72">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <header className="sticky top-0 z-30 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
               <button
@@ -227,13 +228,14 @@ export default function BlogsPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <button
+                    <Link
+                      href="/generate-blog"
                       onClick={() => router.push("/blog-generatoriknjmu89-")}
                       className="px-4 py-2 bg-[#294fd6] text-white rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 text-sm font-medium flex items-center"
                     >
                       <PlusCircle className="h-4 w-4 mr-2" />
                       Create New Blog
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -350,7 +352,7 @@ export default function BlogsPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <button
-                                onClick={() => router.push(`/blogs/${blog.id}`)}
+                                onClick={() => router.push(`/generated/${blog.id}`)}
                                 className="text-blue-600 hover:text-blue-900 mr-3"
                                 title="View blog"
                               >

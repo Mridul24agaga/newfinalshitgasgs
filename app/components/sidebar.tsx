@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Home, FileText, Globe, Sparkles, Star, Menu, X } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
 
 interface AppSidebarProps {
@@ -15,6 +16,8 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClientComponentClient()
 
   // Flattened navigation items (including sub-items)
   const navigation = [
@@ -38,17 +41,27 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Handle sign out
+  // Handle sign out with Supabase
   async function handleSignOut() {
-    if (onSignOut) {
-      setIsSigningOut(true)
-      try {
+    setIsSigningOut(true)
+    try {
+      // If custom onSignOut is provided, call it first
+      if (onSignOut) {
         await onSignOut()
-      } catch (error) {
-        console.error("Error signing out:", error)
-      } finally {
-        setIsSigningOut(false)
+      } else {
+        // Otherwise use Supabase's built-in signOut
+        const { error } = await supabase.auth.signOut()
+        if (error) {
+          throw error
+        }
+        // Redirect to login page after successful sign out
+        router.push("/login")
+        router.refresh()
       }
+    } catch (error) {
+      console.error("Error signing out:", error)
+    } finally {
+      setIsSigningOut(false)
     }
   }
 
@@ -139,7 +152,7 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
-              <span>Log out</span>
+              <span>{isSigningOut ? "Logging out..." : "Log out"}</span>
             </button>
           </div>
         </div>

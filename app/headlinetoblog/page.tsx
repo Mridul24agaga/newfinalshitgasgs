@@ -4,7 +4,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { generateBlog } from "../headlinetoblog"
 import { AppSidebar } from "../components/sidebar"
 import {
   BookOpen,
@@ -105,9 +104,53 @@ export default function HeadlineToBlog() {
     setGeneratedPosts([])
 
     try {
-      // Call generateBlog with the correct argument order: url, headline, humanizeLevel
-      console.log(`Generating blog with headline: "${headline}", URL: "${website || 'None'}", Humanize Level: ${humanizeLevel}`)
-      const posts = await generateBlog(website || "", headline, humanizeLevel)
+      // Prepare payload for API request
+      const payload = {
+        url: website || "", // Send empty string if no URL provided
+        headline,
+        humanizeLevel,
+      }
+
+      console.log(`Sending request to generate blog with payload:`, payload)
+
+      // Call the API endpoint
+      const response = await fetch("/api/generate-blog", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      // Check for API errors
+      if (!response.ok || data.error) {
+        console.error("API error:", data.error || "Unknown error")
+        throw new Error(data.error || "Failed to generate blog post")
+      }
+
+      // Get user data
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id || ""
+
+      // Extract blog posts from response
+      const posts: BlogPost[] = data.blogPosts.map((post: any) => ({
+        id: post.id,
+        user_id: userId,
+        blog_post: post.content,
+        citations: post.citations,
+        created_at: new Date().toISOString(), // API doesn't return created_at, using current time
+        title: post.title,
+        timestamp: post.timestamp,
+        reveal_date: post.reveal_date,
+        url: post.url || null,
+        is_blurred: post.is_blurred || false,
+        needs_formatting: post.needs_formatting || false,
+      }))
+
+      console.log(`Received ${posts.length} blog post(s) from API`)
+
       setGeneratedPosts(posts)
 
       // Redirect to the generated post's page using the first post's id
@@ -120,7 +163,7 @@ export default function HeadlineToBlog() {
           .from("headlinetoblog")
           .select("id")
           .eq("id", postId)
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .eq("user_id", userId)
 
         if (postError || !postExists || postExists.length === 0) {
           console.error("Post verification failed:", postError?.message || "Post not found")
@@ -158,6 +201,29 @@ export default function HeadlineToBlog() {
       text = text.substring(0, maxLength) + "..."
     }
     return text
+  }
+
+  const handleViewPost = async (postId: string) => {
+    try {
+      // Verify the post exists before navigating
+      const { data: userData } = await supabase.auth.getUser()
+      const userId = userData.user?.id
+
+      const { data: postExists, error: postError } = await supabase
+        .from("headlinetoblog")
+        .select("id")
+        .eq("id", postId)
+        .eq("user_id", userId)
+
+      if (postError || !postExists || postExists.length === 0) {
+        setError("Post not found or you do not have access to it.")
+        return
+      }
+      router.push(`/generate/${postId}`)
+    } catch (err: any) {
+      console.error("Error viewing post:", err.message)
+      setError(`Failed to view post: ${err.message}`)
+    }
   }
 
   return (
@@ -271,30 +337,31 @@ export default function HeadlineToBlog() {
                         </div>
                       </div>
                     )}
-                  </form>
-                </div>
 
-                <div className="flex justify-end border-t border-gray-100 p-6">
-                  <button
-                    type="submit"
-                    onClick={handleGenerateBlog}
-                    disabled={loading || !headline.trim()}
-                    className={`flex items-center px-8 py-3 rounded-md text-white font-medium ${
-                      loading || !headline.trim() ? "bg-gray-400 cursor-not-allowed" : "bg-[#294fd6] hover:bg-[#1e3eb8]"
-                    } transition-colors`}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        Generate Blog Post
-                      </>
-                    )}
-                  </button>
+                    <div className="flex justify-end border-t border-gray-100 pt-6">
+                      <button
+                        type="submit"
+                        disabled={loading || !headline.trim()}
+                        className={`flex items-center px-8 py-3 rounded-md text-white font-medium ${
+                          loading || !headline.trim()
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-[#294fd6] hover:bg-[#1e3eb8]"
+                        } transition-colors`}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-5 w-5" />
+                            Generate Blog Post
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
 
@@ -330,9 +397,7 @@ export default function HeadlineToBlog() {
                           Generated on: {new Date(post.created_at).toLocaleString()}
                         </p>
                         {post.needs_formatting && (
-                          <p className="text-yellow-600 text-sm">
-                            This post needs formatting before publishing.
-                          </p>
+                          <p className="text-yellow-600 text-sm">This post needs formatting before publishing.</p>
                         )}
                       </div>
                     ))}
@@ -355,7 +420,7 @@ export default function HeadlineToBlog() {
                     <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-700 mb-2">No posts yet</h3>
                     <p className="text-gray-500 mb-6">
-                      You haven’t generated any blog posts yet. Create your first one!
+                      You haven't generated any blog posts yet. Create your first one!
                     </p>
                     <button
                       onClick={() => setActiveTab("generate")}
@@ -397,9 +462,6 @@ export default function HeadlineToBlog() {
                                 Needs Formatting
                               </span>
                             )}
-                            <span className="inline-block bg-white text-xs font-medium px-2 py-1 rounded-full border border-gray-200">
-                              {humanizeLevel === "hardcore" ? "Hardcore" : "Normal"}
-                            </span>
                           </div>
                         </div>
                       </div>
@@ -416,20 +478,7 @@ export default function HeadlineToBlog() {
                           <span>Full article</span>
                         </div>
                         <button
-                          onClick={async () => {
-                            // Verify the post exists before navigating
-                            const { data: postExists, error: postError } = await supabase
-                              .from("headlinetoblog")
-                              .select("id")
-                              .eq("id", post.id)
-                              .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-
-                            if (postError || !postExists || postExists.length === 0) {
-                              setError("Post not found or you do not have access to it.")
-                              return
-                            }
-                            router.push(`/generate/${post.id}`)
-                          }}
+                          onClick={() => handleViewPost(post.id)}
                           className="flex items-center px-3 py-1 text-sm border border-[#294fd6] text-[#294fd6] rounded-md hover:bg-[#294fd6] hover:text-white transition-colors"
                         >
                           View Post

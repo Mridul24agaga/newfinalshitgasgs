@@ -3,8 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
-import { FileText, Download, Copy, Loader2, Menu, Globe, Home, Lightbulb, Settings, Sparkles } from "lucide-react"
+import { FileText, Download, Copy, Loader2, Menu } from "lucide-react"
+import { AppSidebar } from "../components/sidebar"
 
 export default function SitemapGenerator() {
   const [url, setUrl] = useState("")
@@ -78,95 +78,8 @@ export default function SitemapGenerator() {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="w-72 bg-white flex flex-col h-screen text-gray-800 border-r border-gray-200">
-          <div className="flex items-center justify-center p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-md bg-[#294fd6] flex items-center justify-center border border-[#294fd6]/20">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-[#294fd6] to-[#6284e4] bg-clip-text text-transparent">
-                Sitemap Generator
-              </h1>
-            </div>
-          </div>
-
-          <div className="px-3 mb-4 mt-6">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Navigation</div>
-          </div>
-
-          <nav className="flex-1 px-3 overflow-y-auto space-y-1">
-            <Link
-              href="/"
-              className="flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent"
-            >
-              <Home className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200 text-gray-500 group-hover:text-[#294fd6]" />
-              Dashboard
-            </Link>
-
-            <Link
-              href="/"
-              className="flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group text-[#294fd6] bg-[#294fd6]/10 border-l-4 border-[#294fd6]"
-            >
-              <Globe className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200 text-[#294fd6]" />
-              Sitemap Generator
-            </Link>
-
-            <Link
-              href="/"
-              className="flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent"
-            >
-              <FileText className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200 text-gray-500 group-hover:text-[#294fd6]" />
-              Generated Sitemaps
-            </Link>
-
-            <Link
-              href="/"
-              className="flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent"
-            >
-              <Lightbulb className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200 text-gray-500 group-hover:text-[#294fd6]" />
-              SEO Tips
-            </Link>
-
-            <Link
-              href="/"
-              className="flex items-center px-4 py-3 text-[15px] font-medium rounded-xl transition-all duration-200 mb-1 group text-gray-700 hover:text-[#294fd6] hover:bg-[#294fd6]/5 border-l-4 border-transparent"
-            >
-              <Settings className="w-[18px] h-[18px] mr-3 flex-shrink-0 stroke-[1.5px] transition-colors duration-200 text-gray-500 group-hover:text-[#294fd6]" />
-              Settings
-            </Link>
-          </nav>
-
-          <div className="p-4 mt-auto">
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center">
-                  <FileText className="w-4 h-4 mr-2 text-[#294fd6]" />
-                  <p className="text-sm font-medium text-gray-800">Sitemaps</p>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm font-bold text-[#294fd6]">Free</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                <span className="text-sm font-medium text-gray-700">Basic Plan</span>
-                <Link
-                  href="/"
-                  className="bg-[#294fd6] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#1e3eb8] transition-all duration-300 border border-[#294fd6]"
-                >
-                  Upgrade
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Imported Sidebar Component */}
+      <AppSidebar />
 
       {/* Main content */}
       <div className="flex flex-col flex-1 w-full lg:pl-72">
@@ -283,4 +196,3 @@ export default function SitemapGenerator() {
     </div>
   )
 }
-
