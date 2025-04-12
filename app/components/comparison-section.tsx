@@ -1,4 +1,5 @@
 import { Check, X, Zap, Users, Award, Search, Shield } from "lucide-react"
+import Link from "next/link"
 
 export function ComparisonSection() {
   return (
@@ -347,9 +348,9 @@ export function ComparisonSection() {
           <h3 className="text-2xl font-bold text-gray-900 mb-6">
             Stop wasting time with AI-generated content that Google penalizes
           </h3>
-          <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full transition-colors">
-            Get Started with Human-Written Content
-          </button>
+          <Link href="/signup" className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full transition-colors">
+            Get Started For Free Today
+          </Link>
         </div>
       </div>
     </section>

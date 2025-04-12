@@ -1,44 +1,44 @@
-import { Calendar, Globe, ArrowRight, CheckCircle } from "lucide-react"
+import { Calendar, Globe, ArrowRight, CheckCircle, Zap, Link, FileText } from "lucide-react"
 
 export function FeatureBentoGrid() {
   return (
-    <section className="py-12 md:py-16 lg:py-24">
+    <section className="py-12 md:py-16 lg:py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4">
         {/* Why Choose Us Section */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Us</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Why Choose Us</h2>
           <div className="max-w-3xl mx-auto">
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-gray-600 mb-12">
               We combine cutting-edge AI technology with human expertise to deliver content that drives real results.
               Our platform is trusted by businesses of all sizes to create, publish, and optimize content that ranks.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
-                  <CheckCircle className="w-6 h-6 text-indigo-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 transform hover:-translate-y-1 duration-300">
+                <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <CheckCircle className="w-7 h-7 text-emerald-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-1">100% Human-Written</h3>
+                <h3 className="text-lg font-semibold mb-2">100% Human-Written</h3>
                 <p className="text-gray-600 text-center">
                   Content that passes AI detection and meets Google's standards
                 </p>
               </div>
 
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
-                  <CheckCircle className="w-6 h-6 text-indigo-600" />
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 transform hover:-translate-y-1 duration-300">
+                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <Zap className="w-7 h-7 text-purple-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-1">Full Automation</h3>
+                <h3 className="text-lg font-semibold mb-2">Full Automation</h3>
                 <p className="text-gray-600 text-center">
                   Set it and forget it with our complete content publishing system
                 </p>
               </div>
 
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
-                  <CheckCircle className="w-6 h-6 text-indigo-600" />
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 transform hover:-translate-y-1 duration-300">
+                <div className="w-14 h-14 bg-cyan-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <Globe className="w-7 h-7 text-cyan-600" />
                 </div>
-                <h3 className="text-lg font-semibold mb-1">SEO Optimized</h3>
+                <h3 className="text-lg font-semibold mb-2">SEO Optimized</h3>
                 <p className="text-gray-600 text-center">
                   Built-in linking and optimization for maximum search visibility
                 </p>
@@ -48,70 +48,163 @@ export function FeatureBentoGrid() {
         </div>
 
         {/* Top row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Automatic Blog Publishing Card */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Automatic Blog Publishing</h2>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition-all overflow-hidden group">
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                Automatic Blog Publishing
+              </h2>
+              <div className="bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1 rounded-full">Premium</div>
+            </div>
+
+            <p className="text-gray-600 mb-8 text-base leading-relaxed">
               AutoBlog allows you to automatically schedule or publish high-quality content. Run your blog on auto-pilot
               with both internal and external linking, making Journalist AI your full-time employee.
             </p>
 
-            <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-3">
+            <div className="mb-6 bg-gray-50 rounded-xl p-6 border border-gray-100 transform group-hover:scale-105 transition-transform duration-300">
+              <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-2">
-                    <Calendar className="w-4 h-4 text-indigo-600" />
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                    <Calendar className="w-5 h-5 text-purple-600" />
                   </div>
-                  <span className="text-sm font-medium text-gray-800">Publishing Schedule</span>
+                  <span className="text-base font-medium text-gray-800">Publishing Schedule</span>
                 </div>
-                <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Active</div>
+                <div className="text-xs bg-green-100 text-green-800 px-3 py-1.5 rounded-full font-semibold">Active</div>
               </div>
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-xs text-gray-500">Mon</div>
-                <div className="text-xs text-gray-500">Wed</div>
-                <div className="text-xs text-gray-500">Fri</div>
-                <div className="text-xs text-gray-500">Sun</div>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-indigo-500 rounded-full"></div>
-                </div>
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-indigo-500 rounded-full"></div>
-                </div>
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <div className="w-6 h-6 bg-indigo-500 rounded-full"></div>
-                </div>
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"></div>
-              </div>
-            </div>
-          </div>
 
-          {/* Blog Preview UI Card */}
-          <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-            <div className="p-6">
-              {/* Browser chrome */}
-              <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-                {/* Browser top bar */}
-                <div className="p-2 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex space-x-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-                  </div>
-                  <div className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full flex items-center mx-auto">
+              {/* Calendar visualization */}
+              <div className="mb-4">
+                {/* Month header */}
+                <div className="flex justify-between items-center mb-3">
+                  <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="10"
-                      height="10"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="mr-1"
+                      className="text-gray-600"
+                    >
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                  <div className="text-sm font-medium">October 2023</div>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-600"
+                    >
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Days of week */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                    <div key={i} className="text-xs font-medium text-gray-500 text-center">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {/* First week with empty days */}
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 rounded-md"></div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">1</div>
+
+                  {/* Second week */}
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">2</div>
+                  <div className="h-8 bg-purple-500 rounded-md flex items-center justify-center text-xs text-white">
+                    3
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">4</div>
+                  <div className="h-8 bg-purple-500 rounded-md flex items-center justify-center text-xs text-white">
+                    5
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">6</div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">7</div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">8</div>
+
+                  {/* Third week */}
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">9</div>
+                  <div className="h-8 bg-purple-500 rounded-md flex items-center justify-center text-xs text-white">
+                    10
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">11</div>
+                  <div className="h-8 bg-purple-500 rounded-md flex items-center justify-center text-xs text-white">
+                    12
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">13</div>
+                  <div className="h-8 bg-purple-500 rounded-md flex items-center justify-center text-xs text-white">
+                    14
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-md flex items-center justify-center text-xs">15</div>
+                </div>
+              </div>
+
+              {/* Publishing stats */}
+              <div className="flex justify-between items-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">12</div>
+                  <div className="text-xs text-gray-500">Published</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-600">8</div>
+                  <div className="text-xs text-gray-500">Scheduled</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-600">4</div>
+                  <div className="text-xs text-gray-500">Drafts</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Blog Preview UI Card */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all group">
+            <div className="p-8">
+              {/* Browser chrome */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm transform group-hover:scale-105 transition-transform duration-300">
+                {/* Browser top bar */}
+                <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                  </div>
+                  <div className="bg-white text-gray-500 text-xs px-4 py-1.5 rounded-full flex items-center mx-auto shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mr-2"
                     >
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -123,60 +216,45 @@ export function FeatureBentoGrid() {
                 </div>
 
                 {/* Blog header */}
-                <div className="p-4 flex items-center">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-green-500"
-                    >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
+                <div className="p-4 flex items-center border-b border-gray-100">
+                  <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center mr-3">
+                    <FileText className="w-5 h-5 text-cyan-600" />
                   </div>
                   <span className="text-base font-medium text-gray-800">Your Blog</span>
-                  <div className="ml-4 flex space-x-2">
-                    <div className="h-1.5 bg-gray-300 rounded w-12"></div>
-                    <div className="h-1.5 bg-gray-300 rounded w-12"></div>
-                    <div className="h-1.5 bg-gray-300 rounded w-12"></div>
-                    <div className="h-1.5 bg-gray-300 rounded w-12"></div>
+                  <div className="ml-auto flex space-x-3">
+                    <div className="h-2 bg-gray-200 rounded w-16"></div>
+                    <div className="h-2 bg-gray-200 rounded w-16"></div>
+                    <div className="h-2 bg-gray-200 rounded w-16"></div>
                   </div>
                 </div>
 
                 {/* Blog grid */}
-                <div className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-6 bg-white">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Article 1 */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                      <div className="h-24 bg-gray-200"></div>
-                      <div className="p-2">
-                        <div className="text-xs font-medium">Top 10 tools for Amazon FBA</div>
+                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow transition-all">
+                      <div className="h-32 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
+                      <div className="p-4">
+                        <div className="text-xs text-gray-500 mb-1">E-Commerce</div>
+                        <div className="text-sm font-medium">Top 10 tools for Amazon FBA sellers in 2023</div>
                       </div>
                     </div>
 
                     {/* Article 2 */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                      <div className="h-24 bg-gray-200"></div>
-                      <div className="p-2">
-                        <div className="text-xs font-medium">How to print labels for online marketplaces</div>
+                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow transition-all">
+                      <div className="h-32 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                      <div className="p-4">
+                        <div className="text-xs text-gray-500 mb-1">Shipping</div>
+                        <div className="text-sm font-medium">How to print labels for online marketplaces</div>
                       </div>
                     </div>
 
                     {/* Article 3 */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                      <div className="h-24 bg-gray-200"></div>
-                      <div className="p-2">
-                        <div className="text-xs font-medium">Selling on Amazon: 12 Step Guide</div>
+                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow transition-all">
+                      <div className="h-32 bg-gradient-to-r from-amber-500 to-orange-500"></div>
+                      <div className="p-4">
+                        <div className="text-xs text-gray-500 mb-1">Guide</div>
+                        <div className="text-sm font-medium">Selling on Amazon: 12 Step Guide for Beginners</div>
                       </div>
                     </div>
                   </div>
@@ -185,14 +263,14 @@ export function FeatureBentoGrid() {
             </div>
 
             {/* Search bar at bottom */}
-            <div className="border-t border-gray-100 p-4">
-              <div className="bg-gray-100 rounded-full p-2 flex items-center justify-between">
+            <div className="border-t border-gray-100 p-6 bg-gray-50">
+              <div className="bg-white rounded-full p-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center">
-                  <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
+                      width="14"
+                      height="14"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -207,18 +285,18 @@ export function FeatureBentoGrid() {
                   </div>
                   <span className="text-sm text-gray-600">Best amazon FBA tools</span>
                 </div>
-                <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-cyan-100 rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
+                    width="14"
+                    height="14"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-gray-600"
+                    className="text-cyan-600"
                   >
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -230,122 +308,211 @@ export function FeatureBentoGrid() {
         </div>
 
         {/* Bottom row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Integrate with Any Platform Card - ENHANCED */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-6">
-            <div className="h-48 flex items-center justify-center mb-6 relative">
-              {/* Central hub with Journalist AI logo - MOVED TO THE CENTER */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center z-10 shadow-md">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                  <Globe className="w-8 h-8 text-indigo-600" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Integrate with Any Platform Card */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition-all group">
+            <div className="h-56 flex items-center justify-center mb-6 relative">
+              {/* Central hub with Journalist AI logo */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center z-10 shadow-lg group-hover:shadow-xl transition-all">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
+                  <Globe className="w-10 h-10 text-cyan-600" />
                 </div>
               </div>
 
               {/* Connection lines */}
               <div className="absolute w-full h-full top-0 left-0">
                 <svg className="w-full h-full" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M70 50 L100 100" stroke="#E0E7FF" strokeWidth="2" strokeDasharray="4 2" />
-                  <path d="M130 50 L100 100" stroke="#E0E7FF" strokeWidth="2" strokeDasharray="4 2" />
+                  <path
+                    d="M70 50 L100 100"
+                    stroke="#E0E7FF"
+                    strokeWidth="3"
+                    strokeDasharray="4 2"
+                    className="group-hover:stroke-cyan-200 transition-colors"
+                  />
+                  <path
+                    d="M130 50 L100 100"
+                    stroke="#E0E7FF"
+                    strokeWidth="3"
+                    strokeDasharray="4 2"
+                    className="group-hover:stroke-cyan-200 transition-colors"
+                  />
+                  <path
+                    d="M50 120 L100 100"
+                    stroke="#E0E7FF"
+                    strokeWidth="3"
+                    strokeDasharray="4 2"
+                    className="group-hover:stroke-cyan-200 transition-colors"
+                  />
+                  <path
+                    d="M150 120 L100 100"
+                    stroke="#E0E7FF"
+                    strokeWidth="3"
+                    strokeDasharray="4 2"
+                    className="group-hover:stroke-cyan-200 transition-colors"
+                  />
                 </svg>
               </div>
 
-              {/* WordPress - MOVED TO LEFT TOP */}
-              <div className="absolute top-0 left-1/4 transform -translate-x-1/2">
-                <div className="w-16 h-16 bg-blue-50 rounded-full border border-gray-100 flex items-center justify-center shadow-sm hover:shadow transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+              {/* WordPress */}
+              <div className="absolute top-0 left-1/4 transform -translate-x-1/2 group-hover:-translate-y-2 transition-transform duration-300">
+                <div className="w-18 h-18 bg-blue-50 rounded-full border border-gray-100 flex items-center justify-center shadow-md hover:shadow-lg transition-all p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 256 256">
                     <path
-                      fill="#21759b"
-                      d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 19.5c-5.247 0-9.5-4.253-9.5-9.5S6.753 2.5 12 2.5s9.5 4.253 9.5 9.5-4.253 9.5-9.5 9.5z"
+                      fill="#21759B"
+                      d="M128 0C57.29 0 0 57.29 0 128s57.29 128 128 128s128-57.29 128-128S198.71 0 128 0zM22.56 128c0-13.11 2.34-25.65 6.55-37.31l36.09 98.85C40.6 173.77 22.56 152.79 22.56 128zM128 233.44c-8.87 0-17.43-1.29-25.53-3.69l27.15-78.88l27.78 76.14c.18.44.4.84.63 1.22c-9.6 3.4-19.95 5.21-30.03 5.21zm12.17-136.13c5.45-.29 10.36-.86 10.36-.86c4.87-.58 4.3-7.74-.58-7.45c0 0-14.65 1.15-24.1 1.15c-8.87 0-23.81-1.15-23.81-1.15c-4.87-.29-5.45 7.16-.58 7.45c0 0 4.62.57 9.49.86l14.08 38.65l-19.76 59.27L66.71 97.31c5.45-.29 10.36-.86 10.36-.86c4.87-.58 4.3-7.74-.57-7.45c0 0-14.66 1.15-24.11 1.15c-1.7 0-3.69-.04-5.82-.1C68.06 54.44 96.16 33.28 128 33.28c23.69 0 45.26 9.05 61.41 23.88c-.39-.03-.77-.08-1.16-.08c-8.87 0-15.17 7.74-15.17 16.03c0 7.45 4.3 13.75 8.87 21.2c3.45 6.03 7.45 13.75 7.45 24.97c0 7.74-2.99 16.71-6.88 29.22l-9.01 30.1l-27.51-81.83zm54.86 8.3c6.88 12.6 10.79 27.05 10.79 42.4c0 32.61-17.72 61.06-44 76.26l27.03-78.16c5.05-12.63 6.73-22.74 6.73-31.78c0-3.26-.22-6.28-.55-9.05v.33z"
                     />
                   </svg>
                 </div>
                 <div className="text-sm font-medium text-center mt-2">WordPress</div>
               </div>
 
-              {/* Next.js - MOVED TO RIGHT TOP */}
-              <div className="absolute top-0 right-1/4 transform translate-x-1/2">
-                <div className="w-16 h-16 bg-gray-900 rounded-full border border-gray-100 flex items-center justify-center shadow-sm hover:shadow transition-all">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M11.572 0c-.176 0-.31.001-.358.007a19.76 19.76 0 0 0-.364.033C7.443.346 4.25 2.185 2.228 5.012a11.875 11.875 0 0 0-2.119 5.243c-.096.659-.108.854-.108 1.747s.012 1.089.108 1.748c.652 4.506 3.86 8.292 8.209 9.695.779.25 1.6.422 2.534.525.363.04 1.935.04 2.299 0 1.611-.178 2.977-.577 4.323-1.264.207-.106.247-.134.219-.158-.02-.013-.9-.78-1.963-1.698l-1.93-1.67-.024-.02c-.02-.013-1.07-.928-2.336-2.03l-2.3-2.006-.238.215c-.132.118-.628.561-1.102.984-.475.423-.864.766-.87.767-.006.001-.2.176-.427.39l-.416.39-.258-.176c-.142-.096-.343-.25-.447-.342a7.007 7.007 0 0 1-1.5-1.807 6.957 6.957 0 0 1-1.08-3.374c0-.66.07-1.223.22-1.778.4-1.517 1.372-2.815 2.655-3.543.481-.272 1.075-.519 1.621-.674a7.023 7.023 0 0 1 4.773.366c.219.105.673.349.996.534l.304.174.582-.513c.32-.282 1.153-1.018 1.85-1.635l1.268-1.121.112.07c.585.371 1.463 1.072 2.005 1.605a11.97 11.97 0 0 1 3.18 5.745c.096.659.108.854.108 1.747s-.012 1.089-.108 1.748c-.652 4.506-3.86 8.292-8.209 9.695-.779.25-1.6.422-2.534.525-.363.04-1.935.04-2.299 0-1.612-.178-2.977-.577-4.323-1.264l-.392-.199-.6.518c-.33.285-1.174 1.025-1.876 1.645l-1.277 1.129.11.07c.586.371 1.463 1.072 2.005 1.605.82.808 1.474 1.597 2.069 2.493.82 1.232 1.453 2.71 1.777 4.143.096.419.192.966.237 1.347.046.38.052 1.102.052 5.864V24h2.88v-3.36c0-4.67.006-5.396.052-5.777.268-2.244 1.037-4.258 2.256-5.917.82-1.116 1.925-2.18 3.064-2.943l.23-.154.228.2c.125.11.964.842 1.864 1.628l1.636 1.429.328-.19c1.753-1.014 3.96-1.5 5.95-1.31.734.07 1.635.278 2.35.541 1.833.676 3.256 1.948 4.075 3.637.92 1.903.912 4.214-.024 6.104-.957 1.936-2.74 3.309-4.86 3.743-.335.068-.66.092-1.25.092-.587 0-.91-.024-1.247-.092-.953-.193-1.636-.463-2.423-.961-.946-.598-1.71-1.42-2.242-2.412-.193-.36-.525-1.152-.525-1.256 0-.02.054-.054.12-.076.066-.022.126-.056.134-.076.007-.02.423-.391.923-.825l.909-.789.145.27a4.275 4.275 0 0 0 1.91 1.933 4.318 4.318 0 0 0 2.839.095c.695-.238 1.286-.639 1.753-1.195a4.17 4.17 0 0 0 .918-1.87c.074-.37.074-1.222 0-1.592-.209-1.04-.81-1.971-1.676-2.593-.714-.513-1.675-.802-2.57-.774-.818.026-1.5.224-2.21.644l.193-.115-.152.136c-.084-.075-.976-.855-1.983-1.734l-1.83-1.597-.192.125c-.106.069-.304.22-.44.335-.136.115-.66.58-1.163 1.033l-.914.824-.133-.126c-.073-.07-.287-.262-.475-.428-.992-.883-1.42-1.264-1.42-1.27 0-.003.32-.31.71-.682.39-.372 1.172-1.112 1.736-1.644l1.027-.967.148.087a11.896 11.896 0 0 0 3.153 1.279c.423.082.846.144 1.261.193.363.04 1.935.04 2.299 0 2.488-.275 4.718-1.233 6.6-2.834 1.589-1.352 2.794-3.07 3.56-5.092.495-1.31.777-2.621.86-4.015.022-.374.022-1.12 0-1.494-.083-1.394-.365-2.705-.86-4.015-.766-2.022-1.971-3.74-3.56-5.092C15.22 4.163 12.99 3.205 10.5 2.93c-.363-.04-1.935-.04-2.299 0-.415.049-.838.11-1.261.193a11.896 11.896 0 0 0-3.153 1.279l-.148.087-1.027-.967c-.564-.532-1.346-1.272-1.736-1.644-.39-.372-.71-.679-.71-.682 0-.006.428-.387 1.42-1.27.188-.166.402-.358.475-.428l.133-.126.914.824c.503.453 1.027.918 1.163 1.033.136.115.334.266.44.335l.192.125 1.83-1.597c1.007-.879 1.9-1.659 1.983-1.734l.152-.136.193.115c.71.42 1.392.618 2.21.644.895.028 1.856-.26 2.57-.774.866-.622 1.467-1.553 1.676-2.593.074-.37.074-1.222 0-1.592a4.17 4.17 0 0 0-.918-1.87c-.467-.556-1.058-.957-1.753-1.195a4.318 4.318 0 0 0-2.839.095 4.275 4.275 0 0 0-1.91 1.933l-.145.27-.909-.789c-.5-.434-.916-.805-.923-.825-.008-.02-.068-.054-.134-.076-.066-.022-.12-.056-.12-.076 0-.104.332-.896.525-1.256.532-.992 1.296-1.814 2.242-2.412.787-.498 1.47-.768 2.423-.961.337-.068.66-.092 1.247-.092.59 0 .915.024 1.25.092 2.12.434 3.903 1.807 4.86 3.743.936 1.89.944 4.201.024 6.104-.819 1.689-2.242 2.961-4.075 3.637-.715.263-1.616.47-2.35.541-1.99.19-4.197-.296-5.95-1.31l-.328-.19 1.636-1.429c.9-.786 1.739-1.518 1.864-1.628l.228-.2-.23-.154c-1.139-.763-2.244-1.827-3.064-2.943-1.219-1.659-1.988-3.673-2.256-5.917-.046-.38-.052-1.107-.052-5.777V0h-2.88z"
-                      fill="#ffffff"
-                    />
+              {/* Next.js */}
+              <div className="absolute top-0 right-1/4 transform translate-x-1/2 group-hover:-translate-y-2 transition-transform duration-300">
+                <div className="w-18 h-18 bg-black rounded-full border border-gray-100 flex items-center justify-center shadow-md hover:shadow-lg transition-all p-3">
+                  <svg width="32" height="32" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <mask
+                      id="mask0_408_139"
+                      style={{ maskType: "alpha" }}
+                      maskUnits="userSpaceOnUse"
+                      x="0"
+                      y="0"
+                      width="180"
+                      height="180"
+                    >
+                      <circle cx="90" cy="90" r="90" fill="black" />
+                    </mask>
+                    <g mask="url(#mask0_408_139)">
+                      <circle cx="90" cy="90" r="90" fill="black" />
+                      <path
+                        d="M149.508 157.52L69.142 54H54V125.97H66.1136V69.3836L139.999 164.845C143.333 162.614 146.509 160.165 149.508 157.52Z"
+                        fill="url(#paint0_linear_408_139)"
+                      />
+                      <rect x="115" y="54" width="12" height="72" fill="url(#paint1_linear_408_139)" />
+                    </g>
+                    <defs>
+                      <linearGradient
+                        id="paint0_linear_408_139"
+                        x1="109"
+                        y1="116.5"
+                        x2="144.5"
+                        y2="160.5"
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop stopColor="white" />
+                        <stop offset="1" stopColor="white" stopOpacity="0" />
+                      </linearGradient>
+                      <linearGradient
+                        id="paint1_linear_408_139"
+                        x1="121"
+                        y1="54"
+                        x2="120.799"
+                        y2="106.875"
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop stopColor="white" />
+                        <stop offset="1" stopColor="white" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
                   </svg>
                 </div>
                 <div className="text-sm font-medium text-center mt-2">Next.js</div>
               </div>
+
+              
+              {/* Webflow */}
+              <div className="absolute bottom-4 right-0 group-hover:translate-x-2 transition-transform duration-300">
+                <div className="w-18 h-18 bg-blue-50 rounded-full border border-gray-100 flex items-center justify-center shadow-md hover:shadow-lg transition-all p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 319.382"><path fill="#146EF5" d="M512 0L348.627 319.382H195.172l68.375-132.364h-3.071C204.072 260.235 119.911 308.437 0 319.382V188.849s76.71-4.533 121.808-51.945H0V.007h136.897v112.594l3.071-.013L195.91.007h103.535V111.89l3.071-.006L360.557 0H512z"/></svg>
+                </div>
+                <div className="text-sm font-medium text-center mt-2">Webflow</div>
+              </div>
             </div>
 
-            <h3 className="text-xl font-bold mb-3">WordPress & Next.js Integration</h3>
+            <h3 className="text-xl font-bold mb-4">Multi-Platform Integration</h3>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center text-sm text-gray-600">
-                <ArrowRight className="w-4 h-4 text-indigo-500 mr-2 flex-shrink-0" />
-                <span>One-click publishing to WordPress and Next.js</span>
+            <div className="space-y-4 mb-4">
+              <div className="flex items-start text-sm text-gray-600">
+                <ArrowRight className="w-5 h-5 text-cyan-500 mr-3 flex-shrink-0 mt-0.5" />
+                <span>One-click publishing to WordPress, Next.js, Shopify and Webflow</span>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <ArrowRight className="w-4 h-4 text-indigo-500 mr-2 flex-shrink-0" />
-                <span>Automatic formatting for each platform</span>
+              <div className="flex items-start text-sm text-gray-600">
+                <ArrowRight className="w-5 h-5 text-cyan-500 mr-3 flex-shrink-0 mt-0.5" />
+                <span>Automatic formatting optimized for each platform</span>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <ArrowRight className="w-4 h-4 text-indigo-500 mr-2 flex-shrink-0" />
-                <span>Seamless content synchronization</span>
+              <div className="flex items-start text-sm text-gray-600">
+                <ArrowRight className="w-5 h-5 text-cyan-500 mr-3 flex-shrink-0 mt-0.5" />
+                <span>Seamless content synchronization across all your sites</span>
               </div>
             </div>
           </div>
 
           {/* Automatic Internal Linking Card */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-6">
-            <div className="h-48 flex items-center justify-center mb-6 relative">
-              <div className="w-full max-w-xs mx-auto">
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition-all group">
+            <div className="h-56 flex items-center justify-center mb-6 relative">
+              <div className="w-full max-w-xs mx-auto transform group-hover:scale-105 transition-transform duration-300">
                 {/* Document representation with internal links */}
-                <div className="h-6 bg-gray-100 w-full rounded-md mb-4"></div>
+                <div className="h-8 bg-gray-100 w-full rounded-lg mb-6"></div>
 
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="h-6 bg-gray-100 w-1/2 rounded-md"></div>
-                  <div className="h-6 bg-indigo-100 w-1/4 rounded-md"></div>
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="h-8 bg-gray-100 w-1/2 rounded-lg"></div>
+                  <div className="h-8 bg-purple-100 w-1/3 rounded-lg"></div>
                 </div>
 
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="h-6 bg-indigo-100 w-1/4 rounded-md"></div>
-                  <div className="h-6 bg-gray-100 w-1/2 rounded-md"></div>
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="h-8 bg-purple-100 w-1/3 rounded-lg"></div>
+                  <div className="h-8 bg-gray-100 w-1/2 rounded-lg"></div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="h-6 bg-gray-100 w-1/3 rounded-md"></div>
-                  <div className="h-6 bg-indigo-100 w-1/3 rounded-md"></div>
+                <div className="flex items-center gap-6">
+                  <div className="h-8 bg-gray-100 w-1/3 rounded-lg"></div>
+                  <div className="h-8 bg-purple-100 w-1/3 rounded-lg"></div>
                 </div>
 
                 {/* Connecting lines */}
-                <div className="absolute top-1/3 left-1/2 w-16 h-0.5 bg-indigo-200 transform -translate-x-full -translate-y-1/2"></div>
-                <div className="absolute top-2/3 left-1/2 w-16 h-0.5 bg-indigo-200 transform -translate-x-full translate-y-1/2"></div>
+                <div className="absolute top-1/3 left-1/2 w-20 h-1 bg-purple-200 transform -translate-x-full -translate-y-1/2 group-hover:bg-purple-300 transition-colors"></div>
+                <div className="absolute top-2/3 left-1/2 w-20 h-1 bg-purple-200 transform -translate-x-full translate-y-1/2 group-hover:bg-purple-300 transition-colors"></div>
+
+                {/* Link icons */}
+                <div className="absolute top-1/3 left-1/2 transform -translate-x-full -translate-y-1/2 -ml-10">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Link className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+
+                <div className="absolute top-2/3 left-1/2 transform -translate-x-full translate-y-1/2 -ml-10">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Link className="w-4 h-4 text-white" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <h3 className="text-xl font-bold mb-3">Automatic Internal & External Linking</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-xl font-bold mb-4">Automatic Internal & External Linking</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               Automatically add both internal and external links to your articles. Our system intelligently places links
               to your own pages and authoritative external sources, creating a natural link profile that boosts SEO and
               improves user experience.
             </p>
+
+            
           </div>
 
-          {/* Automatic External Linking Card */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-6">
-            <div className="h-48 flex items-center justify-center mb-6 relative">
-              <div className="w-full max-w-xs mx-auto relative">
+          {/* 100% Human-Written Content Card */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition-all group">
+            <div className="h-56 flex items-center justify-center mb-6 relative">
+              <div className="w-full max-w-xs mx-auto relative transform group-hover:scale-105 transition-transform duration-300">
                 {/* Document with human writer verification */}
-                <div className="w-full bg-white border border-gray-100 rounded-lg p-3 mb-2">
-                  <div className="h-4 bg-gray-100 w-3/4 rounded mb-3"></div>
-                  <div className="h-4 bg-gray-100 w-1/2 rounded mb-3"></div>
-                  <div className="h-4 bg-gray-100 w-2/3 rounded mb-3"></div>
+                <div className="w-full bg-white border border-gray-200 rounded-xl p-5 mb-2 shadow-sm">
+                  <div className="h-4 bg-gray-100 w-3/4 rounded mb-4"></div>
+                  <div className="h-4 bg-gray-100 w-1/2 rounded mb-4"></div>
+                  <div className="h-4 bg-gray-100 w-2/3 rounded mb-4"></div>
                   <div className="h-4 bg-gray-100 w-3/5 rounded"></div>
                 </div>
 
                 {/* Google verification badge */}
-                <div className="absolute -right-4 -top-4 w-16 h-16 bg-white rounded-full border border-gray-100 flex items-center justify-center">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <div className="absolute -right-4 -top-4 w-20 h-20 bg-white rounded-full border border-gray-100 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -368,18 +535,18 @@ export function FeatureBentoGrid() {
 
                 {/* Human writer icon */}
                 <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-1/4">
-                  <div className="w-14 h-14 bg-green-100 rounded-full border border-gray-100 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full border border-gray-100 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
+                      width="28"
+                      height="28"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="text-green-600"
+                      className="text-emerald-600"
                     >
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                       <circle cx="12" cy="7" r="4"></circle>
@@ -389,11 +556,11 @@ export function FeatureBentoGrid() {
 
                 {/* Checkmark badges */}
                 <div className="absolute -left-2 top-1/4">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="white"
@@ -407,11 +574,11 @@ export function FeatureBentoGrid() {
                 </div>
 
                 <div className="absolute left-1/4 top-2/3">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="white"
@@ -425,11 +592,11 @@ export function FeatureBentoGrid() {
                 </div>
 
                 <div className="absolute right-0 top-1/2">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="white"
@@ -444,16 +611,17 @@ export function FeatureBentoGrid() {
               </div>
             </div>
 
-            <h3 className="text-xl font-bold mb-3">100% Human-Written Content</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-xl font-bold mb-4">100% Human-Written Content</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               All content is written by professional human writers and approved by Google's quality guidelines. Our
               content passes AI detection tools and maintains the natural tone and expertise that search engines reward
               with higher rankings.
             </p>
+
+            
           </div>
         </div>
       </div>
     </section>
   )
 }
-

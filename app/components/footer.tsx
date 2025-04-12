@@ -19,7 +19,7 @@ export default function Footer() {
               href="/get-started"
               className="bg-white hover:bg-gray-100 text-[#294df6] px-6 py-3 rounded-md font-medium inline-flex items-center transition-colors duration-200 shadow-md"
             >
-              Try GetMoreSEO free for 7 days
+              Start For Free Today
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
@@ -29,7 +29,7 @@ export default function Footer() {
               <div className="bg-white/20 rounded-full p-1 flex items-center justify-center mr-2">
                 <Check className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white">No Credit Card</span>
+              <span className="text-white">100% Human Written Content</span>
             </div>
             <div className="flex items-center">
               <div className="bg-white/20 rounded-full p-1 flex items-center justify-center mr-2">
@@ -41,32 +41,17 @@ export default function Footer() {
               <div className="bg-white/20 rounded-full p-1 flex items-center justify-center mr-2">
                 <Check className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white">7-Day Free Trial</span>
+              <span className="text-white">With Integrations</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Logo and Quick Links */}
+      {/* Logo Section */}
       <div className="border-t border-gray-200 py-8">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-6 md:mb-0">
+        <div className="max-w-7xl mx-auto px-4 flex justify-center">
+          <div className="flex items-center">
             <Image src="/getmoreseo.png" alt="GetMoreSEO Logo" width={120} height={40} className="h-10 w-auto" />
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/free-seo-course" className="text-gray-600 hover:text-[#294df6] text-sm">
-              Free SEO Course
-            </Link>
-            <Link href="/seo-academy" className="text-gray-600 hover:text-[#294df6] text-sm">
-              Free SEO Academy
-            </Link>
-            <Link href="/ai-translator" className="text-gray-600 hover:text-[#294df6] text-sm">
-              Free AI Translator
-            </Link>
-            <Link href="/tools" className="text-gray-600 hover:text-[#294df6] text-sm">
-              Free Tools
-            </Link>
           </div>
         </div>
       </div>
@@ -74,7 +59,7 @@ export default function Footer() {
       {/* Main Footer Links */}
       <div className="border-t border-gray-200 py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Company */}
             <div>
               <h3 className="font-bold text-gray-900 mb-4">Company</h3>
@@ -122,112 +107,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Product */}
-            <div>
-              <h3 className="font-bold text-gray-900 mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/topic-explorer" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Topic Explorer
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/ai-writer" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    AI Article Writer
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/keyword-tracker" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Keyword Tracker
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog-automation" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Blog Automation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/integrations" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Integrations
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/feature-request" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Feature Request
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/roadmap" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Roadmap
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Free SEO Tools */}
-            <div>
-              <h3 className="font-bold text-gray-900 mb-4">Free SEO Tools</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/ai-outline-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    AI Outline Generator
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/active-to-passive" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Active To Passive Voice
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/ai-paraphraser" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    AI Paraphraser
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/ai-paragraph-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    AI Paragraph Generator
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/brand-voice-generator" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Brand Voice Generator
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/free-tools" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    View All Free Tools
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Learn */}
-            <div>
-              <h3 className="font-bold text-gray-900 mb-4">Learn</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/blog" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/free-seo-course" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Free SEO Course
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/seo-academy" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Free SEO Academy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/community" className="text-gray-600 hover:text-[#294df6] text-sm">
-                    Community
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
             {/* Comparison */}
             <div>
               <h3 className="font-bold text-gray-900 mb-4">Comparison</h3>
@@ -266,7 +145,7 @@ export default function Footer() {
       {/* Copyright */}
       <div className="border-t border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-gray-500 mb-4 md:mb-0">© 2024 GetMoreSEO Inc. All rights reserved.</div>
+          <div className="text-sm text-gray-500 mb-4 md:mb-0">© 2025 GetMoreSEO Inc. All rights reserved.</div>
           <div className="text-sm text-gray-500 flex items-center">
             Made with <span className="text-red-500 mx-1">❤</span>
           </div>
