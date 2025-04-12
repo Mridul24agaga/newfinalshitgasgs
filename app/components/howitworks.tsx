@@ -1,95 +1,67 @@
-import Image from "next/image"
 import { CheckCircle } from "lucide-react"
 
 const steps = [
   {
     number: 1,
-    id: "keyword-research",
-    label: "Keyword Research",
-    title: "Find Your Hidden SEO Goldmine",
+    id: "website-analysis",
+    label: "Website Analysis",
+    title: "Enter Your Website URL",
     description:
-      "Uncover untapped keyword opportunities your competitors haven't even thought of, driving more targeted traffic to your site.",
+      "Simply enter your website URL and wait a few seconds while our AI analyzes your content. We'll generate a comprehensive summary of what your website does and identify key opportunities.",
     features: [
       {
-        title: "Keyword Research, Simplified",
+        title: "Instant Website Scanning",
         description:
-          "Skip the tedious manual work and let our AI engine do the heavy lifting. Uncover hidden keyword gems with high search volume and low competition.",
+          "Our advanced AI scans your entire website in seconds, analyzing content, structure, and key information.",
       },
       {
-        title: "AI-Powered Search Intent Analysis",
+        title: "Comprehensive Summary Generation",
         description:
-          "Our AI digs deep into search intent, revealing the true meaning behind users queries so you can deliver exactly what they're looking for.",
+          "Receive a detailed summary of what your website does, your business model, and your unique value proposition.",
       },
     ],
-    image: "/placeholder.svg?height=400&width=500",
+    videoSrc: "/video1.mp4",
   },
   {
     number: 2,
-    id: "content-editor",
-    label: "Content Editor",
-    title: "Create Content That Search Engines Love",
+    id: "icp-generation",
+    label: "ICP Generation",
+    title: "Generate Your Ideal Customer Profile",
     description:
-      "Tired of staring at a blank page? Our AI-powered writer does the heavy lifting, crafting SEO-optimized content that not only ranks higher in search results but also captivates your readers.",
+      "Based on your website analysis, we automatically create your Ideal Customer Profile (ICP), identifying exactly who your perfect customers are and what they're looking for.",
     features: [
       {
-        title: "AI Humanizer",
+        title: "AI-Powered Customer Analysis",
         description:
-          "Say goodbye to robotic, bland content. Create content that engages and resonates with your audience.",
+          "Our AI identifies your ideal customers based on your website content, industry, and business model.",
       },
       {
-        title: "Seamless Keyword Integration",
+        title: "Detailed Persona Creation",
         description:
-          "We weave relevant keywords naturally into your content, boosting your visibility without sacrificing readability and quality.",
-      },
-      {
-        title: "Brand Voice",
-        description:
-          "Your brand's voice is unique, and our AI understands that. We tailor the tone and style of your content to match your brand's personality perfectly.",
+          "Get comprehensive profiles of your ideal customers including demographics, pain points, and buying behaviors.",
       },
     ],
-    image: "/placeholder.svg?height=400&width=500",
+    videoSrc: "/video2.mp4",
   },
   {
     number: 3,
-    id: "auto-publish",
-    label: "Auto-Publish",
-    title: "Publish Without Lifting a Finger",
+    id: "blog-generation",
+    label: "Blog Generation & Payment",
+    title: "Generate Targeted Content & Complete Payment",
     description:
-      "Set it and forget it. Our platform automatically publishes your content to your blog on your schedule, saving you hours of manual work.",
+      "Our AI creates high-converting blog content specifically designed to attract your ideal customers. Choose your plan and complete payment to start publishing immediately.",
     features: [
       {
-        title: "Smart Scheduling",
-        description:
-          "Our AI determines the optimal publishing times for maximum engagement based on your audience's online behavior.",
+        title: "AI Content Creation",
+        description: "Generate SEO-optimized blog posts tailored to your ICP's interests and search behaviors.",
       },
       {
-        title: "Multi-Platform Publishing",
+        title: "Flexible Payment Options",
         description:
-          "Automatically publish to WordPress, Medium, and other popular blogging platforms with a single click.",
+          "Choose from various plans to suit your content needs and budget with secure, hassle-free payment processing.",
       },
     ],
-    image: "/placeholder.svg?height=400&width=500",
-  },
-  {
-    number: 4,
-    id: "analytics",
-    label: "Analytics",
-    title: "Track Your Content Performance",
-    description:
-      "Get detailed insights into how your content is performing and make data-driven decisions to improve your SEO strategy.",
-    features: [
-      {
-        title: "Real-Time Performance Tracking",
-        description:
-          "Monitor your content's performance in real-time, including rankings, traffic, and engagement metrics.",
-      },
-      {
-        title: "Competitor Analysis",
-        description:
-          "See how your content stacks up against your competitors and identify opportunities to outrank them.",
-      },
-    ],
-    image: "/placeholder.svg?height=400&width=500",
+    videoSrc: "/video3.mp4",
   },
 ]
 
@@ -114,7 +86,7 @@ export function HowItWorks() {
               <div key={step.id} className="relative">
                 {/* Step Indicator */}
                 <div className="flex items-center mb-6 md:mb-8">
-                  <div className="bg-[#294df6] text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg z-10 shadow-md">
+                  <div className="bg-[#294df6] text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg z-10">
                     {step.number}
                   </div>
                   <div className="ml-4">
@@ -127,7 +99,7 @@ export function HowItWorks() {
                 <div className="ml-0 md:ml-16">
                   <div className="grid md:grid-cols-2 gap-8 items-center">
                     {/* Text Content */}
-                    <div>
+                    <div className="order-2 md:order-1">
                       <h3 className="text-2xl md:text-3xl font-bold mb-4">{step.title}</h3>
                       <p className="text-gray-600 mb-8">{step.description}</p>
 
@@ -144,15 +116,16 @@ export function HowItWorks() {
                       </div>
                     </div>
 
-                    {/* Image */}
-                    <div className="bg-[#f9f9f9] rounded-xl p-4 flex items-center justify-center">
-                      <div className="relative w-full max-w-md mx-auto">
-                        <Image
-                          src={step.image || "/placeholder.svg"}
-                          alt={step.title}
-                          width={500}
-                          height={400}
-                          className="rounded-lg shadow-lg"
+                    {/* Video */}
+                    <div className="order-1 md:order-2">
+                      <div className="w-full">
+                        <video
+                          src={step.videoSrc}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-auto rounded-lg"
                         />
                       </div>
                     </div>
@@ -200,3 +173,4 @@ export function HowItWorks() {
   )
 }
 
+export default HowItWorks
