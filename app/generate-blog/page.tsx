@@ -62,7 +62,7 @@ export default function Home() {
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
 
       // Make the API call to generate the blog
-      const response = await fetch("/api/generate-blog", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, humanizeLevel }),
