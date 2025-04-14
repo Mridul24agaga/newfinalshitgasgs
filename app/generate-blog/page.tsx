@@ -1,87 +1,112 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import BlogGenerator from "./generate-blog-content";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  content: string;
-  timestamp: string;
-  citations: string[];
-}
+import { useState, useEffect } from "react"
+import BlogGenerator from "./generate-blog-content"
+import { createClient } from "@/utitls/supabase/client"
 
 export default function Home() {
-  const [generatedBlogs, setGeneratedBlogs] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const [loading, setLoading] = useState(false)
+  const [subscriptionError, setSubscriptionError] = useState(false)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true)
+  const supabase = createClient()
 
-  const handleGenerate = async (url: string, humanizeLevel: "normal" | "hardcore") => {
-    setLoading(true);
-    setError(null);
-    setGeneratedBlogs([]);
+  // Check if user has an active subscription
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        setIsCheckingSubscription(true)
 
+        // Get the current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+
+        if (userError || !user) {
+          console.log("No authenticated user found")
+          setHasActiveSubscription(false)
+          return
+        }
+
+        // Check the subscriptions table for an active subscription
+        const { data: subscriptionData, error: subscriptionError } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single()
+
+        if (subscriptionError && subscriptionError.code !== "PGRST116") {
+          console.error("Error checking subscription:", subscriptionError)
+        }
+
+        // Set subscription status based on whether we found an active subscription
+        setHasActiveSubscription(!!subscriptionData)
+        console.log("Active subscription:", !!subscriptionData)
+      } catch (error) {
+        console.error("Error checking subscription status:", error)
+        setHasActiveSubscription(false)
+      } finally {
+        setIsCheckingSubscription(false)
+      }
+    }
+
+    checkSubscription()
+  }, [supabase])
+
+  const handleGenerateBlog = async (url: string, humanizeLevel: "normal" | "hardcore") => {
     try {
-      const response = await fetch("/api/generate", {
+      setLoading(true)
+
+      console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
+
+      // Make the API call to generate the blog
+      const response = await fetch("/api/generate-blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, humanizeLevel }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate blog");
+      // Check for subscription errors from the API
+      if (data.error === "subscription_required" && !hasActiveSubscription) {
+        setSubscriptionError(true)
       }
 
-      setGeneratedBlogs(data.blogPosts);
-
-      const firstBlogId = data.blogPosts[0]?.id;
-      if (firstBlogId) {
-        router.push(`/generated/${firstBlogId}`);
-      } else {
-        throw new Error("No blog ID found in response");
-      }
-    } catch (err: any) {
-      setError(err.message);
+      return data
+    } catch (error) {
+      console.error("Error generating blog:", error)
+      // Handle error state
     } finally {
-      setLoading(false);
+      // In a real implementation, you might want to keep loading true
+      // until the blog is fully generated, which could take longer
+      setLoading(false)
     }
-  };
+  }
+
+  if (isCheckingSubscription) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+        <p className="ml-3 text-gray-700">Checking subscription status...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <BlogGenerator onGenerate={handleGenerate} loading={loading} />
-      {error && <p className="text-red-500 mt-4">{error}</p>}
-      {generatedBlogs.length > 0 && !loading && (
-        <div className="mt-8 w-full max-w-3xl">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-700">Generated Blogs</h2>
-          {generatedBlogs.map((blog) => (
-            <div key={blog.id} className="bg-white p-6 rounded-lg shadow-md mb-6">
-              <h3 className="text-xl font-bold mb-2">{blog.title}</h3>
-              <div
-                className="prose text-gray-700"
-                dangerouslySetInnerHTML={{ __html: blog.content }}
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                Generated on: {new Date(blog.timestamp).toLocaleString()}
-              </p>
-              {blog.citations.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-semibold">Citations:</h4>
-                  <ul className="list-disc pl-5 text-sm text-gray-600">
-                    {blog.citations.map((cite: string, idx: number) => (
-                      <li key={idx}>{cite}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+    <main className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="container mx-auto">
+        
+
+        <BlogGenerator
+          onGenerate={handleGenerateBlog}
+          loading={loading}
+          subscriptionError={subscriptionError}
+          hasActiveSubscription={hasActiveSubscription}
+        />
+      </div>
+    </main>
+  )
 }
