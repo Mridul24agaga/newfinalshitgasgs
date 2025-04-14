@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import BlogGenerator from "./generate-blog-content"
+import PastBlogs from "@/app/components/past-blogs"
 import { createClient } from "@/utitls/supabase/client"
 
 export default function Home() {
@@ -97,15 +98,16 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <div className="container mx-auto">
-        
-
+      <div className="container mx-auto px-4 py-8">
         <BlogGenerator
           onGenerate={handleGenerateBlog}
           loading={loading}
           subscriptionError={subscriptionError}
           hasActiveSubscription={hasActiveSubscription}
         />
+
+        {/* Past blogs section */}
+        <PastBlogs />
       </div>
     </main>
   )

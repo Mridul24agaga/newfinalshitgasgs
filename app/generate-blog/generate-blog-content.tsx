@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import {
   Clock,
   FileText,
@@ -19,26 +20,14 @@ import {
   Zap,
   Share2,
   CreditCard,
-  ExternalLink,
-  Calendar,
 } from "lucide-react"
-import Link from "next/link"
 import { createClient } from "@/utitls/supabase/client"
 
 // Simple direct import
 import PaymentPage from "@/app/components/payment-page"
 
-interface BlogPost {
-  id: string
-  title: string
-  summary?: string
-  created_at: string
-  tags?: string[]
-  user_id?: string
-}
-
 interface BlogGeneratorProps {
-  onGenerate: (url: string, humanizeLevel: "normal" | "hardcore") => void
+  onGenerate: (url: string, humanizeLevel: "normal" | "hardcore") => Promise<any>
   loading: boolean
   subscriptionError?: boolean
   hasActiveSubscription?: boolean
@@ -50,6 +39,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
   subscriptionError = false,
   hasActiveSubscription = false,
 }) => {
+  const router = useRouter()
   const [url, setUrl] = useState("")
   const [humanizeLevel, setHumanizeLevel] = useState<"normal" | "hardcore">("normal")
   const [progress, setProgress] = useState(0)
@@ -65,9 +55,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
   const [setupSubscriptionError, setSetupSubscriptionError] = useState(false)
   const [freeGenerationUsed, setFreeGenerationUsed] = useState(false)
   const [blogGenerated, setBlogGenerated] = useState(false)
-  const [generatedBlogs, setGeneratedBlogs] = useState<BlogPost[]>([])
-  const [isLoadingBlogs, setIsLoadingBlogs] = useState(false)
-  const [blogError, setBlogError] = useState<string | null>(null)
+  const [generatedBlogId, setGeneratedBlogId] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const progressRef = useRef<NodeJS.Timeout | null>(null)
@@ -102,68 +90,12 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
     }
   }, [blogGenerated, hasActiveSubscription])
 
-  // Fetch generated blogs from Supabase
+  // Redirect to generated blog page when blog is generated and ID is available
   useEffect(() => {
-    const fetchGeneratedBlogs = async () => {
-      try {
-        setIsLoadingBlogs(true)
-        setBlogError(null)
-
-        // Get the current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-
-        if (userError) {
-          console.error("Error fetching user:", userError)
-          return
-        }
-
-        if (!user) {
-          console.log("No user found, skipping blog fetch")
-          return
-        }
-
-        // Fetch blogs from the blogs table for the current user
-        const { data: blogsData, error: blogsError } = await supabase
-          .from("blogs")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-
-        if (blogsError) {
-          throw new Error(blogsError.message)
-        }
-
-        // Fetch blogs from the headlinetoblog table for the current user
-        const { data: headlineToBlogData, error: headlineToBlogError } = await supabase
-          .from("headlinetoblog")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-
-        if (headlineToBlogError) {
-          throw new Error(headlineToBlogError.message)
-        }
-
-        // Combine both datasets
-        const combinedBlogs = [...(blogsData || []), ...(headlineToBlogData || [])]
-
-        // Sort by created_at date (newest first)
-        combinedBlogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-        setGeneratedBlogs(combinedBlogs)
-      } catch (err: any) {
-        console.error("Error fetching blogs:", err)
-        setBlogError(err.message || "Failed to load blogs")
-      } finally {
-        setIsLoadingBlogs(false)
-      }
+    if (blogGenerated && generatedBlogId) {
+      router.push(`/generated/${generatedBlogId}`)
     }
-
-    fetchGeneratedBlogs()
-  }, [supabase, showPaymentPage]) // Refetch when payment page closes
+  }, [blogGenerated, generatedBlogId, router])
 
   const steps = [
     { icon: <Search className="w-4 h-4" />, text: "Extracting website content" },
@@ -173,7 +105,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
     { icon: <CheckCircle className="w-4 h-4" />, text: "Finalizing blog post" },
   ]
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!url.trim()) {
       alert("Please enter a valid URL")
@@ -190,7 +122,16 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
     setUrlEntered(true)
     setGenerationStarted(true)
     setShowPopup(true)
-    onGenerate(url, humanizeLevel)
+
+    try {
+      const result = await onGenerate(url, humanizeLevel)
+      if (result && result.id) {
+        setGeneratedBlogId(result.id)
+        setBlogGenerated(true)
+      }
+    } catch (error) {
+      console.error("Error generating blog:", error)
+    }
   }
 
   const handleDismissPopup = () => {
@@ -319,16 +260,6 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
   }
 
   // Reset the app to initial state
@@ -575,142 +506,6 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({
                   <RefreshCw className="w-4 h-4" />
                   <span>Generate New Blog</span>
                 </button>
-              </div>
-            </div>
-
-            {/* Your Generated Blogs Section */}
-            <div className="bg-white rounded-md border border-gray-200 overflow-hidden mb-8">
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-[#294fd6]/10 to-white">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center">
-                    <h2 className="text-lg font-bold text-gray-900 flex items-center mr-2">
-                      <FileText className="text-[#294fd6] mr-2 h-5 w-5" />
-                      Your Generated Articles
-                    </h2>
-                    <p className="ml-4 text-sm text-slate-500">
-                      Your published articles, ready to inspire your audience
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    {freeGenerationUsed && !hasActiveSubscription && (
-                      <button
-                        onClick={handleBuySubscription}
-                        className="px-4 py-2 bg-[#294fd6] text-white rounded-sm hover:bg-[#1e3eb8] transition-all duration-300 text-sm font-medium flex items-center"
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Subscribe Now
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {isLoadingBlogs ? (
-                  <div className="flex justify-center items-center py-12">
-                    <div className="flex flex-col items-center">
-                      <Loader2 className="h-8 w-8 text-[#294fd6] animate-spin mb-4" />
-                      <p className="text-gray-600">Loading your blogs...</p>
-                    </div>
-                  </div>
-                ) : blogError ? (
-                  <div className="bg-red-50 p-6 rounded-sm text-center">
-                    <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Blogs</h3>
-                    <p className="text-red-600">{blogError}</p>
-                  </div>
-                ) : generatedBlogs.length === 0 ? (
-                  <div className="bg-gradient-to-r from-[#2563eb]/5 to-[#2563eb]/10 p-12 text-center rounded-sm">
-                    <div className="bg-white rounded p-4 inline-flex mb-6 border border-gray-100">
-                      <FileText className="h-12 w-12 text-[#2563eb]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-3">Your Content Canvas Awaits</h2>
-                    <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                      Start your content creation journey by generating your first AI-powered blog post.
-                    </p>
-                    <button
-                      onClick={resetApp}
-                      className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-sm transition-colors flex items-center justify-center mx-auto"
-                    >
-                      <RefreshCw className="h-5 w-5 mr-2" />
-                      <span>Create Your First Masterpiece</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Article Title
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Keywords
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Actions
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Published Date
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {generatedBlogs.map((blog) => (
-                          <tr key={blog.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{blog.title}</div>
-                              {blog.summary && (
-                                <div className="text-xs text-gray-500 mt-1 line-clamp-1">{blog.summary}</div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex flex-wrap">
-                                {blog.tags &&
-                                  blog.tags.map((tag, index) => (
-                                    <span
-                                      key={index}
-                                      className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-sm mr-2"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <Link
-                                href={`/generated/${blog.id}`}
-                                className="text-blue-600 hover:text-blue-900 mr-3 flex items-center"
-                                title="View blog"
-                              >
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                <span>View</span>
-                              </Link>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                                {formatDate(blog.created_at)}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
               </div>
             </div>
 
