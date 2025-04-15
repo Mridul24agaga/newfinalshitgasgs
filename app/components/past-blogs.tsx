@@ -89,7 +89,9 @@ export default function PastBlogs() {
                 <p className="text-sm text-gray-500 truncate">{new Date(blog.created_at).toLocaleDateString()}</p>
               </div>
               <div className="p-4">
-                <p className="text-gray-600 line-clamp-2 mb-3">{blog.content.substring(0, 100)}...</p>
+                <p className="text-gray-600 line-clamp-2 mb-3">
+                  {blog.content ? `${blog.content.substring(0, 100)}...` : "No content available"}
+                </p>
                 <div className="flex justify-between items-center">
                   <button
                     className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
@@ -119,11 +121,15 @@ export default function PastBlogs() {
                 Date: {new Date(selectedBlog.created_at).toLocaleString()}
               </p>
               <div className="prose max-w-none">
-                {selectedBlog.content.split("\n").map((paragraph, index) => (
-                  <p key={index} className="mb-4">
-                    {paragraph}
-                  </p>
-                ))}
+                {selectedBlog.content ? (
+                  selectedBlog.content.split("\n").map((paragraph, index) => (
+                    <p key={index} className="mb-4">
+                      {paragraph}
+                    </p>
+                  ))
+                ) : (
+                  <p>No content available</p>
+                )}
               </div>
               <div className="mt-6 flex justify-end">
                 <button onClick={closeBlogView} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
