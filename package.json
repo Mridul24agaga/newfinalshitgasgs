@@ -12,6 +12,8 @@
     "@ai-sdk/azure": "^1.1.13",
     "@ai-sdk/google": "^1.1.13",
     "@ai-sdk/openai": "^1.1.2",
+    "@azure-rest/ai-inference": "^1.0.0-beta.6",
+    "@azure/core-auth": "^1.9.0",
     "@ckeditor/ckeditor5-build-classic": "^44.3.0",
     "@ckeditor/ckeditor5-react": "^9.5.0",
     "@google/generative-ai": "^0.21.0",

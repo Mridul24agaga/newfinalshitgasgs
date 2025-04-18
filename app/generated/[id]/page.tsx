@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CreditCard, Lock, ArrowUp, Calendar, LinkIcon, Clock, CheckCircle } from "lucide-react";
+import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utitls/supabase/client";
 import PaymentPage from "@/app/components/payment-page";
@@ -15,7 +15,6 @@ type BlogPost = {
   id: string;
   user_id: string;
   blog_post: string;
-  citations: { url: string; title: string }[];
   created_at: string;
   title: string;
   timestamp: string;
@@ -72,9 +71,6 @@ export default function BlogPostPage() {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
-  const [subscriptionCredits, setSubscriptionCredits] = useState<number | null>(null);
-  const [subscriptionLastUpdated, setSubscriptionLastUpdated] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>("");
   const [splitContentResult, setSplitContentResult] = useState<BlogContent>({
     visibleContent: "",
     blurredContent: "",
@@ -88,33 +84,28 @@ export default function BlogPostPage() {
 
   const supabase = createClient();
 
-  const addLog = (message: string) => {
-    console.log(message);
-    setDebugInfo((prev) => `${prev}\n${new Date().toISOString()}: ${message}`);
-  };
-
   useEffect(() => {
     const checkUserAndSubscription = async () => {
       try {
-        addLog("Checking user authentication...");
+        console.log("Checking user authentication...");
         const {
           data: { user: authUser },
           error: authError,
         } = await supabase.auth.getUser();
 
         if (authError) {
-          addLog(`Auth error: ${authError.message}`);
+          console.log(`Auth error: ${authError.message}`);
           setUser(null);
           return;
         }
 
         if (!authUser) {
-          addLog("No authenticated user found");
+          console.log("No authenticated user found");
           setUser(null);
           return;
         }
 
-        addLog(`Authenticated user found: ${authUser.id}`);
+        console.log(`Authenticated user found: ${authUser.id}`);
         const { data: signupUser, error: signupError } = await supabase
           .from("userssignuped")
           .select("*")
@@ -122,9 +113,9 @@ export default function BlogPostPage() {
           .single();
 
         if (signupError) {
-          addLog(`Error fetching user from userssignuped: ${signupError.message}`);
+          console.log(`Error fetching user from userssignuped: ${signupError.message}`);
           if (signupError.code === "PGRST116") {
-            addLog("User not in userssignuped, creating entry...");
+            console.log("User not in userssignuped, creating entry...");
             const { data: newUser, error: insertError } = await supabase
               .from("userssignuped")
               .insert({ id: authUser.id, email: authUser.email })
@@ -132,10 +123,10 @@ export default function BlogPostPage() {
               .single();
 
             if (insertError) {
-              addLog(`Failed to create user record: ${insertError.message}`);
+              console.log(`Failed to create user record: ${insertError.message}`);
               setUser(null);
             } else {
-              addLog(`Created new user record: ${newUser.id}`);
+              console.log(`Created new user record: ${newUser.id}`);
               setUser(newUser);
               setUserId(authUser.id);
               await checkSubscription(authUser.id);
@@ -144,13 +135,13 @@ export default function BlogPostPage() {
             setUser(null);
           }
         } else {
-          addLog(`User found in userssignuped: ${signupUser.id}`);
+          console.log(`User found in userssignuped: ${signupUser.id}`);
           setUser(signupUser);
           setUserId(signupUser.id);
           await checkSubscription(authUser.id);
         }
       } catch (err) {
-        addLog(`User check error: ${err instanceof Error ? err.message : String(err)}`);
+        console.log(`User check error: ${err instanceof Error ? err.message : String(err)}`);
         setUser(null);
       }
     };
@@ -160,71 +151,65 @@ export default function BlogPostPage() {
 
   const checkSubscription = async (userId: string) => {
     try {
-      addLog(`Checking subscription for user: ${userId}`);
+      console.log(`Checking subscription for user: ${userId}`);
       const { data: subscriptions, error: subError } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", userId);
 
       if (subError) {
-        addLog(`Error fetching subscriptions: ${subError.message}`);
+        console.log(`Error fetching subscriptions: ${subError.message}`);
         setHasActiveSubscription(false);
-        setSubscriptionCredits(null);
-        setSubscriptionLastUpdated(null);
+        setSubscriptionPlan(null);
         return;
       }
 
-      addLog(`Found ${subscriptions?.length || 0} subscriptions`);
+      console.log(`Found ${subscriptions?.length || 0} subscriptions`);
       if (subscriptions && subscriptions.length > 0) {
         const activeSubscription = subscriptions.find((sub) => ACTIVE_PLANS.includes(sub.plan_id));
         if (activeSubscription) {
-          addLog(`Active subscription detected: ${activeSubscription.plan_id}`);
+          console.log(`Active subscription detected: ${activeSubscription.plan_id}`);
           setHasActiveSubscription(true);
           setSubscriptionPlan(activeSubscription.plan_id);
-          setSubscriptionCredits(activeSubscription.credits);
-          setSubscriptionLastUpdated(activeSubscription.last_updated || null);
         } else {
-          addLog("No active subscription found among subscriptions");
+          console.log("No active subscription found among subscriptions");
           setHasActiveSubscription(false);
-          setSubscriptionCredits(subscriptions[0].credits);
-          setSubscriptionLastUpdated(subscriptions[0].last_updated || null);
+          setSubscriptionPlan(null);
         }
       } else {
-        addLog("No subscriptions exist for this user");
+        console.log("No subscriptions exist for this user");
         setHasActiveSubscription(false);
-        setSubscriptionCredits(null);
-        setSubscriptionLastUpdated(null);
+        setSubscriptionPlan(null);
       }
     } catch (err) {
-      addLog(`Subscription check error: ${err instanceof Error ? err.message : String(err)}`);
+      console.log(`Subscription check error: ${err instanceof Error ? err.message : String(err)}`);
       setHasActiveSubscription(false);
-      setSubscriptionCredits(null);
-      setSubscriptionLastUpdated(null);
+      setSubscriptionPlan(null);
     }
   };
 
   useEffect(() => {
     const fetchBlogPost = async () => {
       if (!id) {
-        addLog("No blog post ID provided");
+        console.log("No blog post ID provided");
         setLoading(false);
         return;
       }
       try {
-        addLog(`Fetching blog post with ID: ${id}`);
+        console.log(`Fetching blog post with ID: ${id}`);
         const { data: blog, error } = await supabase.from("blogs").select("*").eq("id", id).single();
         if (error || !blog) {
-          addLog(`Error fetching blog post: ${error?.message || "No data returned"}`);
+          console.log(`Error fetching blog post: ${error?.message || "No data returned"}`);
           setBlogPost(null);
         } else {
-          addLog(`Blog post fetched: ${blog.title}, is_blurred: ${blog.is_blurred}`);
+          console.log(`Blog post fetched: ${blog.title}, is_blurred: ${blog.is_blurred}`);
           setBlogPost({
             ...blog,
-            is_blurred: blog.is_blurred ?? false, // Ensure default false if null
+            is_blurred: blog.is_blurred ?? false,
           });
         }
       } catch (err) {
-        addLog(`Blog fetch error: ${err instanceof Error ? err.message : String(err)}`);
+        console.log(`Blog fetch error: ${err instanceof Error ? err.message : String(err)}`);
         setBlogPost(null);
       } finally {
         setLoading(false);
@@ -234,35 +219,49 @@ export default function BlogPostPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!blogPost || typeof document === "undefined") {
-      addLog("No blog post or document not available yet");
+    if (!blogPost) {
+      console.log("No blog post available");
       return;
     }
 
     try {
-      addLog(`Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`);
+      console.log(`Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`);
 
       if (!blogPost.is_blurred || hasActiveSubscription) {
-        addLog("Content should be fully visible (not blurred or user has subscription)");
+        console.log("Content fully visible (not blurred or user has subscription)");
         setSplitContentResult({
           visibleContent: blogPost.blog_post,
           blurredContent: "",
           hasBlurredContent: false,
         });
       } else {
-        addLog("Applying blur effect for free plan user without active subscription");
+        console.log("Applying blur for non-subscribed user");
         const fullContent = blogPost.blog_post || "";
-        const splitIndex = Math.floor(fullContent.length * 0.2); // Show 20% as teaser
+        const paragraphs = fullContent.match(/<\/p>/g) || [];
+        const targetIndex = Math.ceil(paragraphs.length * 0.2);
+        let splitIndex = 0;
+        if (targetIndex > 0 && paragraphs.length >= targetIndex) {
+          let count = 0;
+          let lastPos = 0;
+          while (count < targetIndex) {
+            lastPos = fullContent.indexOf("</p>", lastPos + 1);
+            if (lastPos === -1) break;
+            count++;
+            splitIndex = lastPos + 4;
+          }
+        } else {
+          splitIndex = Math.floor(fullContent.length * 0.2);
+        }
 
         setSplitContentResult({
           visibleContent: fullContent.slice(0, splitIndex),
           blurredContent: fullContent.slice(splitIndex),
           hasBlurredContent: fullContent.length > splitIndex,
         });
-        addLog(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`);
+        console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`);
       }
     } catch (err) {
-      addLog(`Content split error: ${err instanceof Error ? err.message : String(err)}`);
+      console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`);
       setSplitContentResult({
         visibleContent: blogPost.blog_post || "",
         blurredContent: "",
@@ -287,20 +286,20 @@ export default function BlogPostPage() {
     e.preventDefault();
     try {
       setError(null);
-      addLog("Initiating login...");
+      console.log("Initiating login...");
       const {
         data: { user: authUser },
         error: authError,
       } = await supabase.auth.signInWithPassword({ email, password });
       if (authError) {
-        addLog(`Login failed: ${authError.message}`);
+        console.log(`Login failed: ${authError.message}`);
         throw new Error(`Authentication failed: ${authError.message}`);
       }
       if (!authUser) {
-        addLog("No user returned from login");
+        console.log("No user returned from login");
         throw new Error("Authentication failed: No user returned");
       }
-      addLog(`Logged in user: ${authUser.id}`);
+      console.log(`Logged in user: ${authUser.id}`);
       const { data: signupUser, error: signupError } = await supabase
         .from("userssignuped")
         .select("*")
@@ -308,14 +307,14 @@ export default function BlogPostPage() {
         .single();
       if (signupError) {
         if (signupError.code === "PGRST116") {
-          addLog("User not in userssignuped, creating...");
+          console.log("User not in userssignuped, creating...");
           const { data: newUser, error: insertError } = await supabase
             .from("userssignuped")
             .insert({ id: authUser.id, email: authUser.email })
             .select()
             .single();
           if (insertError) {
-            addLog(`Failed to insert new user: ${insertError.message}`);
+            console.log(`Failed to insert new user: ${insertError.message}`);
             throw new Error(`Failed to create user record: ${insertError.message}`);
           }
           setUser(newUser);
@@ -324,22 +323,22 @@ export default function BlogPostPage() {
           await checkSubscription(authUser.id);
           return;
         }
-        addLog(`User fetch error post-login: ${signupError.message}`);
+        console.log(`User fetch error post-login: ${signupError.message}`);
         throw new Error(`Failed to check user record: ${signupError.message}`);
       }
-      addLog("User exists in userssignuped");
+      console.log("User exists in userssignuped");
       setUser(signupUser);
       setUserId(signupUser.id);
       setShowLoginForm(false);
       await checkSubscription(authUser.id);
     } catch (err) {
-      addLog(`Login error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      console.log(`Login error: ${err instanceof Error ? err.message : "Unknown error"}`);
       setError(err instanceof Error ? err.message : "Login failed");
     }
   };
 
   const handlePayNow = () => {
-    addLog("Pay Now clicked");
+    console.log("Pay Now clicked");
     setShowPricing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -356,10 +355,10 @@ export default function BlogPostPage() {
 
   const getCheckoutUrl = (plan: Plan) => {
     if (!user || !user.id) {
-      addLog("No user for checkout URL");
+      console.log("No user for checkout URL");
       return "#";
     }
-    addLog(`Generating checkout URL for plan: ${plan.name}`);
+    console.log(`Generating checkout URL for plan: ${plan.name}`);
     const redirectUrl = encodeURIComponent(
       `${window.location.origin}/payment-success?` +
         `user_id=${user.id}&plan_id=${plan.id}&plan_name=${plan.name}&` +
@@ -388,7 +387,7 @@ export default function BlogPostPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-md mx-auto bg-white rounded-xl shadow-md border border-gray-200"
+          className="max-w-md mx-auto"
         >
           <div className="text-center p-8">
             <div className="h-12 w-12 text-gray-400 mx-auto mb-4">
@@ -419,16 +418,16 @@ export default function BlogPostPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+            className="max-w-4xl mx-auto"
           >
-            <div className="p-6 sm:p-8">
+            <div className="p-6 sm:p-10">
               {hasActiveSubscription && (
-                <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                <div className="mb-6 bg-green-50 rounded-lg p-4 flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
                   <div>
                     <p className="text-green-800 font-medium">Premium Content Unlocked</p>
                     <p className="text-green-600 text-sm">
-                      You're viewing 100% of this content with your{" "}
+                      You're enjoying the full post with your{" "}
                       {subscriptionPlan
                         ? subscriptionPlan.charAt(0).toUpperCase() + subscriptionPlan.slice(1)
                         : "Premium"}{" "}
@@ -442,7 +441,7 @@ export default function BlogPostPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
-                className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800"
+                className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 font-saira"
               >
                 {blogPost.title}
               </motion.h1>
@@ -465,21 +464,8 @@ export default function BlogPostPage() {
                 </div>
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-2" />
-                  <span>5 min read</span>
+                  <span>6 min read</span>
                 </div>
-                {blogPost.url && (
-                  <div className="flex items-center">
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                    <a
-                      href={blogPost.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#294fd6] hover:text-[#1e3eb8] hover:underline transition-colors duration-200"
-                    >
-                      Source
-                    </a>
-                  </div>
-                )}
               </motion.div>
 
               <motion.hr
@@ -489,12 +475,25 @@ export default function BlogPostPage() {
                 className="my-6 border-gray-200"
               />
 
-              {/* Visible Content */}
+              {/* Blog Content */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
-                className="prose prose-gray prose-headings:text-gray-800 prose-a:text-[#294fd6] prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800 max-w-none mb-8"
+                className="prose prose-gray max-w-none mb-8
+                  prose-headings:font-saira prose-headings:text-gray-800
+                  prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
+                  prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
+                  prose-strong:font-bold prose-strong:text-gray-800
+                  prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
+                  prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
+                  prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
+                  prose-iframe:w-full prose-iframe:rounded-lg
+                  prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
+                  prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
+                  prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
+                  prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
+                  prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
                 dangerouslySetInnerHTML={{ __html: visibleContent }}
               />
 
@@ -504,11 +503,19 @@ export default function BlogPostPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
-                  className="relative mt-8 rounded-xl overflow-hidden border border-gray-200 shadow-md"
+                  className="relative mt-8 rounded-xl overflow-hidden"
                 >
                   <div className="relative">
                     <div
-                      className="prose prose-gray prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800 max-w-none blur-md pointer-events-none p-6 opacity-70 select-none"
+                      className="prose prose-gray max-w-none blur-md pointer-events-none p-6 opacity-70 select-none
+                        prose-headings:font-saira prose-headings:text-gray-800
+                        prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
+                        prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700
+                        prose-img:w-full prose-img:rounded-lg
+                        prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
+                        prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
+                        prose-iframe:w-full prose-iframe:rounded-lg
+                        prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800"
                       dangerouslySetInnerHTML={{ __html: blurredContent }}
                     />
                     <div className="absolute top-0 right-0 bg-[#294fd6] text-white text-xs font-bold px-2 py-1 rounded-bl-md">
@@ -521,18 +528,18 @@ export default function BlogPostPage() {
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                       className="text-center max-w-md"
                     >
-                      <div className="bg-blue-100 text-[#294fd6] p-3 rounded-full inline-flex items-center justify-center mb-4 shadow-md">
+                      <div className="bg-blue-100 text-[#294fd6] p-3 rounded-full inline-flex items-center justify-center mb-4">
                         <Lock className="h-6 w-6" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800 mb-3">Unlock Full Article</h3>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-3">Unlock the Full Post</h3>
                       <p className="text-gray-600 mb-6">
-                        This content is exclusive to subscribers. Upgrade now to read the full post and access our premium library!
+                        Yo, this blog’s got the good stuff—images, videos, FAQs, the works! Subscribe to dive in and get all our premium content.
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handlePayNow}
-                        className="bg-[#294fd6] hover:bg-[#1e3eb8] text-white px-8 py-3 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center mx-auto font-medium"
+                        className="bg-[#294fd6] hover:bg-[#1e3eb8] text-white px-8 py-3 rounded-lg transition-all flex items-center justify-center mx-auto font-medium"
                       >
                         <CreditCard className="h-5 w-5 mr-2" />
                         Subscribe to Unlock
@@ -541,61 +548,15 @@ export default function BlogPostPage() {
                   </div>
                 </motion.div>
               )}
-
-              {/* Citations */}
-              {blogPost.citations && blogPost.citations.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7, duration: 0.5 }}
-                  className="mt-8 pt-6 border-t border-gray-200"
-                >
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Citations</h3>
-                  <ul className="space-y-2">
-                    {blogPost.citations.map((citation, index) => (
-                      <li key={index} className="text-gray-600">
-                        <span className="text-gray-400">[{index + 1}]</span>{" "}
-                        <a
-                          href={citation.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#294fd6] hover:text-[#1e3eb8] hover:underline transition-colors duration-200"
-                        >
-                          {citation.title || citation.url}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-
-              {/* Debug Information */}
-              <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Information</h4>
-                <div className="text-xs font-mono text-gray-600">
-                  <p>User ID: {userId || "Not logged in"}</p>
-                  <p>Has Active Subscription: {hasActiveSubscription ? "Yes" : "No"}</p>
-                  <p>Subscription Plan: {subscriptionPlan || "None"}</p>
-                  <p>Credits: {subscriptionCredits !== null ? subscriptionCredits : "N/A"}</p>
-                  <p>Subscription Last Updated: {subscriptionLastUpdated || "N/A"}</p>
-                  <p>Blog Post ID: {blogPost.id}</p>
-                  <p>Is Blurred: {blogPost.is_blurred ? "Yes" : "No"}</p>
-                  <p>Has Blurred Content: {hasBlurredContent ? "Yes" : "No"}</p>
-                  <details>
-                    <summary>Detailed Logs</summary>
-                    <pre className="whitespace-pre-wrap mt-2 text-xs">{debugInfo}</pre>
-                  </details>
-                </div>
-              </div>
             </div>
           </motion.div>
         ) : (
           <motion.div className="text-center mb-8">
             <button
               onClick={handleBackToPreview}
-              className="text-[#294fd6] hover:text-[#1e3eb8] font-medium transition-colors duration-200 underline mb-8"
+              className="text-[#294fd6] hover:text-[#1e3eb8] font-medium transition-colors duration-200 underline mb-8 font-saira"
             >
-              Back to article preview
+              Back to Blog Post
             </button>
             <PaymentPage />
           </motion.div>
@@ -611,7 +572,7 @@ export default function BlogPostPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 bg-[#294fd6] text-white p-3 rounded-full shadow-lg hover:bg-[#1e3eb8] transition-all duration-300 z-50"
+            className="fixed bottom-6 right-6 bg-[#294fd6] text-white p-3 rounded-full transition-all duration-300 z-50"
             aria-label="Scroll to top"
           >
             <ArrowUp className="h-6 w-6" />

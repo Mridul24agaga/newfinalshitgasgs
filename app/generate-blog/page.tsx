@@ -106,8 +106,7 @@ export default function Home() {
           hasActiveSubscription={hasActiveSubscription}
         />
 
-        {/* Past blogs section */}
-        <PastBlogs />
+      
       </div>
     </main>
   )
