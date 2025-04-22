@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import BlogGenerator from "./generate-blog-content"
-import PastBlogs from "@/app/components/past-blogs"
 import { createClient } from "@/utitls/supabase/client"
+import { generateBlog } from "@/app/actions"
 
 export default function Home() {
   const [loading, setLoading] = useState(false)
@@ -62,16 +62,11 @@ export default function Home() {
 
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
 
-      // Make the API call to generate the blog
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, humanizeLevel }),
-      })
+      // Only pass the URL to the server action
+      // The humanizeLevel will need to be handled differently or embedded in the URL
+      const data = await generateBlog(url)
 
-      const data = await response.json()
-
-      // Check for subscription errors from the API
+      // Check for subscription errors from the server action
       if (data.error === "subscription_required" && !hasActiveSubscription) {
         setSubscriptionError(true)
       }
@@ -80,9 +75,8 @@ export default function Home() {
     } catch (error) {
       console.error("Error generating blog:", error)
       // Handle error state
+      return { error: "client_error", message: "Failed to generate blog" }
     } finally {
-      // In a real implementation, you might want to keep loading true
-      // until the blog is fully generated, which could take longer
       setLoading(false)
     }
   }
@@ -105,8 +99,6 @@ export default function Home() {
           subscriptionError={subscriptionError}
           hasActiveSubscription={hasActiveSubscription}
         />
-
-      
       </div>
     </main>
   )
