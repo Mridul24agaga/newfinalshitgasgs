@@ -147,9 +147,13 @@ function generatePlaceholderImages(count: number, topic: string): string[] {
   return placeholders
 }
 
+// Let's also improve the image topic generation to create more diverse and interesting visuals:
+
+// Find the generateImageTopics function and enhance it:
+
 // Add a function to generate image topics based on the blog content
 async function generateImageTopics(blogTitle: string, researchSummary: string): Promise<string[]> {
-  console.log("Generating image topics based on blog content...")
+  console.log("Generating diverse image topics based on blog content...")
 
   const imageTopicsPrompt = `
     Based on this blog title and research summary:
@@ -160,18 +164,21 @@ async function generateImageTopics(blogTitle: string, researchSummary: string): 
     RESEARCH SUMMARY:
     ${researchSummary}
     
-    Generate 3 specific image topics that would be perfect illustrations for this blog post.
+    Generate 5 specific image topics that would be perfect illustrations for this blog post.
     
     The image topics should:
     1. Be highly relevant to the blog content
     2. Be specific enough to generate good images (not too abstract)
     3. Be varied to cover different aspects of the blog
-    4. Be described in 5-10 words each
+    4. Include at least one conceptual/metaphorical image idea
+    5. Include at least one data visualization or chart concept
+    6. Be described in 5-10 words each
     
     Format your response as a numbered list with just the image topics, one per line.
+    Make each topic visually distinct from the others.
   `
 
-  const imageTopicsResponse = await callAzureOpenAI(imageTopicsPrompt, 300, 0.7)
+  const imageTopicsResponse = await callAzureOpenAI(imageTopicsPrompt, 400, 0.8)
 
   // Extract the image topics from the response
   const topicLines = imageTopicsResponse
@@ -181,9 +188,9 @@ async function generateImageTopics(blogTitle: string, researchSummary: string): 
 
   // Ensure we have at least 3 topics
   const defaultTopics = [
-    `${blogTitle}`,
-    `Professional in ${blogTitle.split(" ")[0]} industry`,
-    `Success metrics for ${blogTitle.split(" ")[0]}`,
+    `${blogTitle.split(" ").slice(0, 3).join(" ")} concept visualization`,
+    `Professional in ${blogTitle.split(" ")[0]} industry with digital elements`,
+    `Abstract representation of ${blogTitle.split(" ").slice(-3).join(" ")}`,
   ]
 
   const topics = [...topicLines]
@@ -192,8 +199,12 @@ async function generateImageTopics(blogTitle: string, researchSummary: string): 
     topics.push(defaultTopics[topics.length])
   }
 
-  console.log(`Generated image topics: ${topics.join(", ")}`)
-  return topics.slice(0, 3)
+  console.log(`Generated diverse image topics: ${topics.join(", ")}`)
+
+  // Select 3 diverse topics from our pool
+  const selectedTopics = topics.slice(0, 3)
+
+  return selectedTopics
 }
 
 // Initialize clients
