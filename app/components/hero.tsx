@@ -5,8 +5,7 @@ import type React from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
-import { Menu, X, CreditCard, Clock, ShieldCheck, ChevronDown, Play, Volume2, Maximize2 } from "lucide-react"
-
+import { Menu, X, CreditCard, Clock, ShieldCheck, ChevronDown, Play, Volume2, Maximize2, Star } from "lucide-react"
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -91,8 +90,8 @@ export default function Home() {
       {/* Promotion Banner */}
       <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
         <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
-          <span className="mr-2">🎯</span>
-          Spring Sale: 40% OFF on Yearly Plans – code "SUN"
+          <span className="mr-2">🚀</span>
+          Launch Offer: 40% OFF on Yearly Plans – code "LAUNCH"
         </span>
         <div className="flex items-center ml-4">
           <div className="flex items-center space-x-1 mx-2">
@@ -122,7 +121,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <div className="text-xl font-bold text-gray-800">Arvow</div>
+              <div className="text-xl font-bold text-gray-800">GetMoreSEO</div>
             </Link>
           </div>
 
@@ -170,7 +169,7 @@ export default function Home() {
               href="/signup"
               className="bg-[#294df6] hover:bg-[#1e3ed0] text-white px-5 py-2.5 rounded-md font-medium text-sm whitespace-nowrap transition-colors duration-200"
             >
-              Get 3 Free Articles
+              Get Started Today
             </Link>
           </div>
         </div>
@@ -207,7 +206,7 @@ export default function Home() {
                   className="bg-[#294df6] text-white px-4 py-2 rounded-md font-medium text-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Get 3 Free Articles
+                  Get Started Today
                 </Link>
               </div>
             </nav>
@@ -231,11 +230,11 @@ export default function Home() {
                   <span className="text-gray-800">On</span>
                   <br />
                   <span className="text-[#294df6]">Auto-Pilot</span>
-                 
                 </h1>
 
                 <p className="text-gray-600 text-lg mb-8">
-                100% automated blog creation that ranks on Google, delivers real results, and requires zero effort from you.
+                  100% automated blog creation that ranks on Google, delivers real results, and requires zero effort
+                  from you.
                 </p>
 
                 {/* Email Input */}
@@ -254,27 +253,21 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <div className="flex items-center">
-                    <div className="flex -space-x-3">
+                {/* Replaced the avatars section with a rating section */}
+                <div className="mb-8 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div
-                          key={i}
-                          className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-300"
-                        >
-                          <Image
-                            src={`/confident-professional.png?key=gcgxo&height=40&width=40&query=professional headshot person ${i}`}
-                            alt={`User ${i}`}
-                            width={40}
-                            height={40}
-                          />
-                        </div>
+                        <Star key={i} className="h-5 w-5 fill-current" />
                       ))}
                     </div>
-                    <span className="ml-3 text-gray-700 font-medium text-sm">
-                      Join <span className="font-bold">25,260+</span> business owners
-                    </span>
+                    <span className="ml-2 font-semibold text-gray-700">4.9/5 rating</span>
                   </div>
+                  <p className="text-gray-600 text-sm">
+                    "GetMoreSEO has completely transformed our content strategy. We're now ranking for keywords we never
+                    thought possible."
+                  </p>
+                  <p className="text-gray-700 font-medium text-sm mt-1">— Sarah Johnson, Marketing Director</p>
                 </div>
 
                 <div className="flex flex-wrap gap-6 text-sm">
@@ -333,7 +326,7 @@ export default function Home() {
                           <Play className="h-8 w-8 text-[#294df6] ml-1" fill="#294df6" />
                         </div>
                         <div className="absolute bottom-10 left-6 right-6 text-white font-medium">
-                          <p className="text-xl">See Arvow in action</p>
+                          <p className="text-xl">See GetMoreSEO in action</p>
                           <p className="text-sm opacity-90 mt-1">Watch our 2-minute product demo</p>
                         </div>
                       </div>
@@ -400,7 +393,7 @@ export default function Home() {
 
                 {/* Video Caption */}
                 <div className="mt-4 text-center">
-                  <p className="text-sm text-gray-600">See how Arvow can transform your content strategy</p>
+                  <p className="text-sm text-gray-600">See how GetMoreSEO can transform your content strategy</p>
                 </div>
 
                 {/* Video Features */}
@@ -427,8 +420,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        
+     
       </main>
     </div>
   )

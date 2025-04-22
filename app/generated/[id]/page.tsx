@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle } from "lucide-react"
+import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle, Copy, FileText, CheckCircle2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createClient } from "@/utitls/supabase/client"
 import PaymentPage from "@/app/components/payment-page"
@@ -55,6 +55,250 @@ type Plan = {
   numericPrice: number
 }
 
+// Function to properly format blog content with HTML tags
+const formatBlogContent = (content: string) => {
+  if (!content) return ""
+
+  // Replace simple "Blog image X" references
+  content = content.replace(/Blog image (\d+)/g, (match, index) => {
+    return `<div class="blog-image-container">
+      <div class="relative w-full" style="height: 400px;">
+        <img 
+          src="/seo-backlink-strategy-${index}.jpg"
+          alt="Blog image ${index}"
+          class="rounded-lg object-cover w-full h-full"
+          loading="lazy"
+        />
+      </div>
+    </div>`
+  })
+
+  // Format headings
+  content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
+    if (p1.includes("How to Boost Your Backlink Strategy in Just 30 Days")) {
+      return `<h1 class="text-3xl font-bold my-6">${p1}</h1>`
+    }
+    if (
+      p1.startsWith("1.") ||
+      p1.startsWith("2.") ||
+      p1.startsWith("3.") ||
+      p1.startsWith("4.") ||
+      p1.startsWith("5.") ||
+      p1.startsWith("6.") ||
+      p1.startsWith("Conclusion") ||
+      p1.startsWith("FAQ")
+    ) {
+      return `<h2 class="text-2xl font-bold my-5">${p1}</h2>`
+    }
+    return `<strong>${p1}</strong>`
+  })
+
+  // Format lists - Modified to avoid using /s flag
+  content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
+    return `<div class="my-3">
+      <strong class="block mb-1">${title}:</strong>
+      <p>${description.trim()}</p>
+    </div>`
+  })
+
+  // Format bullet points
+  content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>')
+
+  // Wrap lists in ul tags
+  content = content.replace(
+    /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n<li class="ml-6 list-disc my-2">/g,
+    '<ul class="my-4 list-disc">\n<li class="ml-6 list-disc my-2">$1</li>\n<li class="ml-6 list-disc my-2">',
+  )
+  content = content.replace(
+    /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n(?!<li)/g,
+    '<li class="ml-6 list-disc my-2">$1</li>\n</ul>\n',
+  )
+
+  // Format paragraphs (any text that's not already wrapped in HTML tags)
+  const lines = content.split("\n")
+  let formattedContent = ""
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (
+      line &&
+      !line.startsWith("<h") &&
+      !line.startsWith("<ul") &&
+      !line.startsWith("<li") &&
+      !line.startsWith("<div") &&
+      !line.startsWith("<p") &&
+      !line.startsWith("</")
+    ) {
+      formattedContent += `<p class="my-4">${line}</p>\n`
+    } else {
+      formattedContent += line + "\n"
+    }
+  }
+
+  // Format Q&A in FAQ section
+  formattedContent = formattedContent.replace(
+    /\*\*Q\d+: (.*?)\*\*/g,
+    '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>',
+  )
+
+  return formattedContent
+}
+
+// Function to render markdown to HTML (from generate-blog-page)
+const renderMarkdown = (markdown: string) => {
+  if (!markdown) return ""
+
+  // Remove the first heading (title) as we display it separately
+  const contentWithoutTitle = markdown.replace(/^#\s+.+$/m, "").trim()
+
+  // Remove any "---" separator lines and meta-commentary
+  const cleanedContent = contentWithoutTitle
+    .replace(/^---+$/gm, "") // Remove separator lines
+    .replace(/^There you have it!.*$/gm, "") // Remove common meta-commentary
+    .replace(/^The content flows naturally.*$/gm, "")
+    .replace(/^Let me know if.*$/gm, "")
+    .replace(/^Let's dive in!.*$/gm, "")
+    .replace(/^Here's the final.*$/gm, "")
+    .replace(/^I've also included.*$/gm, "")
+
+  // Process other markdown elements
+  let processedContent = cleanedContent
+
+  // Fix 1: Process image blocks with IMAGE_BLOCK tags
+  const imageBlockRegex = /<!-- IMAGE_BLOCK_START -->([\s\S]*?)<!-- IMAGE_BLOCK_END -->/g
+  processedContent = processedContent.replace(imageBlockRegex, (match, imageContent) => {
+    // Extract the image URL and alt text
+    const imgMatch = imageContent.match(/<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/i)
+    if (imgMatch) {
+      const [_, src, alt] = imgMatch
+      return `<div class="blog-image-container">
+        <div class="relative w-full" style="height: 400px;">
+          <img 
+            src="${src}" 
+            alt="${alt || "Blog image"}" 
+            class="rounded-lg object-cover w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </div>`
+    }
+    return match // Return original if no match
+  })
+
+  // Fix 2: Process standalone image tags with full URL pattern
+  processedContent = processedContent.replace(
+    /(https?:\/\/[^\s"]+)" alt="([^"]*)" class="blog-image" \/>/gi,
+    (match, src, alt) => {
+      return `<div class="blog-image-container">
+        <div class="relative w-full" style="height: 400px;">
+          <img 
+            src="${src}" 
+            alt="${alt || "Blog image"}" 
+            class="rounded-lg object-cover w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </div>`
+    },
+  )
+
+  // Fix 3: Process any remaining image tags
+  processedContent = processedContent.replace(
+    /<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/gi,
+    (match, src, alt) => {
+      return `<div class="blog-image-container">
+        <div class="relative w-full" style="height: 400px;">
+          <img 
+            src="${src}" 
+            alt="${alt || "Blog image"}" 
+            class="rounded-lg object-cover w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </div>`
+    },
+  )
+
+  // Fix 4: Process any raw image URLs that might be in the text
+  processedContent = processedContent.replace(/(https?:\/\/[^\s"]+\.(jpg|jpeg|png|gif|webp))/gi, (match, url) => {
+    return `<div class="blog-image-container">
+        <div class="relative w-full" style="height: 400px;">
+          <img 
+            src="${url}" 
+            alt="Blog image" 
+            class="rounded-lg object-cover w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </div>`
+  })
+
+  // Process other markdown elements
+  processedContent = processedContent
+    // Process headings
+    .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mt-10 mb-4">$1</h1>')
+
+    // Process lists
+    .replace(/^\s*\*\s(.*)/gm, '<li class="ml-6 list-disc my-1">$1</li>')
+    .replace(/^\s*\d\.\s(.*)/gm, '<li class="ml-6 list-decimal my-1">$1</li>')
+
+    // Process emphasis and bold
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+
+    // Process links - fixed the regex pattern
+    .replace(
+      /\[(.*?)\]$(.*?)$/g,
+      '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>',
+    )
+
+  // Process paragraphs (must come last)
+  return processedContent
+    .split("\n\n")
+    .map((para) => {
+      // Skip if it's already a heading, list, image container, or HTML block
+      if (
+        para.startsWith("<h1") ||
+        para.startsWith("<h2") ||
+        para.startsWith("<h3") ||
+        para.startsWith("<li") ||
+        para.startsWith("<div class=") ||
+        para.startsWith("<!-- IMAGE_BLOCK") ||
+        para.startsWith("<img")
+      ) {
+        return para
+      }
+
+      // Handle lists (wrap in ul/ol)
+      if (para.includes('<li class="ml-6 list-disc')) {
+        return `<ul class="my-4">${para}</ul>`
+      }
+      if (para.includes('<li class="ml-6 list-decimal')) {
+        return `<ol class="my-4">${para}</ol>`
+      }
+
+      // Regular paragraph
+      return `<p class="my-4">${para}</p>`
+    })
+    .join("")
+}
+
+// Function to sanitize blog content before rendering
+const sanitizeBlogContent = (content: string) => {
+  // This function will preprocess the content to fix any malformed HTML
+  // before it gets passed to renderMarkdown
+
+  // Fix 1: Fix broken image tags where the URL is outside the src attribute
+  content = content.replace(
+    /(https?:\/\/[^\s"]+)" alt="([^"]*)" class="blog-image" \/>/gi,
+    '<img src="$1" alt="$2" class="blog-image" />',
+  )
+
+  return content
+}
+
 export default function BlogPostPage() {
   const [blogPost, setBlogPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,6 +320,7 @@ export default function BlogPostPage() {
     blurredContent: "",
     hasBlurredContent: false,
   })
+  const [copied, setCopied] = useState(false)
 
   const params = useParams()
   const router = useRouter()
@@ -218,94 +463,6 @@ export default function BlogPostPage() {
     fetchBlogPost()
   }, [id])
 
-  // Function to properly format blog content with HTML tags
-  const formatBlogContent = (content: string) => {
-    if (!content) return ""
-
-    // Replace simple "Blog image X" references
-    content = content.replace(/Blog image (\d+)/g, (match, index) => {
-      return `<div class="blog-image-container">
-        <div class="relative w-full h-[400px] my-8">
-          <img 
-            src="/seo-backlink-strategy-${index}.jpg"
-            alt="Blog image ${index}"
-            class="rounded-lg object-cover w-full h-full"
-          />
-        </div>
-      </div>`
-    })
-
-    // Format headings
-    content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
-      if (p1.includes("How to Boost Your Backlink Strategy in Just 30 Days")) {
-        return `<h1 class="text-3xl font-bold my-6">${p1}</h1>`
-      }
-      if (
-        p1.startsWith("1.") ||
-        p1.startsWith("2.") ||
-        p1.startsWith("3.") ||
-        p1.startsWith("4.") ||
-        p1.startsWith("5.") ||
-        p1.startsWith("6.") ||
-        p1.startsWith("Conclusion") ||
-        p1.startsWith("FAQ")
-      ) {
-        return `<h2 class="text-2xl font-bold my-5">${p1}</h2>`
-      }
-      return `<strong>${p1}</strong>`
-    })
-
-    // Format lists - Modified to avoid using /s flag
-    content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
-      return `<div class="my-3">
-        <strong class="block mb-1">${title}:</strong>
-        <p>${description.trim()}</p>
-      </div>`
-    })
-
-    // Format bullet points
-    content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>')
-
-    // Wrap lists in ul tags
-    content = content.replace(
-      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n<li class="ml-6 list-disc my-2">/g,
-      '<ul class="my-4 list-disc">\n<li class="ml-6 list-disc my-2">$1</li>\n<li class="ml-6 list-disc my-2">',
-    )
-    content = content.replace(
-      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n(?!<li)/g,
-      '<li class="ml-6 list-disc my-2">$1</li>\n</ul>\n',
-    )
-
-    // Format paragraphs (any text that's not already wrapped in HTML tags)
-    const lines = content.split("\n")
-    let formattedContent = ""
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (
-        line &&
-        !line.startsWith("<h") &&
-        !line.startsWith("<ul") &&
-        !line.startsWith("<li") &&
-        !line.startsWith("<div") &&
-        !line.startsWith("<p") &&
-        !line.startsWith("</")
-      ) {
-        formattedContent += `<p class="my-4">${line}</p>\n`
-      } else {
-        formattedContent += line + "\n"
-      }
-    }
-
-    // Format Q&A in FAQ section
-    formattedContent = formattedContent.replace(
-      /\*\*Q\d+: (.*?)\*\*/g,
-      '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>',
-    )
-
-    return formattedContent
-  }
-
   useEffect(() => {
     if (!blogPost) {
       console.log("No blog post available")
@@ -317,16 +474,19 @@ export default function BlogPostPage() {
         `Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`,
       )
 
+      // First sanitize the content to fix any malformed HTML
+      const sanitizedContent = sanitizeBlogContent(blogPost.blog_post || "")
+
       if (!blogPost.is_blurred || hasActiveSubscription) {
         console.log("Content fully visible (not blurred or user has subscription)")
         setSplitContentResult({
-          visibleContent: formatBlogContent(blogPost.blog_post),
+          visibleContent: renderMarkdown(sanitizedContent),
           blurredContent: "",
           hasBlurredContent: false,
         })
       } else {
         console.log("Applying blur for non-subscribed user")
-        const fullContent = blogPost.blog_post || ""
+        const fullContent = sanitizedContent
         const paragraphs = fullContent.match(/<\/p>/g) || []
         const targetIndex = Math.ceil(paragraphs.length * 0.2)
         let splitIndex = 0
@@ -344,8 +504,8 @@ export default function BlogPostPage() {
         }
 
         setSplitContentResult({
-          visibleContent: formatBlogContent(fullContent.slice(0, splitIndex)),
-          blurredContent: formatBlogContent(fullContent.slice(splitIndex)),
+          visibleContent: renderMarkdown(fullContent.slice(0, splitIndex)),
+          blurredContent: renderMarkdown(fullContent.slice(splitIndex)),
           hasBlurredContent: fullContent.length > splitIndex,
         })
         console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`)
@@ -353,7 +513,7 @@ export default function BlogPostPage() {
     } catch (err) {
       console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`)
       setSplitContentResult({
-        visibleContent: formatBlogContent(blogPost.blog_post || ""),
+        visibleContent: renderMarkdown(blogPost.blog_post || ""),
         blurredContent: "",
         hasBlurredContent: false,
       })
@@ -457,6 +617,22 @@ export default function BlogPostPage() {
     return `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${redirectUrl}`
   }
 
+  // Calculate estimated reading time
+  const calculateReadingTime = (content: string) => {
+    const wordsPerMinute = 200
+    const wordCount = content.split(/\s+/).length
+    const readingTime = Math.ceil(wordCount / wordsPerMinute)
+    return readingTime
+  }
+
+  const copyToClipboard = () => {
+    if (blogPost?.blog_post) {
+      navigator.clipboard.writeText(blogPost.blog_post)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   const { visibleContent, blurredContent, hasBlurredContent } = splitContentResult
 
   if (loading) {
@@ -500,6 +676,62 @@ export default function BlogPostPage() {
 
   return (
     <div ref={topRef} className="min-h-screen bg-white py-12 px-4 sm:px-6">
+      {/* Add blog styling from generate-blog-page */}
+      <style jsx global>{`
+        .blog-image-container {
+          margin: 2rem 0;
+          padding: 1.5rem 0;
+          position: relative;
+          clear: both;
+          display: block;
+          width: 100%;
+          overflow: hidden;
+          border-top: 1px solid #f0f0f0;
+          border-bottom: 1px solid #f0f0f0;
+          background-color: #f9fafb;
+          border-radius: 0.5rem;
+        }
+        
+        .blog-content h2 {
+          color: #1e40af;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+          font-weight: 700;
+        }
+        
+        .blog-content h3 {
+          color: #374151;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+        }
+        
+        .blog-content p {
+          margin-bottom: 1rem;
+          line-height: 1.7;
+        }
+        
+        .blog-content ul, .blog-content ol {
+          margin-bottom: 1.5rem;
+          padding-left: 1rem;
+        }
+        
+        .blog-content li {
+          margin-bottom: 0.5rem;
+        }
+        
+        .blog-content a {
+          color: #2563eb;
+          text-decoration: underline;
+          text-decoration-color: #93c5fd;
+          text-underline-offset: 2px;
+        }
+        
+        .blog-content a:hover {
+          text-decoration-color: #2563eb;
+        }
+      `}</style>
+
       <AnimatePresence mode="wait">
         {!showPricing ? (
           <motion.div
@@ -527,63 +759,50 @@ export default function BlogPostPage() {
                 </div>
               )}
 
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 font-saira"
-              >
-                {blogPost.title}
-              </motion.h1>
+              {/* Blog Header - Using styling from generate-blog-page */}
+              <div className="border-b border-gray-200 pb-6 mb-6">
+                <motion.h1
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
+                >
+                  {blogPost.title}
+                </motion.h1>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-500"
-              >
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>
-                    {new Date(blogPost.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2" />
-                  <span>6 min read</span>
-                </div>
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="flex flex-wrap items-center gap-4 mb-2 text-sm text-gray-500"
+                >
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span>
+                      {new Date(blogPost.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    <span>{calculateReadingTime(blogPost.blog_post)} min read</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span>{blogPost.blog_post.split(/\s+/).length} words</span>
+                  </div>
+                </motion.div>
+              </div>
 
-              <motion.hr
-                initial={{ opacity: 0, width: "0%" }}
-                animate={{ opacity: 1, width: "100%" }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="my-6 border-gray-200"
-              />
-
-              {/* Blog Content */}
+              {/* Blog Content - Using the blog-content class from generate-blog-page */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
-                className="prose prose-gray max-w-none mb-8
-                  prose-headings:font-saira prose-headings:text-gray-800
-                  prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
-                  prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
-                  prose-strong:font-bold prose-strong:text-gray-800
-                  prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
-                  prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
-                  prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
-                  prose-iframe:w-full prose-iframe:rounded-lg
-                  prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
-                  prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
-                  prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
-                  prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
-                  prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
+                className="blog-content prose max-w-none mb-8"
                 dangerouslySetInnerHTML={{ __html: visibleContent }}
               />
 
@@ -597,15 +816,7 @@ export default function BlogPostPage() {
                 >
                   <div className="relative">
                     <div
-                      className="prose prose-gray max-w-none blur-md pointer-events-none p-6 opacity-70 select-none
-                        prose-headings:font-saira prose-headings:text-gray-800
-                        prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
-                        prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700
-                        prose-img:w-full prose-img:rounded-lg
-                        prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
-                        prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
-                        prose-iframe:w-full prose-iframe:rounded-lg
-                        prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800"
+                      className="blog-content prose max-w-none blur-md pointer-events-none p-6 opacity-70 select-none"
                       dangerouslySetInnerHTML={{ __html: blurredContent }}
                     />
                     <div className="absolute top-0 right-0 bg-[#294fd6] text-white text-xs font-bold px-2 py-1 rounded-bl-md">
@@ -639,6 +850,26 @@ export default function BlogPostPage() {
                   </div>
                 </motion.div>
               )}
+
+              {/* Copy to Clipboard Button - From generate-blog-page */}
+              <div className="mt-10 pt-6 border-t border-gray-200 flex justify-center">
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      <span>Copied to Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-5 w-5 mr-2" />
+                      <span>Copy Blog Content</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (

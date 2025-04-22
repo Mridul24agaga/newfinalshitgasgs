@@ -5,60 +5,23 @@ import { Mail, Youtube, CreditCard, Clock, ShieldCheck } from "lucide-react"
 export default function Footer() {
   const footerLinks = [
     {
-      title: "AI WRITING",
-      links: [
-        { name: "AI SEO Editor", href: "/ai-seo-editor" },
-        { name: "AI SEO Writer", href: "/ai-seo-writer" },
-        { name: "AI News Writer", href: "/ai-news-writer" },
-        { name: "AI Listicle Generator", href: "/ai-listicle-generator" },
-        { name: "Amazon Product Reviews", href: "/amazon-product-reviews" },
-        { name: "Youtube to Blog Post", href: "/youtube-to-blog" },
-      ],
-    },
-    {
-      title: "AUTOMATION",
-      links: [
-        { name: "Autoblog", href: "/autoblog" },
-        { name: "Link Builder", href: "/link-builder" },
-        { name: "Keyword Monitors", href: "/keyword-monitors" },
-        { name: "Social Syndication", href: "/social-syndication" },
-        { name: "Automatic Indexer", href: "/automatic-indexer" },
-      ],
-    },
-    {
-      title: "RESOURCES",
-      links: [
-        { name: "Pricing", href: "/pricing" },
-        { name: "Learn", href: "/learn" },
-        { name: "Blog", href: "/blog" },
-        { name: "Help Docs", href: "/help-docs" },
-        { name: "API Docs", href: "/api-docs" },
-        { name: "Request a feature", href: "/request-feature" },
-        { name: "Affiliate Program", href: "/affiliate-program" },
-      ],
-    },
-    {
       title: "COMPARISONS",
       links: [
-        { name: "ZimmWriter AI vs Arvow", href: "/compare/zimmwriter" },
-        { name: "Drafthorse AI vs Arvow", href: "/compare/drafthorse" },
-        { name: "Autoblogging AI vs Arvow", href: "/compare/autoblogging" },
-        { name: "Byword AI vs Arvow", href: "/compare/byword" },
-        { name: "Koala vs Arvow", href: "/compare/koala" },
+        { name: "ZimmWriter AI vs GetMoreSEO", href: "/compare/zimmwriter" },
+        { name: "Drafthorse AI vs GetMoreSEO", href: "/compare/drafthorse" },
+        { name: "Autoblogging AI vs GetMoreSEO", href: "/compare/autoblogging" },
+        { name: "Byword AI vs GetMoreSEO", href: "/compare/byword" },
+        { name: "Koala vs GetMoreSEO", href: "/compare/koala" },
       ],
     },
     {
-      title: "INTEGRATIONS",
+      title: "QUICK LINKS",
       links: [
-        { name: "WordPress", href: "/integrations/wordpress" },
-        { name: "Shopify", href: "/integrations/shopify" },
-        { name: "Wix", href: "/integrations/wix" },
-        { name: "Ghost", href: "/integrations/ghost" },
-        { name: "Webflow", href: "/integrations/webflow" },
-        { name: "Blogger", href: "/integrations/blogger" },
-        { name: "Squarespace", href: "/integrations/squarespace" },
-        { name: "Zapier", href: "/integrations/zapier" },
-        { name: "Webhooks", href: "/integrations/webhooks" },
+        { name: "Sign Up Today", href: "/signup", highlight: true },
+        { name: "Free Trial", href: "/free-trial" },
+        { name: "Success Stories", href: "/success-stories" },
+        { name: "How It Works", href: "/how-it-works" },
+        { name: "Content Examples", href: "/content-examples" },
       ],
     },
   ]
@@ -104,53 +67,31 @@ export default function Footer() {
                     placeholder="your@email.com"
                     className="flex-grow px-6 py-4 rounded-lg text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/50"
                   />
-                  <button className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200">
-                    Get 3 Free Articles
-                  </button>
+                  <Link href='/signup' className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200">
+                   Get Started Today
+                  </Link>
                 </div>
               </div>
 
-              {/* User Avatars */}
-              <div className="flex flex-col items-center justify-center mb-10">
-                <div className="flex items-center mb-6">
-                  <div className="flex -space-x-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-md">
-                        <Image
-                          src={`/user-${i}.jpg`}
-                          alt={`User ${i}`}
-                          width={40}
-                          height={40}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
+              {/* Features */}
+              <div className="flex flex-wrap justify-center gap-12 text-[#1a1a1a]">
+                <div className="flex items-center">
+                  <div className="p-2 rounded-full bg-[#4f46e5]/10 mr-3">
+                    <CreditCard className="h-5 w-5 text-[#4f46e5]" />
                   </div>
-                  <span className="ml-4 text-[#1a1a1a] font-medium">
-                    Join <span className="font-bold">25,260+</span> business owners
-                  </span>
+                  <span>No card required</span>
                 </div>
-
-                {/* Features */}
-                <div className="flex flex-wrap justify-center gap-12 text-[#1a1a1a]">
-                  <div className="flex items-center">
-                    <div className="p-2 rounded-full bg-[#4f46e5]/10 mr-3">
-                      <CreditCard className="h-5 w-5 text-[#4f46e5]" />
-                    </div>
-                    <span>No card required</span>
+                <div className="flex items-center">
+                  <div className="p-2 rounded-full bg-[#ec4899]/10 mr-3">
+                    <Clock className="h-5 w-5 text-[#ec4899]" />
                   </div>
-                  <div className="flex items-center">
-                    <div className="p-2 rounded-full bg-[#ec4899]/10 mr-3">
-                      <Clock className="h-5 w-5 text-[#ec4899]" />
-                    </div>
-                    <span>Articles in 30 secs</span>
+                  <span>Articles in 30 secs</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="p-2 rounded-full bg-[#4ade80]/10 mr-3">
+                    <ShieldCheck className="h-5 w-5 text-[#4ade80]" />
                   </div>
-                  <div className="flex items-center">
-                    <div className="p-2 rounded-full bg-[#4ade80]/10 mr-3">
-                      <ShieldCheck className="h-5 w-5 text-[#4ade80]" />
-                    </div>
-                    <span>Plagiarism Free</span>
-                  </div>
+                  <span>Plagiarism Free</span>
                 </div>
               </div>
             </div>
@@ -161,22 +102,68 @@ export default function Footer() {
       {/* Footer with padding to accommodate the overlapping card */}
       <footer className="bg-[#0f1116] text-gray-300 pt-40 pb-8">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Footer Links */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
-            {footerLinks.map((column, i) => (
-              <div key={i}>
-                <h3 className="text-sm font-medium text-white mb-4">{column.title}</h3>
-                <ul className="space-y-2">
-                  {column.links.map((link, j) => (
-                    <li key={j}>
-                      <Link href={link.href} className="text-sm text-gray-400 hover:text-white transition-colors">
-                        {link.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+          {/* Footer Links and CTA Side-by-Side */}
+          <div className="flex flex-col lg:flex-row gap-8 mb-16">
+            {/* Footer Links */}
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-8 lg:flex-1">
+              {footerLinks.map((column, i) => (
+                <div key={i}>
+                  <h3 className="text-sm font-medium text-white mb-4">{column.title}</h3>
+                  <ul className="space-y-2">
+                    {column.links.map((link, j) => (
+                      <li key={j}>
+                        <Link
+                          href={link.href}
+                          className={`text-sm ${link.highlight ? "text-[#7c3aed] font-medium" : "text-gray-400"} hover:text-white transition-colors ${link.highlight ? "flex items-center" : ""}`}
+                        >
+                          {link.name}
+                          {link.highlight && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 ml-1"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {/* Sign Up CTA Side Banner */}
+            <div className="lg:w-1/3 bg-gradient-to-r from-[#4f46e5]/10 to-[#7c3aed]/10 rounded-xl p-6 flex flex-col justify-center">
+              <div className="mb-6">
+                <h3 className="text-white text-xl font-bold mb-2">Ready to transform your content strategy?</h3>
+                <p className="text-gray-400">Join thousands of businesses already using GetMoreSEO.</p>
               </div>
-            ))}
+              <Link
+                href="/signup"
+                className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-6 py-3 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center"
+              >
+                Sign Up Today
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 ml-2"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </Link>
+            </div>
           </div>
 
           {/* Bottom Section */}
@@ -187,9 +174,9 @@ export default function Footer() {
                 <div className="flex items-center mb-6">
                   <div className="text-white font-bold text-xl flex items-center">
                     <div className="w-8 h-8 mr-2 bg-white rounded-full flex items-center justify-center text-black">
-                      A
+                      G
                     </div>
-                    Arvow
+                    GetMoreSEO
                   </div>
                 </div>
 
@@ -230,11 +217,11 @@ export default function Footer() {
               {/* Contact & Legal */}
               <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
                 <a
-                  href="mailto:support@arvow.com"
+                  href="mailto:support@getmoreseo.com"
                   className="text-sm text-gray-400 hover:text-white transition-colors flex items-center"
                 >
                   <Mail className="w-4 h-4 mr-2" />
-                  support@arvow.com
+                  support@getmoreseo.com
                 </a>
                 <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
                   Privacy

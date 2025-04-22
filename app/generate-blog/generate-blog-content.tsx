@@ -3,19 +3,8 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { generateBlog } from "../actions"
-import {
-  Globe,
-  Loader2,
-  AlertCircle,
-  Copy,
-  Clock,
-  FileText,
-  ImageIcon,
-  CheckCircle2,
-  ArrowLeft,
-  CreditCard,
-} from "lucide-react"
+import { generateBlog } from "@/app/actions"
+import { Globe, Loader2, AlertCircle, Copy, Clock, FileText, ImageIcon, CheckCircle2, ArrowLeft } from "lucide-react"
 
 // Define the props interface for the component
 interface GenerateBlogPageProps {
@@ -45,6 +34,7 @@ export default function GenerateBlogPage({
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showFullContent, setShowFullContent] = useState(false)
 
   // Get URL from query params or localStorage when component mounts
   useEffect(() => {
@@ -130,13 +120,7 @@ export default function GenerateBlogPage({
       setError("")
 
       // Use the external onGenerate function if provided, otherwise use the local generateBlog function
-      const result = onGenerate
-        ? await onGenerate(url, "normal")
-        : ((await generateBlog(url)) as {
-            headline: string
-            content: string
-            imageUrls?: string[]
-          })
+      const result = onGenerate ? await onGenerate(url, "normal") : await generateBlog(url)
 
       setBlog(result)
     } catch (err: any) {
@@ -153,7 +137,7 @@ export default function GenerateBlogPage({
     }
   }
 
-  // Function to convert markdown to HTML
+  // Function to convert markdown to HTML with blur effect
   const renderMarkdown = (markdown: string) => {
     if (!markdown) return ""
 
@@ -181,19 +165,19 @@ export default function GenerateBlogPage({
       if (imgMatch) {
         const [_, src, alt] = imgMatch
         return `<div class="blog-image-container">
-          <div class="relative w-full" style="height: 400px;">
-            <Image 
-              src="${src}" 
-              alt="${alt || "Blog image"}" 
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-contain"
-              loading="lazy"
-              placeholder="blur"
-              blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4="
-            />
-          </div>
-        </div>`
+        <div class="relative w-full" style="height: 400px;">
+          <Image 
+            src="${src}" 
+            alt="${alt || "Blog image"}" 
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-contain"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4="
+          />
+        </div>
+      </div>`
       }
       return match // Return original if no match
     })
@@ -215,12 +199,12 @@ export default function GenerateBlogPage({
 
       // Process links - fixed the regex pattern
       .replace(
-        /\[(.*?)\]$(.*?)$/g,
+        /\[(.*?)\]$$(.*?)$$/g,
         '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>',
       )
 
     // Process paragraphs (must come last)
-    return processedContent
+    let htmlContent = processedContent
       .split("\n\n")
       .map((para) => {
         // Skip if it's already a heading, list, image container, or HTML block
@@ -247,6 +231,29 @@ export default function GenerateBlogPage({
         return `<p class="my-4">${para}</p>`
       })
       .join("")
+
+    // If not showing full content, apply blur to 60% of the content
+    if (!showFullContent) {
+      // Split the HTML content into an array of elements
+      const contentElements = htmlContent.match(/<[^>]*>.*?<\/[^>]*>|<[^/>]*\/>/g) || []
+
+      // Calculate the index at which to start blurring (40% of the content visible)
+      const visibleElementsCount = Math.floor(contentElements.length * 0.4)
+
+      // Apply blur to the remaining 60% of elements
+      if (visibleElementsCount < contentElements.length) {
+        const blurredContent = contentElements.map((element, index) => {
+          if (index >= visibleElementsCount) {
+            return element.replace(/<([a-z1-6]+)([^>]*)>/i, '<$1$2 class="blur-sm select-none">')
+          }
+          return element
+        })
+
+        htmlContent = blurredContent.join("")
+      }
+    }
+
+    return htmlContent
   }
 
   // Calculate estimated reading time
@@ -527,12 +534,36 @@ export default function GenerateBlogPage({
                   .blog-content a:hover {
                     text-decoration-color: #2563eb;
                   }
+
+                  .blur-sm {
+                    filter: blur(4px);
+                    user-select: none;
+                  }
+
+                  .select-none {
+                    user-select: none;
+                  }
                 `}</style>
 
                 <div
                   className="blog-content prose max-w-none text-gray-700"
                   dangerouslySetInnerHTML={{ __html: blog.content ? renderMarkdown(blog.content) : "" }}
                 />
+
+                {!showFullContent && (
+                  <div className="my-8 p-6 bg-blue-50 border border-blue-100 rounded-lg text-center">
+                    <h3 className="text-xl font-bold text-blue-800 mb-2">Want to see the full article?</h3>
+                    <p className="text-blue-700 mb-4">
+                      Subscribe to unlock the complete content and get unlimited access to all our premium features.
+                    </p>
+                    <button
+                      onClick={() => router.push("/payment")}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                      Subscribe Now
+                    </button>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="mt-10 pt-6 border-t border-gray-200 flex justify-center">
@@ -558,58 +589,6 @@ export default function GenerateBlogPage({
           </div>
         </div>
       </div>
-
-      {/* Subscription Required Modal */}
-      {showSubscriptionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800">Subscription Required</h3>
-              <p className="text-gray-600 mt-2">
-                You need an active subscription to generate blog content. Please subscribe to continue.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">Benefits of subscribing:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li className="flex items-start">
-                    <CheckCircle2 className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Generate unlimited high-quality blog posts</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle2 className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Access to advanced customization options</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle2 className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Priority support and content optimization</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="flex flex-col space-y-3">
-                <button
-                  onClick={() => router.push("/pricing")}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  View Subscription Plans
-                </button>
-                <button
-                  onClick={() => setShowSubscriptionModal(false)}
-                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

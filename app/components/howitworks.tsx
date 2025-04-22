@@ -444,52 +444,7 @@ export function HowItWorks() {
           </div>
         </div>
 
-        {/* Final CTA */}
-        <div className="mt-24 text-center">
-          <div
-            className="bg-gradient-to-r from-[#294df6]/10 to-purple-500/10 rounded-2xl p-10 md:p-16 max-w-4xl mx-auto"
-            style={{
-              transform: `translateY(${Math.max(0, 100 - scrollY * 0.1)}px)`,
-              opacity: Math.min(1, scrollY * 0.001),
-            }}
-          >
-            <h3 className="text-2xl md:text-3xl font-bold mb-4 text-gray-900">Ready to Get Started?</h3>
-            <p className="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
-              Join thousands of content creators who are already using our platform to create SEO-optimized content that
-              ranks.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-[#294df6] hover:bg-[#1e3fd0] text-white px-8 py-4 rounded-xl font-medium text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[#294df6]/20 flex items-center justify-center">
-                Start for Free Today
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </button>
-              <button className="bg-white hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-xl font-medium text-lg border border-gray-200 transition-all duration-300 hover:shadow-lg flex items-center justify-center">
-                Watch Demo
-                <Play className="ml-2 h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-8 flex items-center justify-center">
-              <div className="flex -space-x-3 mr-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                    <Image
-                      src={`/user-${i}.jpg`}
-                      alt={`User ${i}`}
-                      width={40}
-                      height={40}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="text-gray-600">
-                <span className="font-bold text-gray-900">25,260+</span> content creators trust us
-              </div>
-            </div>
-          </div>
-        </div>
+       
       </div>
     </section>
   )

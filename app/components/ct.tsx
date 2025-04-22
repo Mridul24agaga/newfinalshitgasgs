@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 export default function CTASection() {
   return (
@@ -32,10 +33,10 @@ export default function CTASection() {
               Delivering professional content that drives organic traffic without the traditional headaches.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-[#294df6] hover:bg-white/90 px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center border border-white/50 hover:scale-105 transform">
-                Start Your Free Trial
+              <Link href='/signup' className="bg-white text-[#294df6] hover:bg-white/90 px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center border border-white/50 hover:scale-105 transform">
+                Get Started Today
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </button>
+              </Link>
               <button className="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 hover:scale-105 transform">
                 Schedule a Demo
               </button>

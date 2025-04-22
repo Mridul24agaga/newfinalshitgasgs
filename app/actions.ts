@@ -581,7 +581,7 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     7. Add some personal opinions that might be slightly controversial but authentic
     8. Include references to current events, seasons, or holidays that make it feel timely
     9. Add some self-editing phrases like "let me rephrase that" or "actually, scratch that"
-    10. Include some meta-commentary about the writing process itself (e.g., "I've been working on this post for days and just realized I forgot to mention...")
+    10. Add some meta-commentary about the writing process itself (e.g., "I've been working on this post for days and just realized I forgot to mention...")
     11. Add occasional typos and then correct them (e.g., "teh... the" or "definately... definitely")
     12. Include some personal struggles or frustrations (e.g., "I spent HOURS trying to figure this out")
     13. Add some casual interjections like "Anyway," "So," "Look," "Right," at the start of paragraphs
@@ -624,7 +624,7 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     3. Add references to obscure tools or techniques that aren't commonly discussed online
     4. Include some minor factual errors that a human might make (nothing major, just small inaccuracies)
     5. Add some content that shows vulnerability or admits knowledge gaps (e.g., "I'm still figuring this part out myself")
-    6. Include some content that references the writer's personal journey or evolution of thinking
+    6. Add some content that references the writer's personal journey or evolution of thinking
     7. Add some content that feels slightly disorganized or tangential in a human way
     8. Include some phrases that are slightly awkward but in a human way
     9. Add some content that references specific time periods or seasons (e.g., "As I'm writing this in the middle of summer...")
@@ -692,6 +692,18 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     .replace(/^Let's dive in!.*$/gm, "")
     .replace(/^Here's the final.*$/gm, "")
     .replace(/^I've also included.*$/gm, "")
+
+  // Process any URLs in the content to make them styled external links
+  finalContent = finalContent.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;" target="_blank" rel="noopener noreferrer">$1</a>',
+  )
+
+  // Also process markdown-style links [text](url) to styled external links
+  finalContent = finalContent.replace(
+    /\[([^\]]+)\]$$(https?:\/\/[^)]+)$$/g,
+    '<a href="$2" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;" target="_blank" rel="noopener noreferrer">$1</a>',
+  )
 
   console.log("Final humanization with images completed successfully")
   return finalContent

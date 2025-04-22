@@ -10,10 +10,6 @@ import {
   PenTool,
   CheckCircle,
   Loader2,
-  AlertCircle,
-  RefreshCw,
-  Plus,
-  Trash2,
   Info,
   HelpCircle,
   ArrowRight,
@@ -53,17 +49,12 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   const [urlEntered, setUrlEntered] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [generationStarted, setGenerationStarted] = useState(false)
-  const [iframeLoaded, setIframeLoaded] = useState(false)
-  const [iframeError, setIframeError] = useState(false)
-  const [bulkMode, setBulkMode] = useState(false)
-  const [urlList, setUrlList] = useState<UrlEntry[]>([])
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [userCredits, setUserCredits] = useState(0)
   const [subscription, setSubscription] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [bulkQuantity, setBulkQuantity] = useState(1) // Number of blogs to generate at once
   const [loading, setLoading] = useState(false)
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const progressRef = useRef<ProgressTimerRef>(null)
@@ -100,28 +91,36 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (bulkMode) {
-      // Start the first pending URL in bulk mode
-      const pendingUrl = urlList.find((item) => item.status === "pending")
-      if (pendingUrl) {
-        startGeneration(pendingUrl.id)
-      } else {
-        alert("Please add at least one URL to the bulk list")
-      }
-    } else {
-      if (!url.trim()) {
-        alert("Please enter a valid URL")
-        return
-      }
-      setUrlEntered(true)
-      setGenerationStarted(true)
+    if (!url.trim()) {
+      alert("Please enter a valid URL")
+      return
+    }
 
-      // If external onGenerate is provided, use it
-      if (onGenerate) {
-        onGenerate(url)
-      } else {
-        // Otherwise use the server action directly
-        await generateSingleBlog(url)
+    // Check if user has enough credits
+    if (userCredits < bulkQuantity) {
+      alert(`You only have ${userCredits} credits available. Please reduce the quantity or purchase more credits.`)
+      return
+    }
+
+    setUrlEntered(true)
+    setGenerationStarted(true)
+
+    // If external onGenerate is provided, use it
+    if (onGenerate) {
+      onGenerate(url)
+    } else {
+      // Generate blogs based on quantity
+      setLoading(true)
+      try {
+        // Generate blogs one by one
+        for (let i = 0; i < bulkQuantity; i++) {
+          await generateSingleBlog(url)
+        }
+      } catch (error) {
+        console.error("Error generating blogs:", error)
+        alert("Failed to generate blogs. Please try again.")
+      } finally {
+        setLoading(false)
       }
     }
   }
@@ -130,7 +129,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     setLoading(true)
     try {
       // Call the server action to generate the blog
-      // The server action will handle credit deduction
+      // The server action will handle credit deduction and storage
       const result = await generateBlog(blogUrl)
 
       if (result.error) {
@@ -143,10 +142,10 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
         setUserCredits(result.updatedCredits)
       }
 
-      // Set the generated content
-      if (result.content) {
-        setGeneratedContent(result.content)
-      }
+      // Don't set generated content anymore
+      // if (result.content) {
+      //   setGeneratedContent(result.content)
+      // }
 
       // Refresh subscription data to get updated credits
       fetchUserAndSubscription()
@@ -155,120 +154,6 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
       alert("Failed to generate blog. Please try again.")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const addUrlToBulkList = () => {
-    if (!url.trim()) {
-      alert("Please enter a valid URL")
-      return
-    }
-
-    // Check if adding this URL would exceed available credits
-    if (urlList.length >= userCredits) {
-      alert(`You only have ${userCredits} credits available. Cannot add more URLs.`)
-      return
-    }
-
-    const newEntry: UrlEntry = {
-      id: Date.now().toString(),
-      url: url.trim(),
-      status: "pending",
-    }
-
-    setUrlList((prev) => [...prev, newEntry])
-    setUrl("")
-  }
-
-  const removeUrlFromList = (id: string) => {
-    setUrlList((prev) => prev.filter((item) => item.id !== id))
-  }
-
-  // Start generation for a specific URL in the list
-  const startGeneration = async (id: string) => {
-    // Check if user has enough credits
-    if (userCredits <= 0) {
-      alert("You don't have enough credits to generate blogs. Please purchase more credits.")
-      return
-    }
-
-    // Update UI state
-    setUrlList((prev) => prev.map((item) => (item.id === id ? { ...item, status: "generating", progress: 0 } : item)))
-
-    // Get the URL from the list
-    const urlItem = urlList.find((item) => item.id === id)
-    if (urlItem) {
-      setGenerationStarted(true)
-
-      try {
-        // Call the server action to generate the blog
-        const result = await generateBlog(urlItem.url)
-
-        if (result.error) {
-          // Handle error
-          setUrlList((prev) => prev.map((item) => (item.id === id ? { ...item, status: "error" } : item)))
-          console.error("Error generating blog:", result.error)
-          return
-        }
-
-        // Update local state with the new credits from the server
-        if (result.updatedCredits !== undefined) {
-          setUserCredits(result.updatedCredits)
-        }
-
-        // Set the generated content if this is the active blog
-        if (result.content) {
-          setGeneratedContent(result.content)
-        }
-
-        // Mark this URL as completed
-        setUrlList((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, status: "completed", progress: 100 } : item)),
-        )
-
-        // Check if there are more pending URLs to process
-        const nextPending = urlList.find((item) => item.status === "pending")
-        if (nextPending) {
-          // Start the next one after a short delay
-          setTimeout(() => startGeneration(nextPending.id), 1000)
-        }
-      } catch (error) {
-        console.error("Error in startGeneration:", error)
-        // Mark as error in the UI
-        setUrlList((prev) => prev.map((item) => (item.id === id ? { ...item, status: "error" } : item)))
-      }
-    }
-  }
-
-  // Generate multiple blogs at once
-  const generateBulkBlogs = () => {
-    if (!url.trim()) {
-      alert("Please enter a valid URL")
-      return
-    }
-
-    // Check if user has enough credits
-    if (userCredits < bulkQuantity) {
-      alert(`You only have ${userCredits} credits available. Please reduce the quantity or purchase more credits.`)
-      return
-    }
-
-    // Create multiple entries for the same URL
-    const newEntries: UrlEntry[] = []
-    for (let i = 0; i < bulkQuantity; i++) {
-      newEntries.push({
-        id: `${Date.now()}-${i}`,
-        url: url.trim(),
-        status: "pending",
-      })
-    }
-
-    setUrlList(newEntries)
-    setBulkMode(true)
-
-    // Start the first one
-    if (newEntries.length > 0) {
-      startGeneration(newEntries[0].id)
     }
   }
 
@@ -329,31 +214,6 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
       if (stepRef.current) clearInterval(stepRef.current)
     }
   }, [externalLoading, loading]) // Depend on both loading states
-
-  // Handle iframe loading and errors
-  const handleIframeLoad = () => {
-    setIframeLoaded(true)
-    setIframeError(false)
-  }
-
-  const handleIframeError = () => {
-    setIframeLoaded(false)
-    setIframeError(true)
-  }
-
-  const reloadIframe = () => {
-    setIframeLoaded(false)
-    setIframeError(false)
-    if (iframeRef.current) {
-      const src = iframeRef.current.src
-      iframeRef.current.src = ""
-      setTimeout(() => {
-        if (iframeRef.current) {
-          iframeRef.current.src = src
-        }
-      }, 100)
-    }
-  }
 
   // Format time remaining as MM:SS
   const formatTime = (seconds: number) => {
@@ -531,136 +391,41 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                           disabled={loading || externalLoading}
                         />
                         <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-
-                        {bulkMode && (
-                          <button
-                            type="button"
-                            onClick={addUrlToBulkList}
-                            disabled={!url.trim() || loading || externalLoading || urlList.length >= userCredits}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 bg-[#294fd6] text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                       <p className="mt-2 text-sm text-gray-500">
                         Enter the URL of the website you want to generate a blog from
                       </p>
                     </div>
 
-                    {/* Bulk Generation Settings */}
+                    {/* Generation Settings */}
                     <div className="p-5 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="mb-4">
                         <h3 className="font-medium text-gray-800 flex items-center gap-2">
                           <Settings className="w-4 h-4 text-[#294fd6]" />
                           Generation Settings
                         </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Bulk Mode</span>
-                          <button
-                            type="button"
-                            onClick={() => setBulkMode(!bulkMode)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:ring-offset-2 ${
-                              bulkMode ? "bg-[#294fd6]" : "bg-gray-200"
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                bulkMode ? "translate-x-6" : "translate-x-1"
-                              }`}
-                            />
-                          </button>
-                        </div>
                       </div>
 
-                      {bulkMode ? (
-                        // Bulk mode - URL list
-                        <div>
-                          <div className="mb-4">
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">
-                              URLs to process ({urlList.length}/{userCredits} credits)
-                            </label>
-                            {urlList.length > 0 ? (
-                              <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg bg-white">
-                                {urlList.map((item) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex items-center justify-between px-4 py-3 border-b border-gray-200 last:border-0"
-                                  >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                      <div
-                                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                          item.status === "pending"
-                                            ? "bg-gray-400"
-                                            : item.status === "generating"
-                                              ? "bg-blue-500 animate-pulse"
-                                              : item.status === "completed"
-                                                ? "bg-green-500"
-                                                : "bg-red-500"
-                                        }`}
-                                      />
-                                      <span className="text-sm text-gray-700 truncate">{item.url}</span>
-                                    </div>
-
-                                    {item.status === "generating" && item.progress !== undefined && (
-                                      <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
-                                        <div
-                                          className="h-full bg-blue-500 rounded-full"
-                                          style={{ width: `${item.progress}%` }}
-                                        />
-                                      </div>
-                                    )}
-
-                                    {item.status === "pending" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => removeUrlFromList(item.id)}
-                                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    )}
-
-                                    {item.status === "completed" && (
-                                      <span className="text-xs text-green-600 font-medium">Completed</span>
-                                    )}
-
-                                    {item.status === "error" && (
-                                      <span className="text-xs text-red-600 font-medium">Failed</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                                <p className="text-sm text-gray-500">Add URLs to the list using the input above</p>
-                              </div>
-                            )}
-                          </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">
+                          Number of blogs to generate (1-{userCredits} credits available)
+                        </label>
+                        <div className="flex items-center">
+                          <input
+                            type="range"
+                            min="1"
+                            max={Math.max(1, userCredits)}
+                            value={bulkQuantity}
+                            onChange={(e) => setBulkQuantity(Number.parseInt(e.target.value))}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="ml-3 w-10 text-center font-medium text-gray-700">{bulkQuantity}</span>
                         </div>
-                      ) : (
-                        // Single mode - Quantity selector
-                        <div>
-                          <label className="text-sm font-medium text-gray-700 mb-1 block">
-                            Number of blogs to generate (1-{userCredits} credits available)
-                          </label>
-                          <div className="flex items-center">
-                            <input
-                              type="range"
-                              min="1"
-                              max={Math.max(1, userCredits)}
-                              value={bulkQuantity}
-                              onChange={(e) => setBulkQuantity(Number.parseInt(e.target.value))}
-                              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <span className="ml-3 w-10 text-center font-medium text-gray-700">{bulkQuantity}</span>
-                          </div>
-                          <p className="mt-2 text-xs text-gray-500">
-                            This will generate {bulkQuantity} blog{bulkQuantity > 1 ? "s" : ""} from the same URL, using{" "}
-                            {bulkQuantity} credit{bulkQuantity > 1 ? "s" : ""}
-                          </p>
-                        </div>
-                      )}
+                        <p className="mt-2 text-xs text-gray-500">
+                          This will generate {bulkQuantity} blog{bulkQuantity > 1 ? "s" : ""} from the same URL, using{" "}
+                          {bulkQuantity} credit{bulkQuantity > 1 ? "s" : ""}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Credit Information */}
@@ -678,55 +443,30 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                     </div>
 
                     {/* Submit Button */}
-                    {bulkMode ? (
-                      <button
-                        type="submit"
-                        className={`w-full py-4 px-4 font-medium rounded-lg flex items-center justify-center gap-2 transition-all text-base ${
-                          loading || externalLoading || urlList.length === 0
-                            ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                            : "bg-[#294fd6] hover:bg-blue-700 text-white"
-                        }`}
-                        disabled={loading || externalLoading || urlList.length === 0}
-                      >
-                        {loading || externalLoading ? (
-                          <>
-                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                            <span>Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="w-5 h-5" />
-                            <span>Start Bulk Generation ({urlList.length} URLs)</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={generateBulkBlogs}
-                        className={`w-full py-4 px-4 font-medium rounded-lg flex items-center justify-center gap-2 transition-all text-base ${
-                          loading || externalLoading || !url.trim() || userCredits < bulkQuantity
-                            ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                            : "bg-[#294fd6] hover:bg-blue-700 text-white"
-                        }`}
-                        disabled={loading || externalLoading || !url.trim() || userCredits < bulkQuantity}
-                      >
-                        {loading || externalLoading ? (
-                          <>
-                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                            <span>Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="w-5 h-5" />
-                            <span>
-                              Generate {bulkQuantity > 1 ? `${bulkQuantity} Blogs` : "Blog"} ({bulkQuantity} credit
-                              {bulkQuantity > 1 ? "s" : ""})
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      type="submit"
+                      className={`w-full py-4 px-4 font-medium rounded-lg flex items-center justify-center gap-2 transition-all text-base ${
+                        loading || externalLoading || !url.trim() || userCredits < bulkQuantity
+                          ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                          : "bg-[#294fd6] hover:bg-blue-700 text-white"
+                      }`}
+                      disabled={loading || externalLoading || !url.trim() || userCredits < bulkQuantity}
+                    >
+                      {loading || externalLoading ? (
+                        <>
+                          <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-5 h-5" />
+                          <span>
+                            Generate {bulkQuantity > 1 ? `${bulkQuantity} Blogs` : "Blog"} ({bulkQuantity} credit
+                            {bulkQuantity > 1 ? "s" : ""})
+                          </span>
+                        </>
+                      )}
+                    </button>
                   </form>
                 </div>
               </div>
@@ -772,57 +512,24 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
           ) : (
             // Generation in progress view - improved layout
             <div className="w-full mx-auto">
-              {/* Main content area with Notion embed */}
+              {/* Main content area with success message */}
               <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm mb-8 max-w-[1200px] mx-auto">
-                <h2 className="text-xl font-semibold mb-6 text-gray-800">Generated Blog Preview</h2>
-                {/* Improved iframe implementation with better loading state */}
-                <div className="relative w-full h-[650px] border border-gray-200 rounded-lg overflow-hidden shadow-md">
-                  {!iframeLoaded && !iframeError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
-                      <div className="relative w-16 h-16 mb-6">
-                        <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-                        <div className="absolute inset-0 rounded-full border-4 border-t-[#294fd6] animate-spin"></div>
-                      </div>
-                      <p className="text-gray-700 font-medium">Loading content...</p>
-                      <p className="text-gray-500 text-sm mt-2">This may take a few moments</p>
-                    </div>
-                  )}
-
-                  {iframeError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
-                      <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mb-6">
-                        <AlertCircle className="w-8 h-8 text-red-500" />
-                      </div>
-                      <p className="text-gray-800 font-medium text-lg mb-2">Failed to load content</p>
-                      <p className="text-gray-600 text-sm mb-6 max-w-md text-center">
-                        The Notion embed couldn't be loaded. This might be due to connection issues or content
-                        restrictions.
-                      </p>
-                      <button
-                        onClick={reloadIframe}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#294fd6] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        <span>Try Again</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {generatedContent ? (
-                    <div className="h-full overflow-auto p-6">
-                      <div dangerouslySetInnerHTML={{ __html: generatedContent }} />
-                    </div>
-                  ) : (
-                    <iframe
-                      ref={iframeRef}
-                      src="https://v2-embednotion.com/18ac8ab792fa8047ab4bda7b6e3474e4"
-                      style={{ width: "100%", height: "100%", border: "none" }}
-                      onLoad={handleIframeLoad}
-                      onError={handleIframeError}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  )}
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  </div>
+                  <h2 className="text-2xl font-semibold mb-3 text-gray-800">Blog Generation in Progress</h2>
+                  <p className="text-gray-600 max-w-md mx-auto mb-6">
+                    Your blog{bulkQuantity > 1 ? "s are" : " is"} being generated and will be stored for viewing in your
+                    content library.
+                  </p>
+                  <button
+                    onClick={() => (window.location.href = "/content-library")}
+                    className="px-6 py-3 bg-[#294fd6] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md inline-flex items-center gap-2"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span>View Content Library</span>
+                  </button>
                 </div>
               </div>
 
@@ -867,19 +574,19 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                   <Loader2 className="w-6 h-6 text-[#294fd6] animate-spin" />
                 </div>
 
-                {bulkMode && (
+                {bulkQuantity > 1 && (
                   <div className="mt-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">Bulk Progress</span>
+                      <span className="text-sm font-medium text-gray-700">Generation Progress</span>
                       <span className="text-xs text-gray-500">
-                        {urlList.filter((item) => item.status === "completed").length}/{urlList.length} completed
+                        Blog {Math.min(Math.ceil(progress / 20), bulkQuantity)} of {bulkQuantity}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                       <div
                         className="bg-green-500 h-full rounded-full"
                         style={{
-                          width: `${(urlList.filter((item) => item.status === "completed").length / urlList.length) * 100}%`,
+                          width: `${(Math.min(Math.ceil(progress / 20), bulkQuantity) / bulkQuantity) * 100}%`,
                         }}
                       />
                     </div>
@@ -934,22 +641,20 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
               </div>
 
               <div className="border-t border-gray-200 pt-6">
-                <h3 className="font-semibold text-lg text-gray-800 mb-3">Bulk Generation</h3>
-                <p className="text-gray-600 mb-4">
-                  Need to create multiple blog posts? Our bulk generation feature allows you to:
-                </p>
+                <h3 className="font-semibold text-lg text-gray-800 mb-3">Multiple Blog Generation</h3>
+                <p className="text-gray-600 mb-4">Need to create multiple blog posts? You can:</p>
                 <ul className="space-y-2 text-gray-600">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Generate multiple blogs at once based on your available credits</span>
+                    <span>Select the number of blogs to generate based on your available credits</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Monitor progress for each blog in the queue</span>
+                    <span>Generate multiple blogs from the same URL in one go</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Save time by automating the entire content generation process</span>
+                    <span>Save time by automating the content generation process</span>
                   </li>
                 </ul>
               </div>

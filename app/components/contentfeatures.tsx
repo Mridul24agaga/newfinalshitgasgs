@@ -366,7 +366,7 @@ article.addLinks({
               href="/get-started"
               className="bg-white hover:bg-gray-100 text-[#294df6] px-8 py-4 rounded-lg font-medium inline-flex items-center justify-center transition-colors duration-200 shadow-md text-lg"
             >
-              Start your free trial
+             Get Started Today
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
 
