@@ -186,9 +186,13 @@ export default function PaymentPage() {
         // If user doesn't exist in userssignuped, create an entry
         if (!signupUser) {
           setDebugInfo("User not found in userssignuped table, creating entry...")
+          // Generate a default username from the email
+          const defaultUsername = user.email ? user.email.split("@")[0] : `user_${user.id.substring(0, 8)}`
+
           const { error: insertError } = await supabase.from("userssignuped").insert({
             id: user.id,
             email: user.email,
+            username: defaultUsername,
           })
 
           if (insertError) {
@@ -267,9 +271,13 @@ export default function PaymentPage() {
       // If user doesn't exist in userssignuped, create an entry
       if (!signupUser) {
         setDebugInfo("User not found in userssignuped table, creating entry...")
+        // Generate a default username from the email
+        const defaultUsername = user.email ? user.email.split("@")[0] : `user_${user.id.substring(0, 8)}`
+
         const { error: insertError } = await supabase.from("userssignuped").insert({
           id: user.id,
           email: user.email,
+          username: defaultUsername,
         })
 
         if (insertError) {

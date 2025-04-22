@@ -1,373 +1,463 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/utitls/supabase/client";
-import PaymentPage from "@/app/components/payment-page";
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { createClient } from "@/utitls/supabase/client"
+import PaymentPage from "@/app/components/payment-page"
 
-const DODO_URL = "https://test.checkout.dodopayments.com/buy";
-const ACTIVE_PLANS = ["growth", "basic", "pro"];
+const DODO_URL = "https://test.checkout.dodopayments.com/buy"
+const ACTIVE_PLANS = ["growth", "basic", "pro"]
 
 type BlogPost = {
-  id: string;
-  user_id: string;
-  blog_post: string;
-  created_at: string;
-  title: string;
-  timestamp: string;
-  reveal_date: string;
-  url: string;
-  is_blurred: boolean;
-};
+  id: string
+  user_id: string
+  blog_post: string
+  created_at: string
+  title: string
+  timestamp: string
+  reveal_date: string
+  url: string
+  is_blurred: boolean
+}
 
 type BlogContent = {
-  visibleContent: string;
-  blurredContent: string;
-  hasBlurredContent: boolean;
-};
+  visibleContent: string
+  blurredContent: string
+  hasBlurredContent: boolean
+}
 
 type UserSignedUp = {
-  id: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-};
+  id: string
+  email: string
+  created_at: string
+  updated_at: string
+}
 
 type Subscription = {
-  id: string;
-  user_id: string;
-  plan_id: string;
-  credits: number;
-  status: string;
-  billing_cycle: string;
-  subscription_type: string;
-  current_period_end?: string;
-  last_updated?: string;
-};
+  id: string
+  user_id: string
+  plan_id: string
+  credits: number
+  status: string
+  billing_cycle: string
+  subscription_type: string
+  current_period_end?: string
+  last_updated?: string
+}
 
 type Plan = {
-  id: string;
-  name: string;
-  dodoProductId: string;
-  numericPrice: number;
-};
+  id: string
+  name: string
+  dodoProductId: string
+  numericPrice: number
+}
 
 export default function BlogPostPage() {
-  const [blogPost, setBlogPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showPricing, setShowPricing] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [user, setUser] = useState<UserSignedUp | null>(null);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly");
-  const [processingPayment, setProcessingPayment] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
-  const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
+  const [blogPost, setBlogPost] = useState<BlogPost | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showPricing, setShowPricing] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [user, setUser] = useState<UserSignedUp | null>(null)
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly")
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showLoginForm, setShowLoginForm] = useState(false)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null)
   const [splitContentResult, setSplitContentResult] = useState<BlogContent>({
     visibleContent: "",
     blurredContent: "",
     hasBlurredContent: false,
-  });
+  })
 
-  const params = useParams();
-  const router = useRouter();
-  const id = params?.id as string;
-  const topRef = useRef<HTMLDivElement>(null);
+  const params = useParams()
+  const router = useRouter()
+  const id = params?.id as string
+  const topRef = useRef<HTMLDivElement>(null)
 
-  const supabase = createClient();
+  const supabase = createClient()
 
   useEffect(() => {
     const checkUserAndSubscription = async () => {
       try {
-        console.log("Checking user authentication...");
+        console.log("Checking user authentication...")
         const {
           data: { user: authUser },
           error: authError,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getUser()
 
         if (authError) {
-          console.log(`Auth error: ${authError.message}`);
-          setUser(null);
-          return;
+          console.log(`Auth error: ${authError.message}`)
+          setUser(null)
+          return
         }
 
         if (!authUser) {
-          console.log("No authenticated user found");
-          setUser(null);
-          return;
+          console.log("No authenticated user found")
+          setUser(null)
+          return
         }
 
-        console.log(`Authenticated user found: ${authUser.id}`);
+        console.log(`Authenticated user found: ${authUser.id}`)
         const { data: signupUser, error: signupError } = await supabase
           .from("userssignuped")
           .select("*")
           .eq("id", authUser.id)
-          .single();
+          .single()
 
         if (signupError) {
-          console.log(`Error fetching user from userssignuped: ${signupError.message}`);
+          console.log(`Error fetching user from userssignuped: ${signupError.message}`)
           if (signupError.code === "PGRST116") {
-            console.log("User not in userssignuped, creating entry...");
+            console.log("User not in userssignuped, creating entry...")
             const { data: newUser, error: insertError } = await supabase
               .from("userssignuped")
               .insert({ id: authUser.id, email: authUser.email })
               .select()
-              .single();
+              .single()
 
             if (insertError) {
-              console.log(`Failed to create user record: ${insertError.message}`);
-              setUser(null);
+              console.log(`Failed to create user record: ${insertError.message}`)
+              setUser(null)
             } else {
-              console.log(`Created new user record: ${newUser.id}`);
-              setUser(newUser);
-              setUserId(authUser.id);
-              await checkSubscription(authUser.id);
+              console.log(`Created new user record: ${newUser.id}`)
+              setUser(newUser)
+              setUserId(authUser.id)
+              await checkSubscription(authUser.id)
             }
           } else {
-            setUser(null);
+            setUser(null)
           }
         } else {
-          console.log(`User found in userssignuped: ${signupUser.id}`);
-          setUser(signupUser);
-          setUserId(signupUser.id);
-          await checkSubscription(authUser.id);
+          console.log(`User found in userssignuped: ${signupUser.id}`)
+          setUser(signupUser)
+          setUserId(signupUser.id)
+          await checkSubscription(authUser.id)
         }
       } catch (err) {
-        console.log(`User check error: ${err instanceof Error ? err.message : String(err)}`);
-        setUser(null);
+        console.log(`User check error: ${err instanceof Error ? err.message : String(err)}`)
+        setUser(null)
       }
-    };
+    }
 
-    checkUserAndSubscription();
-  }, []);
+    checkUserAndSubscription()
+  }, [])
 
   const checkSubscription = async (userId: string) => {
     try {
-      console.log(`Checking subscription for user: ${userId}`);
+      console.log(`Checking subscription for user: ${userId}`)
       const { data: subscriptions, error: subError } = await supabase
         .from("subscriptions")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
 
       if (subError) {
-        console.log(`Error fetching subscriptions: ${subError.message}`);
-        setHasActiveSubscription(false);
-        setSubscriptionPlan(null);
-        return;
+        console.log(`Error fetching subscriptions: ${subError.message}`)
+        setHasActiveSubscription(false)
+        setSubscriptionPlan(null)
+        return
       }
 
-      console.log(`Found ${subscriptions?.length || 0} subscriptions`);
+      console.log(`Found ${subscriptions?.length || 0} subscriptions`)
       if (subscriptions && subscriptions.length > 0) {
-        const activeSubscription = subscriptions.find((sub) => ACTIVE_PLANS.includes(sub.plan_id));
+        const activeSubscription = subscriptions.find((sub) => ACTIVE_PLANS.includes(sub.plan_id))
         if (activeSubscription) {
-          console.log(`Active subscription detected: ${activeSubscription.plan_id}`);
-          setHasActiveSubscription(true);
-          setSubscriptionPlan(activeSubscription.plan_id);
+          console.log(`Active subscription detected: ${activeSubscription.plan_id}`)
+          setHasActiveSubscription(true)
+          setSubscriptionPlan(activeSubscription.plan_id)
         } else {
-          console.log("No active subscription found among subscriptions");
-          setHasActiveSubscription(false);
-          setSubscriptionPlan(null);
+          console.log("No active subscription found among subscriptions")
+          setHasActiveSubscription(false)
+          setSubscriptionPlan(null)
         }
       } else {
-        console.log("No subscriptions exist for this user");
-        setHasActiveSubscription(false);
-        setSubscriptionPlan(null);
+        console.log("No subscriptions exist for this user")
+        setHasActiveSubscription(false)
+        setSubscriptionPlan(null)
       }
     } catch (err) {
-      console.log(`Subscription check error: ${err instanceof Error ? err.message : String(err)}`);
-      setHasActiveSubscription(false);
-      setSubscriptionPlan(null);
+      console.log(`Subscription check error: ${err instanceof Error ? err.message : String(err)}`)
+      setHasActiveSubscription(false)
+      setSubscriptionPlan(null)
     }
-  };
+  }
 
   useEffect(() => {
     const fetchBlogPost = async () => {
       if (!id) {
-        console.log("No blog post ID provided");
-        setLoading(false);
-        return;
+        console.log("No blog post ID provided")
+        setLoading(false)
+        return
       }
       try {
-        console.log(`Fetching blog post with ID: ${id}`);
-        const { data: blog, error } = await supabase.from("blogs").select("*").eq("id", id).single();
+        console.log(`Fetching blog post with ID: ${id}`)
+        const { data: blog, error } = await supabase.from("blogs").select("*").eq("id", id).single()
         if (error || !blog) {
-          console.log(`Error fetching blog post: ${error?.message || "No data returned"}`);
-          setBlogPost(null);
+          console.log(`Error fetching blog post: ${error?.message || "No data returned"}`)
+          setBlogPost(null)
         } else {
-          console.log(`Blog post fetched: ${blog.title}, is_blurred: ${blog.is_blurred}`);
+          console.log(`Blog post fetched: ${blog.title}, is_blurred: ${blog.is_blurred}`)
           setBlogPost({
             ...blog,
             is_blurred: blog.is_blurred ?? false,
-          });
+          })
         }
       } catch (err) {
-        console.log(`Blog fetch error: ${err instanceof Error ? err.message : String(err)}`);
-        setBlogPost(null);
+        console.log(`Blog fetch error: ${err instanceof Error ? err.message : String(err)}`)
+        setBlogPost(null)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchBlogPost();
-  }, [id]);
+    }
+    fetchBlogPost()
+  }, [id])
+
+  // Function to properly format blog content with HTML tags
+  const formatBlogContent = (content: string) => {
+    if (!content) return ""
+
+    // Replace simple "Blog image X" references
+    content = content.replace(/Blog image (\d+)/g, (match, index) => {
+      return `<div class="blog-image-container">
+        <div class="relative w-full h-[400px] my-8">
+          <img 
+            src="/seo-backlink-strategy-${index}.jpg"
+            alt="Blog image ${index}"
+            class="rounded-lg object-cover w-full h-full"
+          />
+        </div>
+      </div>`
+    })
+
+    // Format headings
+    content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
+      if (p1.includes("How to Boost Your Backlink Strategy in Just 30 Days")) {
+        return `<h1 class="text-3xl font-bold my-6">${p1}</h1>`
+      }
+      if (
+        p1.startsWith("1.") ||
+        p1.startsWith("2.") ||
+        p1.startsWith("3.") ||
+        p1.startsWith("4.") ||
+        p1.startsWith("5.") ||
+        p1.startsWith("6.") ||
+        p1.startsWith("Conclusion") ||
+        p1.startsWith("FAQ")
+      ) {
+        return `<h2 class="text-2xl font-bold my-5">${p1}</h2>`
+      }
+      return `<strong>${p1}</strong>`
+    })
+
+    // Format lists - Modified to avoid using /s flag
+    content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
+      return `<div class="my-3">
+        <strong class="block mb-1">${title}:</strong>
+        <p>${description.trim()}</p>
+      </div>`
+    })
+
+    // Format bullet points
+    content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>')
+
+    // Wrap lists in ul tags
+    content = content.replace(
+      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n<li class="ml-6 list-disc my-2">/g,
+      '<ul class="my-4 list-disc">\n<li class="ml-6 list-disc my-2">$1</li>\n<li class="ml-6 list-disc my-2">',
+    )
+    content = content.replace(
+      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n(?!<li)/g,
+      '<li class="ml-6 list-disc my-2">$1</li>\n</ul>\n',
+    )
+
+    // Format paragraphs (any text that's not already wrapped in HTML tags)
+    const lines = content.split("\n")
+    let formattedContent = ""
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      if (
+        line &&
+        !line.startsWith("<h") &&
+        !line.startsWith("<ul") &&
+        !line.startsWith("<li") &&
+        !line.startsWith("<div") &&
+        !line.startsWith("<p") &&
+        !line.startsWith("</")
+      ) {
+        formattedContent += `<p class="my-4">${line}</p>\n`
+      } else {
+        formattedContent += line + "\n"
+      }
+    }
+
+    // Format Q&A in FAQ section
+    formattedContent = formattedContent.replace(
+      /\*\*Q\d+: (.*?)\*\*/g,
+      '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>',
+    )
+
+    return formattedContent
+  }
 
   useEffect(() => {
     if (!blogPost) {
-      console.log("No blog post available");
-      return;
+      console.log("No blog post available")
+      return
     }
 
     try {
-      console.log(`Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`);
+      console.log(
+        `Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`,
+      )
 
       if (!blogPost.is_blurred || hasActiveSubscription) {
-        console.log("Content fully visible (not blurred or user has subscription)");
+        console.log("Content fully visible (not blurred or user has subscription)")
         setSplitContentResult({
-          visibleContent: blogPost.blog_post,
+          visibleContent: formatBlogContent(blogPost.blog_post),
           blurredContent: "",
           hasBlurredContent: false,
-        });
+        })
       } else {
-        console.log("Applying blur for non-subscribed user");
-        const fullContent = blogPost.blog_post || "";
-        const paragraphs = fullContent.match(/<\/p>/g) || [];
-        const targetIndex = Math.ceil(paragraphs.length * 0.2);
-        let splitIndex = 0;
+        console.log("Applying blur for non-subscribed user")
+        const fullContent = blogPost.blog_post || ""
+        const paragraphs = fullContent.match(/<\/p>/g) || []
+        const targetIndex = Math.ceil(paragraphs.length * 0.2)
+        let splitIndex = 0
         if (targetIndex > 0 && paragraphs.length >= targetIndex) {
-          let count = 0;
-          let lastPos = 0;
+          let count = 0
+          let lastPos = 0
           while (count < targetIndex) {
-            lastPos = fullContent.indexOf("</p>", lastPos + 1);
-            if (lastPos === -1) break;
-            count++;
-            splitIndex = lastPos + 4;
+            lastPos = fullContent.indexOf("</p>", lastPos + 1)
+            if (lastPos === -1) break
+            count++
+            splitIndex = lastPos + 4
           }
         } else {
-          splitIndex = Math.floor(fullContent.length * 0.2);
+          splitIndex = Math.floor(fullContent.length * 0.2)
         }
 
         setSplitContentResult({
-          visibleContent: fullContent.slice(0, splitIndex),
-          blurredContent: fullContent.slice(splitIndex),
+          visibleContent: formatBlogContent(fullContent.slice(0, splitIndex)),
+          blurredContent: formatBlogContent(fullContent.slice(splitIndex)),
           hasBlurredContent: fullContent.length > splitIndex,
-        });
-        console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`);
+        })
+        console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`)
       }
     } catch (err) {
-      console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`);
+      console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`)
       setSplitContentResult({
-        visibleContent: blogPost.blog_post || "",
+        visibleContent: formatBlogContent(blogPost.blog_post || ""),
         blurredContent: "",
         hasBlurredContent: false,
-      });
+      })
     }
-  }, [blogPost, hasActiveSubscription]);
+  }, [blogPost, hasActiveSubscription])
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollButton(window.scrollY > 300);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+      setShowScrollButton(window.scrollY > 300)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   const scrollToTop = () => {
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    topRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      setError(null);
-      console.log("Initiating login...");
+      setError(null)
+      console.log("Initiating login...")
       const {
         data: { user: authUser },
         error: authError,
-      } = await supabase.auth.signInWithPassword({ email, password });
+      } = await supabase.auth.signInWithPassword({ email, password })
       if (authError) {
-        console.log(`Login failed: ${authError.message}`);
-        throw new Error(`Authentication failed: ${authError.message}`);
+        console.log(`Login failed: ${authError.message}`)
+        throw new Error(`Authentication failed: ${authError.message}`)
       }
       if (!authUser) {
-        console.log("No user returned from login");
-        throw new Error("Authentication failed: No user returned");
+        console.log("No user returned from login")
+        throw new Error("Authentication failed: No user returned")
       }
-      console.log(`Logged in user: ${authUser.id}`);
+      console.log(`Logged in user: ${authUser.id}`)
       const { data: signupUser, error: signupError } = await supabase
         .from("userssignuped")
         .select("*")
         .eq("id", authUser.id)
-        .single();
+        .single()
       if (signupError) {
         if (signupError.code === "PGRST116") {
-          console.log("User not in userssignuped, creating...");
+          console.log("User not in userssignuped, creating...")
           const { data: newUser, error: insertError } = await supabase
             .from("userssignuped")
             .insert({ id: authUser.id, email: authUser.email })
             .select()
-            .single();
+            .single()
           if (insertError) {
-            console.log(`Failed to insert new user: ${insertError.message}`);
-            throw new Error(`Failed to create user record: ${insertError.message}`);
+            console.log(`Failed to insert new user: ${insertError.message}`)
+            throw new Error(`Failed to create user record: ${insertError.message}`)
           }
-          setUser(newUser);
-          setUserId(authUser.id);
-          setShowLoginForm(false);
-          await checkSubscription(authUser.id);
-          return;
+          setUser(newUser)
+          setUserId(authUser.id)
+          setShowLoginForm(false)
+          await checkSubscription(authUser.id)
+          return
         }
-        console.log(`User fetch error post-login: ${signupError.message}`);
-        throw new Error(`Failed to check user record: ${signupError.message}`);
+        console.log(`User fetch error post-login: ${signupError.message}`)
+        throw new Error(`Failed to check user record: ${signupError.message}`)
       }
-      console.log("User exists in userssignuped");
-      setUser(signupUser);
-      setUserId(signupUser.id);
-      setShowLoginForm(false);
-      await checkSubscription(authUser.id);
+      console.log("User exists in userssignuped")
+      setUser(signupUser)
+      setUserId(signupUser.id)
+      setShowLoginForm(false)
+      await checkSubscription(authUser.id)
     } catch (err) {
-      console.log(`Login error: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setError(err instanceof Error ? err.message : "Login failed");
+      console.log(`Login error: ${err instanceof Error ? err.message : "Unknown error"}`)
+      setError(err instanceof Error ? err.message : "Login failed")
     }
-  };
+  }
 
   const handlePayNow = () => {
-    console.log("Pay Now clicked");
-    setShowPricing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    console.log("Pay Now clicked")
+    setShowPricing(true)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const handleBackToPreview = () => {
-    setShowPricing(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    setShowPricing(false)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const toggleLoginForm = () => {
-    setShowLoginForm(!showLoginForm);
-    setError(null);
-  };
+    setShowLoginForm(!showLoginForm)
+    setError(null)
+  }
 
   const getCheckoutUrl = (plan: Plan) => {
     if (!user || !user.id) {
-      console.log("No user for checkout URL");
-      return "#";
+      console.log("No user for checkout URL")
+      return "#"
     }
-    console.log(`Generating checkout URL for plan: ${plan.name}`);
+    console.log(`Generating checkout URL for plan: ${plan.name}`)
     const redirectUrl = encodeURIComponent(
       `${window.location.origin}/payment-success?` +
         `user_id=${user.id}&plan_id=${plan.id}&plan_name=${plan.name}&` +
         `price=${plan.numericPrice}¤cy=USD&billing_cycle=${billingCycle}`,
-    );
-    return `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${redirectUrl}`;
-  };
+    )
+    return `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${redirectUrl}`
+  }
 
-  const { visibleContent, blurredContent, hasBlurredContent } = splitContentResult;
+  const { visibleContent, blurredContent, hasBlurredContent } = splitContentResult
 
   if (loading) {
     return (
@@ -377,7 +467,7 @@ export default function BlogPostPage() {
           <p className="text-gray-600">Loading blog post...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (!blogPost) {
@@ -405,7 +495,7 @@ export default function BlogPostPage() {
           </div>
         </motion.div>
       </div>
-    );
+    )
   }
 
   return (
@@ -533,7 +623,8 @@ export default function BlogPostPage() {
                       </div>
                       <h3 className="text-2xl font-bold text-gray-800 mb-3">Unlock the Full Post</h3>
                       <p className="text-gray-600 mb-6">
-                        Yo, this blog’s got the good stuff—images, videos, FAQs, the works! Subscribe to dive in and get all our premium content.
+                        Yo, this blog's got the good stuff—images, videos, FAQs, the works! Subscribe to dive in and get
+                        all our premium content.
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -580,5 +671,5 @@ export default function BlogPostPage() {
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }

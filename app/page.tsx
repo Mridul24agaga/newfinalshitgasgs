@@ -1,7 +1,7 @@
 import Script from "next/script"
 import { Navbar } from "@/app/components/navbar"
 import  Hero  from "@/app/components/hero"
-import { FAQSection } from "./components/faq"
+import FAQSection from "./components/faq"
 import { ProblemSolution } from "./components/video-section"
 import ContentProblems from "./components/frustration"
 import BlogsocialStats from "./components/blogosocial"
@@ -11,7 +11,6 @@ import IntegrationsSection from "./components/integrations"
 import LanguageScroll from "./components/language"
 import EarlyBirdOffer from "./components/offer"
 import BlogSection from "./components/blogpost"
-import CTASection from "./components/cta"
 import  Footer  from "./components/footer"
 import AnnouncementBanner from "./components/navit"
 import StructuredData from "./components/structured-data"
@@ -30,6 +29,9 @@ import { PricingCTA } from "./components/pricecta"
 import { FeatureBentoGrid } from "./components/feature-grid"
 import { ContentFeaturesSection } from "./components/contentfeatures"
 import PaymentPage from "./components/payment-page"
+import WhyBloggingSection from "./components/why"
+import CTASection from "./components/ct"
+import FeaturesSection from "./components/fet"
 
 export const metadata: Metadata = {
   title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
@@ -84,10 +86,12 @@ export default function Page() {
 
       {/* Hero Section with gradient background */}
         <Hero />
+        <WhyBloggingSection/>
+        <CTASection/>
+        <FeaturesSection/>
+
         <HowItWorks/>
         <PricingCTA/>
-        <FeatureBentoGrid/>
-        <ContentFeaturesSection/>
         <ComparisonSection/>
 
 

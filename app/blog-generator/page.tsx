@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-      <BlogGenerator onGenerate={handleGenerate} loading={loading} />
+      <BlogGenerator />
       {error && <p className="text-red-500 mt-4">{error}</p>}
       {generatedBlogs.length > 0 && !loading && (
         <div className="mt-8 w-full max-w-7xl">

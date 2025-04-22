@@ -1899,7 +1899,7 @@ export async function generateBlog(
   // Fetch existing posts from headlinetoblog table
   console.log(`Fetching existing posts for user ${userId}...`);
   const { data: existingPosts, error: postsError } = await supabase
-    .from("headlinetoblog")
+    .from("blogs")
     .select("title, blog_post, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });

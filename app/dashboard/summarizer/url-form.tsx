@@ -215,7 +215,7 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
     try {
       const result = await generateBlog(url)
 
-      if (result && result.length > 0) {
+      if (result && Array.isArray(result) && result.length > 0) {
         console.log(`Successfully generated ${result.length} blog posts`)
 
         // Refresh subscription data to get updated credits
@@ -449,4 +449,3 @@ export default function URLForm({ onContentGenerated }: URLFormProps) {
     </div>
   )
 }
-

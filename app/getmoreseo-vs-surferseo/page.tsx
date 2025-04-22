@@ -1,9 +1,11 @@
 import Link from "next/link"
 import { Check, X } from "lucide-react"
 import Footer from "../components/footer"
+import { Header } from "../components/header"
 export default function ComparisonPage() {
   return (
     <div className="min-h-screen bg-white">
+        <Header/>
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#294fd6]/10 to-white">
         <div className="max-w-7xl mx-auto">
