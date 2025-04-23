@@ -1,17 +1,16 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Mail, Youtube, CreditCard, Clock, ShieldCheck } from "lucide-react"
+import { Mail, CreditCard, Clock, ShieldCheck } from "lucide-react"
 
 export default function Footer() {
   const footerLinks = [
     {
       title: "COMPARISONS",
       links: [
-        { name: "ZimmWriter AI vs GetMoreSEO", href: "/compare/zimmwriter" },
-        { name: "Drafthorse AI vs GetMoreSEO", href: "/compare/drafthorse" },
-        { name: "Autoblogging AI vs GetMoreSEO", href: "/compare/autoblogging" },
-        { name: "Byword AI vs GetMoreSEO", href: "/compare/byword" },
-        { name: "Koala vs GetMoreSEO", href: "/compare/koala" },
+        { name: "GetMoreSEO vs Texta AI", href: "/getmoreseo-vs-texta" },
+        { name: "GetMoreSEO vs Outrank.so", href: "/getmoreseo-vs-outrank" },
+        { name: "GetMoreSEO vs SebotAI", href: "/getmoreseo-vs-seobotai" },
+        { name: "GetMoreSEO vs Surfer SEO", href: "/getmoreseo-vs-surferseo" },
       ],
     },
     {
@@ -67,8 +66,11 @@ export default function Footer() {
                     placeholder="your@email.com"
                     className="flex-grow px-6 py-4 rounded-lg text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/50"
                   />
-                  <Link href='/signup' className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200">
-                   Get Started Today
+                  <Link
+                    href="/signup"
+                    className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200"
+                  >
+                    Get Started Today
                   </Link>
                 </div>
               </div>
@@ -172,12 +174,7 @@ export default function Footer() {
               <div className="mb-6 md:mb-0">
                 {/* Logo */}
                 <div className="flex items-center mb-6">
-                  <div className="text-white font-bold text-xl flex items-center">
-                    <div className="w-8 h-8 mr-2 bg-white rounded-full flex items-center justify-center text-black">
-                      G
-                    </div>
-                    GetMoreSEO
-                  </div>
+                  <div className="text-white font-bold text-xl flex items-center">GetMoreSEO</div>
                 </div>
 
                 {/* Social Links */}
@@ -187,21 +184,19 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    <Youtube className="w-5 h-5" />
-                  </a>
-                  <a href="#" className="w-6 h-6 rounded-full overflow-hidden">
+                  ></a>
+                  <a href="https://www.linkedin.com/in/mridulthareja/" className="w-6 h-6 rounded-full overflow-hidden">
                     <Image
-                      src="/founder-1.jpg"
+                      src="/mridul.jpg"
                       alt="Founder"
                       width={24}
                       height={24}
                       className="w-full h-full object-cover"
                     />
                   </a>
-                  <a href="#" className="w-6 h-6 rounded-full overflow-hidden">
+                  <a href="https://www.linkedin.com/in/krissmann/" className="w-6 h-6 rounded-full overflow-hidden">
                     <Image
-                      src="/founder-2.jpg"
+                      src="/krissmann.jpg"
                       alt="Founder"
                       width={24}
                       height={24}
@@ -211,7 +206,7 @@ export default function Footer() {
                 </div>
 
                 {/* Copyright */}
-                <div className="text-xs text-gray-500">Copyright 2024. OBEDIENTSHIELD, LDA. All rights reserved!</div>
+                <div className="text-xs text-gray-500">Copyright 2025. MARKUPX BRANDS. All rights reserved!</div>
               </div>
 
               {/* Contact & Legal */}
@@ -221,7 +216,7 @@ export default function Footer() {
                   className="text-sm text-gray-400 hover:text-white transition-colors flex items-center"
                 >
                   <Mail className="w-4 h-4 mr-2" />
-                  support@getmoreseo.com
+                  hi@mridulthareja.com
                 </a>
                 <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
                   Privacy

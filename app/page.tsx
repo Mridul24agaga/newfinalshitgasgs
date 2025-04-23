@@ -23,7 +23,7 @@ import WhyHireSection from "./components/hire"
 import ComparisonTable from "./components/comparison"
 import TestimonialsSection from "./components/testimonials"
 import OurProcessSection from "./components/newtext"
-import { ComparisonSection } from "./components/comparison-section"
+import  ComparisonSection  from "./components/comparison-section"
 import ScrollingResults from "./components/moving"
 import { PricingCTA } from "./components/pricecta"
 import { FeatureBentoGrid } from "./components/feature-grid"
@@ -32,6 +32,8 @@ import PaymentPage from "./components/payment-page"
 import WhyBloggingSection from "./components/why"
 import CTASection from "./components/ct"
 import FeaturesSection from "./components/fet"
+import BlogArticles from "./components/example"
+import FounderSupportSection from "./components/founder"
 
 export const metadata: Metadata = {
   title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
@@ -87,13 +89,14 @@ export default function Page() {
       {/* Hero Section with gradient background */}
         <Hero />
         <WhyBloggingSection/>
-        <CTASection/>
         <FeaturesSection/>
+        <BlogArticles/>
 
         <HowItWorks/>
-        <PricingCTA/>
         <ComparisonSection/>
-
+        <div className="flex justify-center w-full">
+      <FounderSupportSection />
+    </div>
 
       
 

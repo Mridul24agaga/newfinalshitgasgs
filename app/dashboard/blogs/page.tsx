@@ -14,6 +14,7 @@ interface BlogPost {
   summary?: string
   created_at: string
   tags?: string[]
+  source?: string
 }
 
 export default function BlogsPage() {
@@ -78,6 +79,12 @@ export default function BlogsPage() {
           throw new Error(blogsError.message)
         }
 
+        // Add source identifier to blogs
+        const blogsWithSource = (blogsData || []).map((blog) => ({
+          ...blog,
+          source: "blog_generator",
+        }))
+
         // Fetch blogs from the headlinetoblog table for the current user
         const { data: headlineToBlogData, error: headlineToBlogError } = await supabase
           .from("headlinetoblog")
@@ -89,8 +96,14 @@ export default function BlogsPage() {
           throw new Error(headlineToBlogError.message)
         }
 
+        // Add source identifier to headline to blog posts
+        const headlineToBlogWithSource = (headlineToBlogData || []).map((blog) => ({
+          ...blog,
+          source: "headline_to_blog",
+        }))
+
         // Combine both datasets
-        const combinedBlogs = [...(blogsData || []), ...(headlineToBlogData || [])]
+        const combinedBlogs = [...blogsWithSource, ...headlineToBlogWithSource]
 
         // Sort by created_at date (newest first)
         combinedBlogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -375,6 +388,17 @@ export default function BlogsPage() {
                               {blog.summary && (
                                 <div className="text-xs text-gray-500 mt-1 line-clamp-1">{blog.summary}</div>
                               )}
+                              <div className="mt-1">
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full ${
+                                    blog.source === "headline_to_blog"
+                                      ? "bg-purple-50 text-purple-700"
+                                      : "bg-green-50 text-green-700"
+                                  }`}
+                                >
+                                  {blog.source === "headline_to_blog" ? "Headline to Blog" : "Blog Generator"}
+                                </span>
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex flex-wrap gap-1">
@@ -398,7 +422,13 @@ export default function BlogsPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() => router.push(`/generated/${blog.id}`)}
+                                  onClick={() => {
+                                    if (blog.source === "headline_to_blog") {
+                                      router.push(`/generate/${blog.id}`)
+                                    } else {
+                                      router.push(`/generated/${blog.id}`)
+                                    }
+                                  }}
                                   className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
                                   title="View article"
                                 >

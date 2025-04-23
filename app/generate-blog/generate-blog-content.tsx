@@ -48,10 +48,13 @@ export default function GenerateBlogPage({
 
   // Get URL from query params or localStorage when component mounts
   useEffect(() => {
+    // First check if URL is in query params (from onboarding page)
     const urlFromParams = searchParams.get("url")
+
     if (urlFromParams) {
       setWebsite(urlFromParams)
     } else {
+      // If not in query params, check localStorage
       const savedUrl = localStorage.getItem("websiteUrl")
       if (savedUrl) {
         setWebsite(savedUrl)
@@ -75,24 +78,28 @@ export default function GenerateBlogPage({
   useEffect(() => {
     if (blog?.imageUrls && blog.imageUrls.length > 0) {
       setImagesLoaded(false)
+
       const preloadImages = async () => {
         try {
           const imagePromises = blog.imageUrls!.map((url) => {
             return new Promise((resolve, reject) => {
               const img = new globalThis.Image()
-              img.crossOrigin = "anonymous"
+              img.crossOrigin = "anonymous" // Fix CORS issues
               img.src = url
               img.onload = () => resolve(url)
               img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
             })
           })
+
           await Promise.all(imagePromises)
           setImagesLoaded(true)
         } catch (err) {
           console.warn("Some images failed to preload:", err)
+          // Still mark as loaded even if some fail
           setImagesLoaded(true)
         }
       }
+
       preloadImages()
     }
   }, [blog?.imageUrls])
@@ -105,18 +112,24 @@ export default function GenerateBlogPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!website) {
       setError("Please enter a website URL")
       return
     }
+
+    // Basic URL validation
     let url = website
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       url = "https://" + url
       setWebsite(url)
     }
+
     try {
       setIsGenerating(true)
       setError("")
+
+      // Use the external onGenerate function if provided, otherwise use the local generateBlog function
       const result = onGenerate
         ? await onGenerate(url, "normal")
         : ((await generateBlog(url)) as {
@@ -124,9 +137,12 @@ export default function GenerateBlogPage({
             content: string
             imageUrls?: string[]
           })
+
       setBlog(result)
     } catch (err: any) {
       console.error("Error:", err)
+
+      // Check if the error is related to subscription
       if (err.message?.includes("No subscription found") || err.message?.includes("Subscription data required")) {
         setShowSubscriptionModal(true)
       } else {
@@ -137,20 +153,30 @@ export default function GenerateBlogPage({
     }
   }
 
+  // Function to convert markdown to HTML
   const renderMarkdown = (markdown: string) => {
     if (!markdown) return ""
+
+    // Remove the first heading (title) as we display it separately
     const contentWithoutTitle = markdown.replace(/^#\s+.+$/m, "").trim()
+
+    // Remove any "---" separator lines and meta-commentary
     const cleanedContent = contentWithoutTitle
-      .replace(/^---+$/gm, "")
-      .replace(/^There you have it!.*$/gm, "")
+      .replace(/^---+$/gm, "") // Remove separator lines
+      .replace(/^There you have it!.*$/gm, "") // Remove common meta-commentary
       .replace(/^The content flows naturally.*$/gm, "")
       .replace(/^Let me know if.*$/gm, "")
       .replace(/^Let's dive in!.*$/gm, "")
       .replace(/^Here's the final.*$/gm, "")
       .replace(/^I've also included.*$/gm, "")
+
+    // Process other markdown elements
     let processedContent = cleanedContent
+
+    // Process image blocks first to prevent interference with other markdown processing
     const imageBlockRegex = /<!-- IMAGE_BLOCK_START -->([\s\S]*?)<!-- IMAGE_BLOCK_END -->/g
     processedContent = processedContent.replace(imageBlockRegex, (match, imageContent) => {
+      // Extract the image URL and alt text
       const imgMatch = imageContent.match(/<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/i)
       if (imgMatch) {
         const [_, src, alt] = imgMatch
@@ -163,29 +189,39 @@ export default function GenerateBlogPage({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain"
               loading="lazy"
-              placeholder="blur"
-              blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4="
             />
           </div>
         </div>`
       }
-      return match
+      return match // Return original if no match
     })
+
+    // Process other markdown elements
     processedContent = processedContent
+      // Process headings
       .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>')
       .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>')
       .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mt-10 mb-4">$1</h1>')
+
+      // Process lists
       .replace(/^\s*\*\s(.*)/gm, '<li class="ml-6 list-disc my-1">$1</li>')
       .replace(/^\s*\d\.\s(.*)/gm, '<li class="ml-6 list-decimal my-1">$1</li>')
+
+      // Process emphasis and bold
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
+
+      // Process links - fixed the regex pattern
       .replace(
-        /\[(.*?)\]\((.*?)\)/g,
+        /\[(.*?)\]$(.*?)$/g,
         '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>',
       )
+
+    // Process paragraphs (must come last)
     return processedContent
       .split("\n\n")
       .map((para) => {
+        // Skip if it's already a heading, list, image container, or HTML block
         if (
           para.startsWith("<h1") ||
           para.startsWith("<h2") ||
@@ -196,17 +232,22 @@ export default function GenerateBlogPage({
         ) {
           return para
         }
+
+        // Handle lists (wrap in ul/ol)
         if (para.includes('<li class="ml-6 list-disc')) {
           return `<ul class="my-4">${para}</ul>`
         }
         if (para.includes('<li class="ml-6 list-decimal')) {
           return `<ol class="my-4">${para}</ol>`
         }
+
+        // Regular paragraph
         return `<p class="my-4">${para}</p>`
       })
       .join("")
   }
 
+  // Calculate estimated reading time
   const calculateReadingTime = (content: string) => {
     const wordsPerMinute = 200
     const wordCount = content.split(/\s+/).length
@@ -222,11 +263,13 @@ export default function GenerateBlogPage({
     }
   }
 
+  // Use external loading state if provided
   const isLoading = externalLoading !== undefined ? externalLoading : isGenerating
 
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
+        {/* Back button */}
         <button
           onClick={() => router.back()}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
@@ -235,7 +278,9 @@ export default function GenerateBlogPage({
           <span>Back</span>
         </button>
 
+        {/* Main Card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8 sm:px-10">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">AI Blog Generator</h1>
             <p className="text-blue-100 max-w-2xl">
@@ -243,6 +288,7 @@ export default function GenerateBlogPage({
             </p>
           </div>
 
+          {/* Content */}
           <div className="p-6 sm:p-10">
             {!blog && !isLoading && (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -349,7 +395,7 @@ export default function GenerateBlogPage({
 
                     <div className="flex items-center">
                       <div
-                        className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${timer > 30 ? "bg-green-100[text-green-600" : "bg-gray-100 text-gray-400"}`}
+                        className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${timer > 30 ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}
                       >
                         {timer > 30 ? <CheckCircle2 className="h-5 w-5" /> : "2"}
                       </div>
@@ -479,61 +525,37 @@ export default function GenerateBlogPage({
                   .blog-content a:hover {
                     text-decoration-color: #2563eb;
                   }
-                  
-                  .blurred-content {
+
+                  .blur-sm {
                     filter: blur(4px);
-                    pointer-events: none;
                     user-select: none;
-                    opacity: 0.6;
-                  }
-                  
-                  .subscribe-overlay {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 10;
                   }
                 `}</style>
 
                 <div className="relative">
                   <div
-                    className={`blog-content prose max-w-none text-gray-700 ${!hasActiveSubscription ? "blurred-content" : ""}`}
+                    className="blog-content prose max-w-none text-gray-700 blur-sm"
+                    style={{ filter: "blur(4px)" }}
                     dangerouslySetInnerHTML={{ __html: blog.content ? renderMarkdown(blog.content) : "" }}
                   />
-                  {!hasActiveSubscription && (
-                    <div className="subscribe-overlay">
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50">
+                    <div className="text-center p-6 bg-white rounded-xl shadow-lg max-w-md">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">Subscribe to View Full Content</h3>
+                      <p className="text-gray-600 mb-4">
+                        Get unlimited access to all our AI-generated blog posts and more.
+                      </p>
                       <button
                         onClick={() => router.push("/payment")}
                         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                       >
-                        Subscribe to View Full Blog
+                        Subscribe Now
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Actions */}
-                {hasActiveSubscription && (
-                  <div className="mt-10 pt-6 border-t border-gray-200 flex justify-center">
-                    <button
-                      onClick={copyToClipboard}
-                      className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    >
-                      {copied ? (
-                        <>
-                          <CheckCircle2 className="h-5 w-5 mr-2" />
-                          <span>Copied to Clipboard!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-5 w-5 mr-2" />
-                          <span>Copy Blog Content</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
+                
               </div>
             )}
           </div>

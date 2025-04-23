@@ -104,77 +104,59 @@ export default function HeadlineToBlog() {
     setGeneratedPosts([])
 
     try {
-      // Prepare payload for API request
-      const payload = {
-        url: website || "", // Send empty string if no URL provided
-        headline,
-        humanizeLevel,
+      // Get user data
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !userData.user) {
+        throw new Error("You must be logged in to generate a blog post")
       }
 
-      console.log(`Sending request to generate blog with payload:`, payload)
+      const userId = userData.user.id
 
-      // Call the API endpoint
-      const response = await fetch("/api/generate-blog", {
+      // Call the server action directly
+      const response = await fetch("/api/generate-blog-from-headline", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          headline,
+          websiteUrl: website,
+          humanizeLevel,
+        }),
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to generate blog post")
+      }
 
       const data = await response.json()
 
-      // Check for API errors
-      if (!response.ok || data.error) {
-        console.error("API error:", data.error || "Unknown error")
-        throw new Error(data.error || "Failed to generate blog post")
+      if (!data.id || !data.title || !data.content) {
+        throw new Error("Invalid response from server")
       }
 
-      // Get user data
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id || ""
-
-      // Extract blog posts from response
-      const posts: BlogPost[] = data.blogPosts.map((post: any) => ({
-        id: post.id,
+      // Create a blog post object
+      const post: BlogPost = {
+        id: data.id,
         user_id: userId,
-        blog_post: post.content,
-        citations: post.citations,
-        created_at: new Date().toISOString(), // API doesn't return created_at, using current time
-        title: post.title,
-        timestamp: post.timestamp,
-        reveal_date: post.reveal_date,
-        url: post.url || null,
-        is_blurred: post.is_blurred || false,
-        needs_formatting: post.needs_formatting || false,
-      }))
-
-      console.log(`Received ${posts.length} blog post(s) from API`)
-
-      setGeneratedPosts(posts)
-
-      // Redirect to the generated post's page using the first post's id
-      if (posts.length > 0) {
-        const postId = posts[0].id
-        console.log(`Blog post generated with ID: ${postId}. Verifying existence before redirect...`)
-
-        // Verify the post exists before redirecting
-        const { data: postExists, error: postError } = await supabase
-          .from("headlinetoblog")
-          .select("id")
-          .eq("id", postId)
-          .eq("user_id", userId)
-
-        if (postError || !postExists || postExists.length === 0) {
-          console.error("Post verification failed:", postError?.message || "Post not found")
-          throw new Error("Generated post could not be found in the database.")
-        }
-
-        console.log(`Post ${postId} verified. Redirecting to /generate/${postId}`)
-        router.push(`/generate/${postId}`)
-      } else {
-        throw new Error("No posts were generated.")
+        blog_post: data.content,
+        citations: [],
+        created_at: new Date().toISOString(),
+        title: data.title,
+        timestamp: new Date().toISOString(),
+        reveal_date: new Date().toISOString(),
+        url: website || null,
+        is_blurred: data.is_blurred || false,
+        needs_formatting: false,
       }
+
+      console.log(`Blog post generated with ID: ${post.id}`)
+      setGeneratedPosts([post])
+
+      // Redirect to the generated post's page
+      router.push(`/generate/${post.id}`)
 
       await fetchExistingPosts()
     } catch (err: any) {

@@ -65,7 +65,7 @@ export default function FAQSection() {
   }
 
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
+    <section id="faq" className="py-24 bg-white relative overflow-hidden">
       <div className="absolute top-40 left-0 w-72 h-72 bg-[#294df6]/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-0 w-80 h-80 bg-[#294df6]/5 rounded-full blur-3xl"></div>
 
