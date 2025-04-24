@@ -30,7 +30,7 @@ export function Header() {
       <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
         <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
           <span className="mr-2">🚀</span>
-          Launch Offer: 40% OFF on Yearly Plans – code "LAUNCH"
+          Launch Offer: 57% OFF on All Plans
         </span>
         
       </div>

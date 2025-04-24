@@ -1,6 +1,7 @@
 import Image from "next/image"
 import { Button } from "@/app/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 export default function Home() {
   return (
@@ -15,12 +16,7 @@ export default function Home() {
           <div className="md:w-1/2">
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               How we <span className="text-[#294fd6]">make magic</span> happen
-              <span className="inline-block ml-4">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 25C15 30 25 30 30 25" stroke="black" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M30 25L25 20" stroke="black" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </span>
+           
             </h1>
           </div>
 
@@ -31,10 +27,12 @@ export default function Home() {
             </p>
             <p className="text-lg font-semibold text-[#294fd6] mb-6">Fully Automated. No Writers. No Hassle.</p>
 
-            <Button className="bg-[#294fd6] hover:bg-blue-700 rounded-full px-6">
-              <span>Start for Free</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/signup">
+              <Button className="bg-[#294fd6] hover:bg-blue-700 rounded-full px-6">
+                <span className="text-white">Start for Free</span>
+                <ArrowRight className="ml-2 h-4 w-4 text-white" />
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -84,7 +82,7 @@ export default function Home() {
 
           {/* Card 3: Auto-Publishing */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-          <div className="h-48 mb-6 relative rounded-lg overflow-hidden">
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden">
               <Image src="/api.png" alt="Automatic blog publishing system" fill className="object-cover" />
             </div>
 

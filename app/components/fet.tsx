@@ -17,19 +17,7 @@ export default function ComparisonSection() {
       <div className="mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">
           And so <span className="text-[#294fd6]">much more you need</span> to do your best work.
-          <span className="inline-block mx-4">
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="inline"
-            >
-              <path d="M10 25C15 30 25 30 30 25" stroke="black" strokeWidth="2" strokeLinecap="round" />
-              <path d="M30 25L25 20" stroke="black" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </span>
+          
         </h2>
       </div>
 

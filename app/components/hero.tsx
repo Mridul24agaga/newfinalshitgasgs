@@ -77,27 +77,9 @@ export default function Home() {
       <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
         <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
           <span className="mr-2">🚀</span>
-          Launch Offer: 40% OFF on Yearly Plans – code "LAUNCH"
+          Launch Offer: 57% OFF on All Plans 
         </span>
-        <div className="flex items-center ml-4">
-          <div className="flex items-center space-x-1 mx-2">
-            <div className="bg-white/20 rounded px-2 py-1 text-center min-w-[32px]">
-              <span className="font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
-              <span className="text-xs block">HRS</span>
-            </div>
-            <div className="bg-white/20 rounded px-2 py-1 text-center min-w-[32px]">
-              <span className="font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
-              <span className="text-xs block">MIN</span>
-            </div>
-            <div className="bg-white/20 rounded px-2 py-1 text-center min-w-[32px]">
-              <span className="font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
-              <span className="text-xs block">SEC</span>
-            </div>
-          </div>
-          <Link href="/signup" className="ml-4 bg-white text-[#294df6] px-3 py-1 rounded-md text-sm font-medium">
-            Get Deal
-          </Link>
-        </div>
+        
       </div>
 
       {/* Navigation */}
@@ -369,28 +351,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Trust Indicators - SMALLER AND CENTERED */}
-          <div className="flex flex-col items-center justify-center mb-16 mt-12">
-            <p className="text-sm font-medium text-gray-700 mb-3 tracking-wide text-center">
-              TRUSTED BY 500+ FOUNDERS, SOLOPRENEURS AND BUILDERS
-            </p>
-            <div className="flex justify-center items-center mb-2">
-              <div className="flex -space-x-2 mr-3">
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="/profile1.jpeg" alt="User" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="/profile2.jpeg" alt="User" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="/profile3.jpeg" alt="User" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="/profile4.jpeg" alt="User" />
-              </div>
-              <div className="flex text-yellow-400">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <svg key={i} xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                  </svg>
-                ))}
-              </div>
-            </div>
-            <p className="text-xs text-gray-600">50k+ Articles Created</p>
-          </div>
+         
         </div>
       </main>
     </div>
