@@ -1,5 +1,7 @@
-import Image from "next/image"
-import Link from "next/link"
+"use client"; // Add this at the top
+
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Howthisisworking() {
   return (
@@ -46,14 +48,22 @@ export default function Howthisisworking() {
               </svg>
             </Link>
           </div>
-          <div className="md:w-1/2 relative">
+          <div className="md:w-1/2 relative w-full">
             <div className="absolute -top-20 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               AI-powered
               <br />
               automation
             </div>
-            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden ">
-              <Image src="/true.png" alt="AI-powered content automation dashboard" fill className="object-cover" />
+            <div className="relative w-full h-[300px] md:h-[350px] rounded-xl overflow-hidden">
+              <Image
+                src="/true.png"
+                alt="AI-powered content automation dashboard"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={false}
+                onError={() => console.error("Failed to load image: /true.png")} // Keep onError
+              />
             </div>
           </div>
         </div>
@@ -89,14 +99,22 @@ export default function Howthisisworking() {
               </svg>
             </Link>
           </div>
-          <div className="md:w-1/2 relative">
+          <div className="md:w-1/2 relative w-full">
             <div className="absolute -top-20 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               Expert
               <br />
               knowledge
             </div>
-            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
-              <Image src="/seoo.png" alt="SEO experts analyzing website data" fill className="object-cover" />
+            <div className="relative w-full h-[300px] md:h-[350px] rounded-xl overflow-hidden">
+              <Image
+                src="/seoo.png"
+                alt="SEO experts analyzing website data"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={false}
+                onError={() => console.error("Failed to load image: /seoo.png")}
+              />
             </div>
           </div>
         </div>
@@ -132,14 +150,22 @@ export default function Howthisisworking() {
               </svg>
             </Link>
           </div>
-          <div className="md:w-1/2 relative">
+          <div className="md:w-1/2 relative w-full">
             <div className="absolute -top-20 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               No upfront
               <br />
               costs
             </div>
-            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
-              <Image src="/start.png" alt="Risk-free trial signup with no credit card" fill className="object-cover" />
+            <div className="relative w-full h-[300px] md:h-[350px] rounded-xl overflow-hidden">
+              <Image
+                src="/start.png"
+                alt="Risk-free trial signup with no credit card"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={false}
+                onError={() => console.error("Failed to load image: /start.png")}
+              />
             </div>
           </div>
         </div>
@@ -176,18 +202,26 @@ export default function Howthisisworking() {
               </svg>
             </Link>
           </div>
-          <div className="md:w-1/2 relative">
+          <div className="md:w-1/2 relative w-full">
             <div className="absolute -top-20 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               Human-like
               <br />
               quality
             </div>
-            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
-              <Image src="/humann.png" alt="Human-quality blog content with multimedia" fill className="object-cover" />
+            <div className="relative w-full h-[300px] md:h-[350px] rounded-xl overflow-hidden">
+              <Image
+                src="/humann.png"
+                alt="Human-quality blog content with multimedia"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={false}
+                onError={() => console.error("Failed to load image: /humann.png")}
+              />
             </div>
           </div>
         </div>
       </section>
     </main>
-  )
+  );
 }

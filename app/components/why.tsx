@@ -1,5 +1,5 @@
-import Image from "next/image"
-import { BarChart3, Users, DollarSign } from "lucide-react"
+import Image from "next/image";
+import { BarChart3, Users, DollarSign } from "lucide-react";
 
 const WhyBloggingSection = () => {
   return (
@@ -61,14 +61,15 @@ const WhyBloggingSection = () => {
                 </div>
               </div>
 
-              {/* Right side - Image (replacing feature cards) */}
+              {/* Right side - Image (smaller on mobile) */}
               <div className="flex items-center justify-center">
-                <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden border border-gray-100 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300">
+                <div className="relative w-full h-[200px] lg:h-[400px] rounded-xl overflow-hidden border border-gray-100 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300">
                   <Image
                     src="/loading.png"
                     alt="Content marketing strategy illustration"
                     fill
-                    className="object-cover"
+                    className="object-cover w-full h-full"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 </div>
               </div>
@@ -87,7 +88,7 @@ const WhyBloggingSection = () => {
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default WhyBloggingSection
+export default WhyBloggingSection;
