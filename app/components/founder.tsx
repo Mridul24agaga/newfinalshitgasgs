@@ -1,93 +1,257 @@
 import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
-import { ArrowRight, Mail, Twitter } from "lucide-react"
+import {
+  ArrowRight,
+  Mail,
+  Twitter,
+  MessageCircle,
+  Zap,
+  Rocket,
+  Award,
+  Clock,
+  CheckCircle2,
+  Calendar,
+  Users,
+  Sparkles,
+} from "lucide-react"
 
 export default function FounderSupportSection() {
   return (
-    <div className="flex flex-col items-center justify-center w-full bg-white">
-      {/* Main content section - centered with flex */}
-      <section className="w-full py-12 md:py-20 bg-white flex justify-center">
-        <div className="max-w-2xl px-4 md:px-6 flex flex-col items-center">
-          <div className="flex flex-col items-center space-y-16 text-center">
-            {/* Founder Support Section */}
-            <div className="flex flex-col items-center space-y-6">
-              <div className="rounded-lg bg-[#294fd6] px-4 py-1.5 text-sm font-medium text-white">CONTACT FOUNDERS</div>
-              <h2 className="text-3xl font-bold tracking-tight text-black md:text-4xl text-center">
-                Founder Support That Goes Beyond Software
-              </h2>
-              <p className="text-lg text-black text-center max-w-xl">
-                When you choose GetMoreSEO, you're not just getting a tool—you're joining a community supported directly
-                by our founders:
+    <div className="w-full bg-gradient-to-b from-white to-gray-50">
+      {/* Hero section with founder images */}
+      <section className="w-full py-16 md:py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.png')] bg-center opacity-5"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+            {/* Left content */}
+            <div className="flex-1 space-y-8">
+              <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-4 py-1.5 text-sm font-medium text-[#294fd6]">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                <span>DIRECT FOUNDER ACCESS</span>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 leading-tight">
+                Founder Support That{" "}
+                <span className="text-[#294fd6] relative">
+                  Truly Cares
+                  <span className="absolute bottom-1 left-0 w-full h-1 bg-[#294fd6]/30 rounded-full"></span>
+                </span>{" "}
+                About Your Success
+              </h1>
+
+              <p className="text-xl text-gray-600 leading-relaxed">
+                When you choose GetMoreSEO, you're not just getting software—you're gaining partners committed to your
+                growth. Our founders are directly involved in your success journey.
               </p>
-              <ul className="space-y-3 w-fit mx-auto">
-                {[
-                  "Direct assistance via email and X (Twitter)",
-                  "Founder shoutouts for successful clients",
-                  "Regular platform updates based on user feedback",
-                  "Priority access to upcoming features",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="mr-2 text-[#294fd6] font-bold">·</span>
-                    <span className="text-black">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-wrap justify-center gap-4">
+
+              <div className="flex flex-wrap gap-4">
                 <Link href="mailto:hi@mridulthareja.com">
-                  <Button className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white">
-                    <Mail className="mr-2 h-4 w-4" />
+                  <Button
+                    size="lg"
+                    className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white shadow-md shadow-[#294fd6]/20 transition-all hover:translate-y-[-2px]"
+                  >
+                    <Mail className="mr-2 h-5 w-5" />
                     Email Founders
                   </Button>
                 </Link>
                 <Link href="https://twitter.com/innvisionagency">
-                  <Button className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white">
-                    <Twitter className="mr-2 h-4 w-4" />
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-[#294fd6] text-[#294fd6] hover:bg-[#294fd6]/10 transition-all hover:translate-y-[-2px]"
+                  >
+                    <Twitter className="mr-2 h-5 w-5" />
                     Connect on X
                   </Button>
                 </Link>
               </div>
+
+              {/* Testimonial */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6 relative mt-8">
+                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
+                  <div className="text-[#294fd6] text-6xl opacity-20">"</div>
+                </div>
+                <p className="text-gray-700 italic mb-4">
+                  "The founder support at GetMoreSEO is unmatched. When I had questions about optimizing my content
+                  strategy, I received a personal response within hours. This level of attention has made all the
+                  difference for my business."
+                </p>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4 border border-gray-200">
+                    <img src="/kavin.jpeg" alt="Customer" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Kaivan Parekh</div>
+                    <div className="text-sm text-gray-500">Marketer</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Roadmap Section */}
-            <div className="flex flex-col items-center space-y-6">
-              <div className="rounded-lg bg-[#294fd6] px-4 py-1.5 text-sm font-medium text-white">ON OUR ROADMAP</div>
-              <h2 className="text-3xl font-bold tracking-tight text-black md:text-4xl text-center">
-                We're constantly improving
-              </h2>
-              <p className="text-lg text-black text-center max-w-xl">Here's what's coming soon:</p>
-              <ul className="space-y-3 w-fit mx-auto">
-                {[
-                  "One-click blog generation from just a title",
-                  "Automatic indexing submission to search engines",
-                  "LLM.text advanced content optimization",
-                  "And more innovations to keep you ahead",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="mr-2 text-[#294fd6] font-bold">·</span>
-                    <span className="text-black">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Right image */}
+            <div className="flex-1 relative">
+              <div className="relative h-[400px] w-full md:h-[500px] rounded-2xl overflow-hidden shadow-xl">
+                <img
+                  src="/collaborative-success.png"
+                  alt="Founder Support Team"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                <div className="absolute bottom-6 left-6 right-6 text-white">
+                  <div className="text-xl font-bold mb-1">Our Founder Team</div>
+                  <p className="text-white/90 text-sm">Dedicated to your success every step of the way</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Simplified CTA Section with White Background */}
-      <section className="w-full py-12 md:py-16 bg-white border-t border-gray-100 flex justify-center">
-        <div className="max-w-xl px-4 md:px-6 flex flex-col items-center">
-          <div className="text-center space-y-6">
-            <p className="text-lg text-black md:text-xl text-center">
-              Join the community of business owners who have discovered that great SEO content doesn't have to be
-              expensive or time-consuming.
+      {/* Benefits section */}
+      <section className="w-full py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-4 py-1.5 text-sm font-medium text-[#294fd6] mb-4">
+              <Award className="mr-2 h-4 w-4" />
+              <span>EXCLUSIVE BENEFITS</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              What Makes Our Founder Support <span className="text-[#294fd6]">Exceptional</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We believe in building relationships, not just providing a service. Here's how our founders personally
+              ensure your success:
             </p>
-            <Button size="lg" className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white px-8 py-2.5 mx-auto">
-              Start Growing Your Organic Traffic Today
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: <MessageCircle className="h-8 w-8 text-[#294fd6]" />,
+                title: "Direct Communication",
+                description: "Email our founders directly and receive a response within 24 hours, guaranteed.",
+              },
+              {
+                icon: <Zap className="h-8 w-8 text-amber-500" />,
+                title: "Founder Shoutouts",
+                description: "Get featured in our success stories and receive promotion to our entire network.",
+              },
+              {
+                icon: <Rocket className="h-8 w-8 text-purple-500" />,
+                title: "Feedback-Driven Updates",
+                description: "Your suggestions directly influence our product roadmap and feature priorities.",
+              },
+              {
+                icon: <Clock className="h-8 w-8 text-green-500" />,
+                title: "Priority Access",
+                description: "Be the first to try new features before they're released to the general public.",
+              },
+            ].map((benefit, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm"
+              >
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  {benefit.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{benefit.title}</h3>
+                <p className="text-gray-600">{benefit.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* Roadmap section */}
+      <section className="w-full py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-4 py-1.5 text-sm font-medium text-[#294fd6] mb-4">
+              <Rocket className="mr-2 h-4 w-4" />
+              <span>PRODUCT ROADMAP</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              We're Constantly <span className="text-[#294fd6]">Innovating</span> For You
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our development roadmap is shaped by your feedback. Here's what we're working on to make your content
+              creation even more powerful:
+            </p>
+          </div>
+
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-[#294fd6]/20 transform md:-translate-x-1/2"></div>
+
+            {/* Timeline items */}
+            <div className="space-y-12">
+              {[
+                {
+                  icon: <Sparkles className="h-6 w-6 text-white" />,
+                  title: "One-Click Blog Generation",
+                  description:
+                    "Generate complete, SEO-optimized blog posts from just a title input. Save hours of content creation time.",
+                  date: "Coming Q2 2023",
+                  status: "In Development",
+                },
+                {
+                  icon: <Rocket className="h-6 w-6 text-white" />,
+                  title: "Automatic Search Engine Indexing",
+                  description:
+                    "Submit your content directly to search engines for faster indexing and quicker ranking results.",
+                  date: "Coming Q3 2023",
+                  status: "Planning Phase",
+                },
+                {
+                  icon: <Zap className="h-6 w-6 text-white" />,
+                  title: "LLM.text Advanced Optimization",
+                  description:
+                    "Our proprietary language model will analyze and enhance your content for maximum search visibility.",
+                  date: "Coming Q4 2023",
+                  status: "Research Phase",
+                },
+                {
+                  icon: <Users className="h-6 w-6 text-white" />,
+                  title: "Enterprise Team Collaboration",
+                  description: "Seamlessly work with your entire marketing team with advanced collaboration features.",
+                  date: "Coming Q1 2024",
+                  status: "Early Planning",
+                },
+              ].map((item, index) => (
+                <div key={index} className="relative flex flex-col md:flex-row items-center md:items-start gap-8">
+                  {/* Timeline node */}
+                  <div className="absolute left-4 md:left-1/2 w-8 h-8 rounded-full bg-[#294fd6] flex items-center justify-center transform -translate-x-1/2 z-10">
+                    {item.icon}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`md:w-1/2 pl-16 md:pl-0 ${index % 2 === 0 ? "md:pr-16 md:text-right" : "md:pl-16"}`}>
+                    <div
+                      className={`bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm ${index % 2 === 0 ? "md:ml-auto" : ""}`}
+                    >
+                      <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800 mb-3">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        <span>{item.date}</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
+                      <p className="text-gray-600 mb-4">{item.description}</p>
+                      <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        <span>{item.status}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Empty div for alternating layout */}
+                  <div className={`hidden md:block md:w-1/2 ${index % 2 === 0 ? "" : ""}`}></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
     </div>
   )
 }

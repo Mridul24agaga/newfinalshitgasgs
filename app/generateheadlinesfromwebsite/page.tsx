@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sparkles, Globe, Copy, CheckCircle } from "lucide-react"
 import { generateHeadlinesFromWebsite } from "../generateHeadlinesFromWebsite "
 import { AppSidebar } from "../components/sidebar"
@@ -13,6 +13,20 @@ export default function HeadlineGenerator() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  // Add this useEffect hook to prevent right-clicking
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    document.addEventListener("contextmenu", handleContextMenu)
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu)
+    }
+  }, [])
 
   // Handle headline generation
   const handleSubmit = async (e: React.FormEvent) => {

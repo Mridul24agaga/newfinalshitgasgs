@@ -1,156 +1,145 @@
 import Image from "next/image"
-import { BarChart2, TrendingUp, Users, ArrowRight } from "lucide-react"
-import Link from "next/link"
+import { Search, Activity, BarChart3, Users, DollarSign } from "lucide-react"
 
-export default function WhyBloggingSection() {
+const WhyBloggingSection = () => {
   return (
-    <section id="results" className="py-24 bg-white relative overflow-hidden">
-      {/* Subtle Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="dot-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#294df6" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#dot-pattern)" />
-        </svg>
-      </div>
-
-      {/* Background Accents */}
-      <div className="absolute top-40 left-0 w-72 h-72 bg-[#294df6]/5 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 right-0 w-80 h-80 bg-[#294df6]/5 rounded-full blur-3xl"></div>
-
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Section Header */}
-        <div className="text-center mb-20 max-w-3xl mx-auto">
-          <div className="inline-flex items-center bg-[#294df6]/10 rounded-full px-4 py-1.5 mb-6 text-sm text-[#294df6] font-medium">
-            <BarChart2 className="h-4 w-4 mr-2" />
-            <span>PROVEN RESULTS</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-800 leading-tight">
-            Why Consistent Blogging <span className="text-[#294df6]">Changes Everything</span>
-          </h2>
-          <p className="text-gray-600 text-lg md:text-xl">
-            Consistent, high-quality blog content is the backbone of successful SEO strategies, but creating it manually
-            is time-consuming and expensive.
+    <section className="py-20 bg-white">
+      <div className="container px-4 mx-auto max-w-6xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Why Blogging Matters</h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Discover the power of blogging for your business and personal brand.
           </p>
         </div>
 
-        {/* Graph Section */}
-        <div className="mb-20 relative">
-          <div className="bg-white rounded-xl border border-gray-200 hover:border-[#294df6]/30 transition-colors duration-300 p-6 md:p-8 overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  Organic Traffic Growth with Consistent Blogging
-                </h3>
-                <p className="text-gray-600">Average results from our customers after 6 months</p>
-              </div>
-              <div className="flex space-x-4 mt-4 md:mt-0">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-[#294df6] rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">With GetMoreSEO</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
-                  <span className="text-sm text-gray-600">Manual Blogging</span>
-                </div>
-              </div>
-            </div>
+        {/* Graph and Features Section */}
+        <div className="mb-12">
+          <div className="bg-white rounded-2xl border border-gray-200 hover:border-[#294df6]/30 hover:shadow-lg transition-all duration-300 p-6 md:p-8 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left side - Graph */}
+              <div className="border border-gray-100 rounded-xl shadow-sm p-6 bg-white">
+                {/* Key Blogging Benefits instead of metrics */}
+                <div className="grid grid-cols-1 gap-4 mb-6">
 
-            {/* Graph Image with Animation */}
-            <div className="relative h-[300px] md:h-[400px] w-full group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#294df6]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg pointer-events-none"></div>
-              <Image
-                src="/googlie.png"
-                alt="Organic Traffic Growth Chart"
-                fill
-                className="object-contain"
-              />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center p-3 border border-gray-100 rounded-lg hover:border-[#294df6]/30 hover:bg-gray-50 transition-all">
+                      <BarChart3 className="w-8 h-8 text-[#294df6] mb-2" />
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-800">67%</div>
+                        <div className="text-xs text-gray-600 mt-1">More leads per month</div>
+                      </div>
+                    </div>
 
-              {/* Animated Highlight Points */}
-              <div className="absolute top-[30%] right-[30%] w-6 h-6 rounded-full border-2 border-[#294df6] opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"></div>
-              <div
-                className="absolute top-[60%] right-[15%] w-6 h-6 rounded-full border-2 border-[#294df6] opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"
-                style={{ animationDelay: "0.5s" }}
-              ></div>
-            </div>
+                    <div className="flex flex-col items-center p-3 border border-gray-100 rounded-lg hover:border-[#294df6]/30 hover:bg-gray-50 transition-all">
+                      <Users className="w-8 h-8 text-[#294df6] mb-2" />
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-800">55%</div>
+                        <div className="text-xs text-gray-600 mt-1">Increased website visitors</div>
+                      </div>
+                    </div>
 
-            {/* Stats Below Graph */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 pt-10 border-t border-gray-100">
-              {[
-                {
-                  icon: <TrendingUp className="h-8 w-8 text-[#294df6]" />,
-                  value: "237%",
-                  label: "Average Traffic Increase",
-                  description: "After 6 months of consistent blogging",
-                },
-                {
-                  icon: <Users className="h-8 w-8 text-[#294df6]" />,
-                  value: "68%",
-                  label: "More Conversions",
-                  description: "Higher quality leads from organic traffic",
-                },
-                {
-                  icon: <BarChart2 className="h-8 w-8 text-[#294df6]" />,
-                  value: "12.4x",
-                  label: "ROI Improvement",
-                  description: "Compared to paid advertising channels",
-                },
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="border border-gray-100 hover:border-[#294df6]/30 transition-all duration-300 rounded-lg p-6 text-center group hover:bg-gradient-to-b hover:from-white hover:to-[#294df6]/5"
-                >
-                  <div className="inline-flex items-center justify-center bg-[#294df6]/10 rounded-full p-3 mb-4 group-hover:bg-[#294df6]/20 transition-colors duration-300">
-                    {stat.icon}
+                    <div className="flex flex-col items-center p-3 border border-gray-100 rounded-lg hover:border-[#294df6]/30 hover:bg-gray-50 transition-all">
+                      <DollarSign className="w-8 h-8 text-[#294df6] mb-2" />
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-800">13x</div>
+                        <div className="text-xs text-gray-600 mt-1">Positive ROI</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-gray-800 mb-1 group-hover:text-[#294df6] transition-colors duration-300">
-                    {stat.value}
-                  </div>
-                  <div className="font-medium text-gray-700 mb-2">{stat.label}</div>
-                  <div className="text-sm text-gray-600">{stat.description}</div>
+
+                  
                 </div>
-              ))}
+
+                {/* Graph Image */}
+                <div className="relative h-[250px] w-full group border-t border-b border-gray-100 py-4 mb-4">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Image
+                      src="/googlie.png"
+                      alt="Organic Traffic Growth Chart"
+                      width={500}
+                      height={250}
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side - Feature Cards */}
+              <div className="space-y-6">
+                {/* First Feature Card */}
+                <div className="border border-gray-100 rounded-xl p-6 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300 bg-white group">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-5">
+                      <div className="p-3 bg-[#294df6]/10 rounded-full group-hover:bg-[#294df6]/20 transition-colors duration-300">
+                        <Search className="w-6 h-6 text-[#294df6]" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#294df6] mb-3">In-Depth, Research-Backed Content</h3>
+                      <ul className="mt-3 space-y-3">
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Comprehensive articles (up to 4,000 words)</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Fact-checked from reliable sources</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Audience-specific problem-solving content</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Second Feature Card */}
+                <div className="border border-gray-100 rounded-xl p-6 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300 bg-white group">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-5">
+                      <div className="p-3 bg-[#294df6]/10 rounded-full group-hover:bg-[#294df6]/20 transition-colors duration-300">
+                        <Activity className="w-6 h-6 text-[#294df6]" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#294df6] mb-3">Complete SEO Framework</h3>
+                      <ul className="mt-3 space-y-3">
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Strategic keyword placement (primary & longtail)</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Effective internal & external linking</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
+                          <span className="text-gray-700">Organized in search-friendly structures</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <section className="py-16 bg-white relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-gradient-to-r from-[#294fd6] to-[#3e5df8] rounded-xl border border-gray-200 p-8 md:p-12 text-white text-center relative overflow-hidden">
-          {/* Animated Circles */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white opacity-10 animate-pulse"></div>
-          <div
-            className="absolute -bottom-40 -left-20 w-80 h-80 rounded-full bg-white opacity-10 animate-pulse"
-            style={{ animationDelay: "1s" }}
-          ></div>
 
-          <div className="relative z-10 max-w-3xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              GetMoreSEO solves this by automating your entire blogging workflow
-            </h3>
-            <p className="text-lg md:text-xl mb-8 text-white/90">
-              Delivering professional content that drives organic traffic without the traditional headaches.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/signup"
-                className="bg-white text-[#294fd6] hover:bg-white/90 px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center border border-white/50 hover:scale-105 transform"
-              >
-                Get Started Today
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-              <Link href='/#howitworks' className="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 hover:scale-105 transform">
-                See How It Works
-              </Link>
-            </div>
-          </div>
+        {/* Call to Action */}
+        <div className="text-center">
+          <button className="px-8 py-3 bg-[#294df6] hover:bg-[#1a3ad0] text-white font-medium rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg">
+            Start Your Blogging Strategy
+          </button>
+          <p className="mt-4 text-gray-500 text-sm">
+            Join 2,500+ businesses already growing with our content strategies
+          </p>
         </div>
       </div>
     </section>
-    </section>
-    
   )
 }
+
+export default WhyBloggingSection

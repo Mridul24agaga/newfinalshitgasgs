@@ -160,6 +160,19 @@ export default function BlogsPage() {
     }
   }, [searchQuery, blogs])
 
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    document.addEventListener("contextmenu", handleContextMenu)
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu)
+    }
+  }, [])
+
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -351,7 +364,7 @@ export default function BlogsPage() {
                           >
                             Article Title
                           </th>
-                          
+
                           <th
                             scope="col"
                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -386,7 +399,7 @@ export default function BlogsPage() {
                                 </span>
                               </div>
                             </td>
-                            
+
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(blog.created_at)}
                             </td>

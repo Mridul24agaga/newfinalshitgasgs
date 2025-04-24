@@ -15,7 +15,7 @@ import  Footer  from "./components/footer"
 import AnnouncementBanner from "./components/navit"
 import StructuredData from "./components/structured-data"
 import type { Metadata } from "next"
-import { HowItWorks } from "./components/howitworks"
+import  HowItWorks  from "./components/howitworks"
 import TrustedBySection from "./components/trusted"
 import AIWritingSection from "./components/ai-writing-section"
 import FeatureSection from "./components/features"
@@ -34,7 +34,8 @@ import CTASection from "./components/ct"
 import FeaturesSection from "./components/fet"
 import BlogArticles from "./components/example"
 import FounderSupportSection from "./components/founder"
-
+import Home from "./components/howitworks"
+import Howthisisworking from "./components/whatmakesusbetter"
 export const metadata: Metadata = {
   title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
   description:
@@ -89,13 +90,16 @@ export default function Page() {
       {/* Hero Section with gradient background */}
         <Hero />
         <WhyBloggingSection/>
+        <Howthisisworking/>
+        <HowItWorks/>
         <FeaturesSection/>
+        <TrustedBySection/>
+
         <BlogArticles/>
 
-        <HowItWorks/>
-        <ComparisonSection/>
         <div className="flex justify-center w-full">
       <FounderSupportSection />
+
     </div>
 
       
@@ -104,6 +108,8 @@ export default function Page() {
       <div>
         < FAQSection />
       </div>
+      <ComparisonSection/>
+
 
     
 

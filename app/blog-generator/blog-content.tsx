@@ -210,13 +210,6 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     }
   }, [externalLoading, loading])
 
-  // Format time remaining as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
-
   // Fetch user subscription data and credits
   const fetchUserAndSubscription = async () => {
     setIsLoadingSubscription(true)
@@ -294,6 +287,27 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   useEffect(() => {
     fetchUserAndSubscription()
   }, [])
+
+  // Add this useEffect hook after the other useEffect hooks, before the formatTime function
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    document.addEventListener("contextmenu", handleContextMenu)
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu)
+    }
+  }, [])
+
+  // Format time remaining as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full bg-white">

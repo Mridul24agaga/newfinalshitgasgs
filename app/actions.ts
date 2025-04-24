@@ -83,6 +83,14 @@ async function generateExternalLinks(
     }
   }
 
+  // Ensure we have at least 3 external links
+  while (externalLinks.length < 3) {
+    externalLinks.push({
+      text: `${domain} Industry Resource ${externalLinks.length + 1}`,
+      url: "https://example.com/resource",
+    })
+  }
+
   console.log(`Generated ${externalLinks.length} external links`)
   return externalLinks.slice(0, 8) // Return up to 8 external links
 }
@@ -98,11 +106,11 @@ async function generateInternalLinks(
 
   // Default subpages for internal links
   const defaultSubpages = [
-    { text: "About Us", path: "/" },
-    { text: "Pricing Plans", path: "/" },
-    { text: "Contact Support", path: "/" },
-    { text: "Blog", path: "/" },
-    { text: "Features", path: "/" },
+    { text: "About Us", path: "/about" },
+    { text: "Pricing Plans", path: "/pricing" },
+    { text: "Contact Support", path: "/contact" },
+    { text: "Blog", path: "/blog" },
+    { text: "Features", path: "/features" },
   ]
 
   // Add default subpages
@@ -555,9 +563,30 @@ async function generateFAQs(websiteInfo: string, researchSummary: string): Promi
   return faqs
 }
 
-// Generate first half of blog content
-async function generateFirstHalf(blogTitle: string, researchSummary: string, websiteUrl: string): Promise<string> {
-  console.log("Generating first half of blog content...")
+// Generate first half of blog content with direct links
+async function generateFirstHalf(
+  blogTitle: string,
+  researchSummary: string,
+  websiteUrl: string,
+  externalLinks: { text: string; url: string }[],
+  internalLinks: { text: string; url: string }[],
+): Promise<string> {
+  console.log("Generating first half of blog content with direct links...")
+
+  // Ensure we have enough links
+  while (externalLinks.length < 2) {
+    externalLinks.push({
+      text: `Industry Resource ${externalLinks.length + 1}`,
+      url: "https://example.com/resource",
+    })
+  }
+
+  while (internalLinks.length < 2) {
+    internalLinks.push({
+      text: `${new URL(websiteUrl).hostname} Page ${internalLinks.length + 1}`,
+      url: `${websiteUrl}/${internalLinks.length + 1}`,
+    })
+  }
 
   const firstHalfPrompt = `
     I'm a professional content writer working on a blog post for ${websiteUrl}. My marketing consultant gave me this research:
@@ -571,8 +600,12 @@ async function generateFirstHalf(blogTitle: string, researchSummary: string, web
     For this first half (approximately 750 words), include:
     1. A personal introduction that hooks the reader
     2. The first 2-3 main sections with clear headings
-    3. Two placeholders for external links ([EXTERNAL_LINK_1], [EXTERNAL_LINK_2]) to relevant industry resources
-    4. Two placeholders for internal links ([INTERNAL_LINK_1], [INTERNAL_LINK_2]) to pages on ${websiteUrl}
+    3. Include these two external links naturally in the text:
+       - Link 1: <a href="${externalLinks[0].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${externalLinks[0].text}</a>
+       - Link 2: <a href="${externalLinks[1].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${externalLinks[1].text}</a>
+    4. Include these two internal links naturally in the text:
+       - Link 1: <a href="${internalLinks[0].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${internalLinks[0].text}</a>
+       - Link 2: <a href="${internalLinks[1].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${internalLinks[1].text}</a>
     
     IMPORTANT FORMATTING INSTRUCTIONS:
     - Make all headings bold by surrounding them with ** (e.g., **Heading**)
@@ -580,7 +613,7 @@ async function generateFirstHalf(blogTitle: string, researchSummary: string, web
     - Don't use markdown symbols like # or ### for headings
     - Use bold text for important points and key phrases
     - Ensure proper paragraph breaks for readability
-    - Keep [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders as-is for later replacement
+    - Include the HTML link tags exactly as provided above, integrated naturally into sentences
     
     The tone should be conversational, helpful, and show personality - like an experienced blogger who really knows this industry. 
     Include humor, rhetorical questions, and varied sentence structures to make it feel authentic.
@@ -592,14 +625,31 @@ async function generateFirstHalf(blogTitle: string, researchSummary: string, web
   return firstHalf
 }
 
-// Generate second half of blog content
+// Generate second half of blog content with direct links
 async function generateSecondHalf(
   blogTitle: string,
   researchSummary: string,
   firstHalf: string,
   websiteUrl: string,
+  externalLinks: { text: string; url: string }[],
+  internalLinks: { text: string; url: string }[],
 ): Promise<string> {
-  console.log("Generating second half of blog content...")
+  console.log("Generating second half of blog content with direct links...")
+
+  // Ensure we have enough links
+  if (externalLinks.length < 3) {
+    externalLinks.push({
+      text: `Industry Resource ${externalLinks.length + 1}`,
+      url: "https://example.com/resource",
+    })
+  }
+
+  if (internalLinks.length < 3) {
+    internalLinks.push({
+      text: `${new URL(websiteUrl).hostname} Page ${internalLinks.length + 1}`,
+      url: `${websiteUrl}/${internalLinks.length + 1}`,
+    })
+  }
 
   const secondHalfPrompt = `
     I'm continuing to write a blog post for ${websiteUrl} with the title:
@@ -614,8 +664,10 @@ async function generateSecondHalf(
     1. The remaining 2-3 main sections with clear headings
     2. A personal anecdote or case study
     3. A strong conclusion with a call-to-action
-    4. One placeholder for an external link ([EXTERNAL_LINK_3]) to a relevant industry resource
-    5. One placeholder for an internal link ha bh to a page on ${websiteUrl}
+    4. Include this external link naturally in the text:
+       - <a href="${externalLinks[2].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${externalLinks[2].text}</a>
+    5. Include this internal link naturally in the text:
+       - <a href="${internalLinks[2].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${internalLinks[2].text}</a>
     
     IMPORTANT FORMATTING INSTRUCTIONS:
     - Make all headings bold by surrounding them with ** (e.g., **Heading**)
@@ -623,7 +675,7 @@ async function generateSecondHalf(
     - Don't use markdown symbols like # or ### for headings
     - Use bold text for important points and key phrases
     - Ensure proper paragraph breaks for readability
-    - Keep [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders as-is for later replacement
+    - Include the HTML link tags exactly as provided above, integrated naturally into sentences
     - Make sure the conclusion is clearly marked with a bold heading like **Conclusion**
     
     Continue with the same conversational, helpful tone established in the first half.
@@ -636,15 +688,9 @@ async function generateSecondHalf(
   return secondHalf
 }
 
-// Modified finalHumanization function with YouTube video references removed
-async function finalHumanization(
-  content: string,
-  faqs: string,
-  imageUrls: string[],
-  externalLinks: { text: string; url: string }[],
-  internalLinks: { text: string; url: string }[],
-): Promise<string> {
-  console.log("Performing final humanization of content with images and links...")
+// Modified finalHumanization function without placeholder replacement
+async function finalHumanization(content: string, faqs: string, imageUrls: string[]): Promise<string> {
+  console.log("Performing final humanization of content with images...")
 
   const combinedContent = `${content}\n\n${faqs}`
 
@@ -665,7 +711,6 @@ async function finalHumanization(
     8. Use contractions, slang, and informal language where appropriate
     9. Add some rhetorical questions directed at the reader
     10. Maintain the same headings and overall structure, but make the writing flow more naturally
-    11. Preserve [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders exactly as they are
 
     IMPORTANT FORMATTING INSTRUCTIONS:
     - Preserve all bold text formatting (text between ** marks)
@@ -674,7 +719,7 @@ async function finalHumanization(
     - Make sure headings are properly formatted as bold text
     - Ensure proper paragraph breaks for readability
     - MAKE SURE TO INCLUDE THE FAQ SECTION AFTER THE CONCLUSION
-    - Do NOT modify [EXTERNAL_LINK_X] or [INTERNAL_LINK_X] placeholders
+    - PRESERVE ALL HTML LINKS EXACTLY AS THEY APPEAR IN THE ORIGINAL TEXT
 
     The goal is to make this content pass as 100% human-written, even under careful scrutiny by content experts.
   `
@@ -700,7 +745,6 @@ async function finalHumanization(
     8. Use more varied punctuation including em dashes, ellipses, and occasional exclamation points!
     9. Include some self-doubt or hedging phrases like "at least that's what I think" or "I could be wrong but..."
     10. Add some stream-of-consciousness elements in places
-    11. Preserve [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders exactly as they are
 
     IMPORTANT:
     - Keep all the factual information intact
@@ -708,7 +752,7 @@ async function finalHumanization(
     - Preserve all numbered lists and bullet points
     - Preserve all headings and ensure they're properly formatted as bold text
     - Ensure the FAQ section remains after the conclusion
-    - Do NOT modify [EXTERNAL_LINK_X] or [INTERNAL_LINK_X] placeholders
+    - PRESERVE ALL HTML LINKS EXACTLY AS THEY APPEAR IN THE ORIGINAL TEXT
     
     The goal is to make this content pass as 100% human-written, even under careful scrutiny by content experts who are specifically looking for AI-generated text.
   `
@@ -744,7 +788,6 @@ async function finalHumanization(
     18. Include some minor contradictions or changes of mind that humans naturally have
     19. Add some personal anecdotes with very specific details
     20. Include some text that acknowledges the reader directly in a casual way
-    21. Preserve [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders exactly as they are
 
     CRITICAL INSTRUCTIONS:
     - This MUST read like it was written by a real human blogger with their own unique voice and quirks
@@ -754,7 +797,7 @@ async function finalHumanization(
     - Include at least one personal anecdote that feels genuinely human
     - Make sure the FAQ section still appears after the conclusion
     - Preserve all important information and maintain the overall structure
-    - Do NOT modify [EXTERNAL_LINK_X] or [INTERNAL_LINK_X] placeholders
+    - PRESERVE ALL HTML LINKS EXACTLY AS THEY APPEAR IN THE ORIGINAL TEXT
   `
 
   const ultraHumanizedContent = await callAzureOpenAI(ultraHumanizationPrompt, 3500, 0.99)
@@ -778,7 +821,6 @@ async function finalHumanization(
     8. Include some phrases that are slightly awkward but in a human way
     9. Add some content that references specific time periods or seasons
     10. Include some content that shows the writer's personality quirks
-    11. Preserve [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders exactly as they are
 
     CRITICAL REQUIREMENTS:
     - The writing must feel like it comes from a SPECIFIC person with their own unique voice
@@ -788,30 +830,10 @@ async function finalHumanization(
     - Add some content that shows the writer's thought process evolving as they write
     - Include some content that feels slightly rambling but in an authentic way
     - Make sure to maintain all the important information and overall structure
-    - Do NOT modify [EXTERNAL_LINK_X] or [INTERNAL_LINK_X] placeholders
+    - PRESERVE ALL HTML LINKS EXACTLY AS THEY APPEAR IN THE ORIGINAL TEXT
   `
 
   let finalContent = await callAzureOpenAI(extremeHumanizationPrompt, 3500, 0.99)
-
-  console.log("Replacing link placeholders with styled HTML anchor tags...")
-
-  // Replace external link placeholders with styled anchor tags
-  externalLinks.forEach((link, index) => {
-    const placeholder = `[EXTERNAL_LINK_${index + 1}]`
-    finalContent = finalContent.replace(
-      placeholder,
-      `<a href="${link.url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${link.text}</a>`,
-    )
-  })
-
-  // Replace internal link placeholders with styled anchor tags
-  internalLinks.forEach((link, index) => {
-    const placeholder = `[INTERNAL_LINK_${index + 1}]`
-    finalContent = finalContent.replace(
-      placeholder,
-      `<a href="${link.url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${link.text}</a>`,
-    )
-  })
 
   console.log("Adding image placeholders to extreme humanized content...")
 
@@ -856,7 +878,7 @@ async function finalHumanization(
     .replace(/^Here's the final.*$/gm, "")
     .replace(/^I've also included.*$/gm, "")
 
-  console.log("Final humanization with images and links completed successfully")
+  console.log("Final humanization with images completed successfully")
   return finalContent
 }
 
@@ -872,7 +894,7 @@ function blurContent(content: string): string {
   return blurredWords.join(" ")
 }
 
-// Update the main generateBlog function with YouTube video references removed
+// Update the main generateBlog function to use direct links
 export async function generateBlog(websiteUrl: string) {
   try {
     console.log("Starting blog generation with Tavily web search...")
@@ -1086,11 +1108,19 @@ No specific web content found. Using general industry knowledge based on the web
     const faqs = await generateFAQs(websiteInfo, researchResults)
     console.log("Generated FAQs successfully")
 
-    const firstHalf = await generateFirstHalf(blogTitle, researchResults, validatedUrl)
-    console.log("Generated first half of blog content")
+    // Generate content with direct links
+    const firstHalf = await generateFirstHalf(blogTitle, researchResults, validatedUrl, externalLinks, internalLinks)
+    console.log("Generated first half of blog content with direct links")
 
-    const secondHalf = await generateSecondHalf(blogTitle, researchResults, firstHalf, validatedUrl)
-    console.log("Generated second half of blog content")
+    const secondHalf = await generateSecondHalf(
+      blogTitle,
+      researchResults,
+      firstHalf,
+      validatedUrl,
+      externalLinks,
+      internalLinks,
+    )
+    console.log("Generated second half of blog content with direct links")
 
     const fullContent = `${firstHalf}\n\n${secondHalf}`
     console.log("Combined blog content successfully")
@@ -1100,7 +1130,7 @@ No specific web content found. Using general industry knowledge based on the web
     console.log(`Generated ${imageUrls.length} images successfully`)
 
     console.log("Performing final humanization of the content with FAQs and images...")
-    const finalContent = await finalHumanization(fullContent, faqs, imageUrls, externalLinks, internalLinks)
+    const finalContent = await finalHumanization(fullContent, faqs, imageUrls)
     console.log("Final humanization with images completed successfully")
 
     const contentToSave = finalContent
@@ -1247,6 +1277,19 @@ Many platforms in the ${industryInfo} industry offer user-friendly interfaces su
 Pricing information for ${domain} would be available on their official website. Many similar services offer tiered pricing models with free trials or freemium options, but specific details would need to be confirmed directly from their pricing page.
       `
 
+      // Create fallback links
+      const fallbackExternalLinks = [
+        { text: "Industry Report", url: "https://example.com/industry-report" },
+        { text: "Market Trends", url: "https://example.com/market-trends" },
+        { text: "Case Study", url: "https://example.com/case-study" },
+      ]
+
+      const fallbackInternalLinks = [
+        { text: "About Us", url: `${websiteUrl}/about` },
+        { text: "Pricing Plans", url: `${websiteUrl}/pricing` },
+        { text: "Contact Support", url: `${websiteUrl}/contact` },
+      ]
+
       const fallbackFirstHalfPrompt = `
         I'm a professional content writer who needs to write the first half of a blog post about ${nicheInfo}
         
@@ -1257,8 +1300,12 @@ Pricing information for ${domain} would be available on their official website. 
         For this first half, include:
         1. A personal introduction with a hook
         2. The first 2-3 main sections with clear headings
-        3. Two placeholders for external links ([EXTERNAL_LINK_1], [EXTERNAL_LINK_2]) to relevant industry resources
-        4. Two placeholders for internal links ([INTERNAL_LINK_1], [INTERNAL_LINK_2]) to pages on ${websiteUrl}
+        3. Include these two external links naturally in the text:
+           - Link 1: <a href="${fallbackExternalLinks[0].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${fallbackExternalLinks[0].text}</a>
+           - Link 2: <a href="${fallbackExternalLinks[1].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${fallbackExternalLinks[1].text}</a>
+        4. Include these two internal links naturally in the text:
+           - Link 1: <a href="${fallbackInternalLinks[0].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${fallbackInternalLinks[0].text}</a>
+           - Link 2: <a href="${fallbackInternalLinks[1].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${fallbackInternalLinks[1].text}</a>
         
         IMPORTANT FORMATTING INSTRUCTIONS:
         - Make all headings bold by surrounding them with ** (e.g., **Heading**)
@@ -1266,7 +1313,7 @@ Pricing information for ${domain} would be available on their official website. 
         - Don't use markdown symbols like # or ### for headings
         - Use bold text for important points and key phrases
         - Ensure proper paragraph breaks for readability
-        - Keep [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders as-is
+        - Include the HTML link tags exactly as provided above, integrated naturally into sentences
         
         The tone should be conversational, helpful, and show personality - like an experienced blogger who really knows this topic.
         Include humor, rhetorical questions, and varied sentence structures to make it feel authentic.
@@ -1287,8 +1334,10 @@ Pricing information for ${domain} would be available on their official website. 
         1. The remaining 2-3 main sections with clear headings
         2. A personal anecdote or case study
         3. A strong conclusion with a call-to-action
-        4. One placeholder for an external link ([EXTERNAL_LINK_3]) to a relevant industry resource
-        5. One placeholder for an internal link ([INTERNAL_LINK_3]) to a page on ${websiteUrl}
+        4. Include this external link naturally in the text:
+           - <a href="${fallbackExternalLinks[2].url}" class="external-link" style="color: #0066cc; text-decoration: underline; font-weight: 500;">${fallbackExternalLinks[2].text}</a>
+        5. Include this internal link naturally in the text:
+           - <a href="${fallbackInternalLinks[2].url}" class="internal-link" style="color: #2e7d32; text-decoration: underline; font-weight: 500;">${fallbackInternalLinks[2].text}</a>
         
         IMPORTANT FORMATTING INSTRUCTIONS:
         - Make all headings bold by surrounding them with ** (e.g., **Heading**)
@@ -1296,7 +1345,7 @@ Pricing information for ${domain} would be available on their official website. 
         - Don't use markdown symbols like # or ### for headings
         - Use bold text for important points and key phrases
         - Ensure proper paragraph breaks for readability
-        - Keep [EXTERNAL_LINK_X] and [INTERNAL_LINK_X] placeholders as-is
+        - Include the HTML link tags exactly as provided above, integrated naturally into sentences
         - Make sure the conclusion is clearly marked with a bold heading like **Conclusion**
         
         Continue with the same conversational, helpful tone established in the first half.
@@ -1306,26 +1355,8 @@ Pricing information for ${domain} would be available on their official website. 
 
       const fallbackFullContent = `${fallbackFirstHalf}\n\n${fallbackSecondHalf}`
 
-      const fallbackExternalLinks = [
-        { text: "Industry Report", url: "https://example.com/industry-report" },
-        { text: "Market Trends", url: "https://example.com/market-trends" },
-        { text: "Case Study", url: "https://example.com/case-study" },
-      ]
-
-      const fallbackInternalLinks = [
-        { text: "About Us", url: `${websiteUrl}` },
-        { text: "Pricing Plans", url: `${websiteUrl}` },
-        { text: "Contact Support", url: `${websiteUrl}` },
-      ]
-
       console.log("Performing final humanization on fallback content with FAQs and images...")
-      const humanizedFallbackContent = await finalHumanization(
-        fallbackFullContent,
-        fallbackFAQs,
-        imageUrls,
-        fallbackExternalLinks,
-        fallbackInternalLinks,
-      )
+      const humanizedFallbackContent = await finalHumanization(fallbackFullContent, fallbackFAQs, imageUrls)
       console.log("Fallback humanization with images completed successfully")
 
       const contentToSave = humanizedFallbackContent

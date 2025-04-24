@@ -63,6 +63,20 @@ export default function HeadlineToBlog() {
     fetchExistingPosts()
   }, [])
 
+  // Add this useEffect hook to prevent right-clicking
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    document.addEventListener("contextmenu", handleContextMenu)
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu)
+    }
+  }, [])
+
   const fetchExistingPosts = async () => {
     try {
       setLoadingPosts(true)
@@ -276,8 +290,6 @@ export default function HeadlineToBlog() {
 
       {/* Main Content - with its own scrollbar */}
       <div className="flex-1 overflow-auto">
-       
-
         <main className="p-6 pr-12">
           {activeTab === "generate" ? (
             <div className="max-w-4xl mx-auto">
@@ -286,7 +298,7 @@ export default function HeadlineToBlog() {
                 <div className="p-8 text-white">
                   <h2 className="text-3xl font-bold mb-2">Headline To Blog Generator</h2>
                   <p className="text-blue-100 text-lg">
-                  Effortlessly turn your catchy headlines into full-length, engaging blog posts with AI.
+                    Effortlessly turn your catchy headlines into full-length, engaging blog posts with AI.
                   </p>
                 </div>
 

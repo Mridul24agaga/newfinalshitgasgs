@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle } from "lucide-react"
+import { CreditCard, Lock, ArrowUp, Calendar, Clock, CheckCircle, ArrowLeft } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createClient } from "@/utitls/supabase/client"
 import PaymentPage from "@/app/components/payment-page"
@@ -219,14 +219,14 @@ export default function BlogPostPage() {
   }, [id])
 
   const formatBlogContent = (content: string) => {
-    if (!content) return "";
-  
+    if (!content) return ""
+
     // Step 1: Handle markdown headings (#, ##, ###, etc.)
     content = content.replace(/^(#+)\s*(.*?)\s*$/gm, (match, hashes, text) => {
-      const level = hashes.length; // Number of # determines heading level
-      return `<h${level} class="text-${4 - level + 1}xl font-bold my-6">${text.trim()}</h${level}>`;
-    });
-  
+      const level = hashes.length // Number of # determines heading level
+      return `<h${level} class="text-${4 - level + 1}xl font-bold my-6">${text.trim()}</h${level}>`
+    })
+
     // Step 2: Format bold text (**text**)
     content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
       // Avoid bolding headings that were already processed
@@ -240,37 +240,37 @@ export default function BlogPostPage() {
         p1.startsWith("Conclusion") ||
         p1.startsWith("FAQ")
       ) {
-        return `<h2 class="text-2xl font-bold my-5">${p1}</h2>`;
+        return `<h2 class="text-2xl font-bold my-5">${p1}</h2>`
       }
-      return `<strong>${p1}</strong>`;
-    });
-  
+      return `<strong>${p1}</strong>`
+    })
+
     // Step 3: Format lists
     content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
       return `<div class="my-3">
         <strong class="block mb-1">${title}:</strong>
         <p>${description.trim()}</p>
-      </div>`;
-    });
-  
+      </div>`
+    })
+
     // Step 4: Format bullet points
-    content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>');
-  
+    content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>')
+
     // Step 5: Wrap lists in ul tags
     content = content.replace(
       /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n<li class="ml-6 list-disc my-2">/g,
       '<ul class="my-4 list-disc">\n<li class="ml-6 list-disc my-2">$1</li>\n<li class="ml-6 list-disc my-2">',
-    );
+    )
     content = content.replace(
       /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n(?!<li)/g,
       '<li class="ml-6 list-disc my-2">$1</li>\n</ul>\n',
-    );
-  
+    )
+
     // Step 6: Format paragraphs
-    const lines = content.split("\n");
-    let formattedContent = "";
+    const lines = content.split("\n")
+    let formattedContent = ""
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i].trim()
       if (
         line &&
         !line.startsWith("<h") &&
@@ -280,20 +280,20 @@ export default function BlogPostPage() {
         !line.startsWith("<p") &&
         !line.startsWith("</")
       ) {
-        formattedContent += `<p class="my-4">${line}</p>\n`;
+        formattedContent += `<p class="my-4">${line}</p>\n`
       } else {
-        formattedContent += line + "\n";
+        formattedContent += line + "\n"
       }
     }
-  
+
     // Step 7: Format Q&A in FAQ section
     formattedContent = formattedContent.replace(
       /\*\*Q\d+: (.*?)\*\*/g,
       '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>',
-    );
-  
-    return formattedContent;
-  };
+    )
+
+    return formattedContent
+  }
 
   useEffect(() => {
     if (!blogPost) {
@@ -489,6 +489,15 @@ export default function BlogPostPage() {
 
   return (
     <div ref={topRef} className="min-h-screen bg-white py-12 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto mb-6">
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center text-gray-600 hover:text-[#294fd6] transition-colors duration-200 font-medium"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </button>
+      </div>
       <AnimatePresence mode="wait">
         {!showPricing ? (
           <motion.div
