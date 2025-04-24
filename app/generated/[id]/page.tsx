@@ -166,6 +166,16 @@ export default function BlogPostPage() {
 
       console.log(`Found ${subscriptions?.length || 0} subscriptions`)
       if (subscriptions && subscriptions.length > 0) {
+        // First check if user has a free plan
+        const freePlan = subscriptions.find((sub) => sub.plan_id === "free")
+        if (freePlan) {
+          console.log("Free plan detected, content will be blurred")
+          setHasActiveSubscription(false)
+          setSubscriptionPlan("free")
+          return
+        }
+
+        // Then check for active plans
         const activeSubscription = subscriptions.find((sub) => ACTIVE_PLANS.includes(sub.plan_id))
         if (activeSubscription) {
           console.log(`Active subscription detected: ${activeSubscription.plan_id}`)
@@ -303,18 +313,22 @@ export default function BlogPostPage() {
 
     try {
       console.log(
-        `Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}`,
+        `Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}, subscriptionPlan: ${subscriptionPlan}`,
       )
 
-      if (!blogPost.is_blurred || hasActiveSubscription) {
-        console.log("Content fully visible (not blurred or user has subscription)")
+      // For free plan users, blur the entire content
+      if (subscriptionPlan === "free") {
+        console.log("Free plan detected - blurring entire content")
+        const fullContent = blogPost.blog_post || ""
         setSplitContentResult({
-          visibleContent: formatBlogContent(blogPost.blog_post),
-          blurredContent: "",
-          hasBlurredContent: false,
+          visibleContent: "", // No visible content for free plan
+          blurredContent: formatBlogContent(fullContent),
+          hasBlurredContent: true,
         })
-      } else {
-        console.log("Applying blur for non-subscribed user")
+      }
+      // For non-subscribers (but not free plan), show 20% and blur the rest
+      else if (blogPost.is_blurred && !hasActiveSubscription) {
+        console.log("Non-subscriber - showing 20% and blurring the rest")
         const fullContent = blogPost.blog_post || ""
         const paragraphs = fullContent.match(/<\/p>/g) || []
         const targetIndex = Math.ceil(paragraphs.length * 0.2)
@@ -339,6 +353,15 @@ export default function BlogPostPage() {
         })
         console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`)
       }
+      // For premium subscribers, show everything
+      else {
+        console.log("Premium subscriber - showing all content")
+        setSplitContentResult({
+          visibleContent: formatBlogContent(blogPost.blog_post),
+          blurredContent: "",
+          hasBlurredContent: false,
+        })
+      }
     } catch (err) {
       console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`)
       setSplitContentResult({
@@ -347,7 +370,7 @@ export default function BlogPostPage() {
         hasBlurredContent: false,
       })
     }
-  }, [blogPost, hasActiveSubscription])
+  }, [blogPost, hasActiveSubscription, subscriptionPlan])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -418,8 +441,7 @@ export default function BlogPostPage() {
 
   const handlePayNow = () => {
     console.log("Pay Now clicked")
-    setShowPricing(true)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    router.push("/payment")
   }
 
   const handleBackToPreview = () => {
@@ -509,6 +531,16 @@ export default function BlogPostPage() {
             className="max-w-4xl mx-auto"
           >
             <div className="p-6 sm:p-10">
+              {subscriptionPlan === "free" && (
+                <div className="mb-6 bg-blue-50 rounded-lg p-4 flex items-center">
+                  <Lock className="h-5 w-5 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-blue-800 font-medium">Free Plan</p>
+                    <p className="text-blue-600 text-sm">Upgrade to a premium plan to unlock all content</p>
+                  </div>
+                </div>
+              )}
+
               {hasActiveSubscription && (
                 <div className="mb-6 bg-green-50 rounded-lg p-4 flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
@@ -564,26 +596,28 @@ export default function BlogPostPage() {
               />
 
               {/* Blog Content */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                className="prose prose-gray max-w-none mb-8
-                  prose-headings:font-saira prose-headings:text-gray-800
-                  prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
-                  prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
-                  prose-strong:font-bold prose-strong:text-gray-800
-                  prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
-                  prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
-                  prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
-                  prose-iframe:w-full prose-iframe:rounded-lg
-                  prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
-                  prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
-                  prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
-                  prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
-                  prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
-                dangerouslySetInnerHTML={{ __html: visibleContent }}
-              />
+              {visibleContent && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="prose prose-gray max-w-none mb-8
+                    prose-headings:font-saira prose-headings:text-gray-800
+                    prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
+                    prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
+                    prose-strong:font-bold prose-strong:text-gray-800
+                    prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
+                    prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
+                    prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
+                    prose-iframe:w-full prose-iframe:rounded-lg
+                    prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
+                    prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
+                    prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
+                    prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
+                    prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
+                  dangerouslySetInnerHTML={{ __html: visibleContent }}
+                />
+              )}
 
               {/* Blurred Content Section */}
               {hasBlurredContent && (
@@ -621,8 +655,9 @@ export default function BlogPostPage() {
                       </div>
                       <h3 className="text-2xl font-bold text-gray-800 mb-3">Unlock the Full Post</h3>
                       <p className="text-gray-600 mb-6">
-                        Yo, this blog's got the good stuff—images, videos, FAQs, the works! Subscribe to dive in and get
-                        all our premium content.
+                        {subscriptionPlan === "free"
+                          ? "You're on the Free plan! Upgrade now to unlock all premium content including images, videos, and FAQs."
+                          : "Yo, this blog's got the good stuff—images, videos, FAQs, the works! Subscribe to dive in and get all our premium content."}
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -631,7 +666,7 @@ export default function BlogPostPage() {
                         className="bg-[#294fd6] hover:bg-[#1e3eb8] text-white px-8 py-3 rounded-lg transition-all flex items-center justify-center mx-auto font-medium"
                       >
                         <CreditCard className="h-5 w-5 mr-2" />
-                        Subscribe to Unlock
+                        {subscriptionPlan === "free" ? "Upgrade Your Plan" : "Subscribe to Unlock"}
                       </motion.button>
                     </motion.div>
                   </div>
