@@ -199,11 +199,7 @@ export default function ComparisonSection() {
         {/* Testimonial/Social Proof */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-12">
           <div className="flex flex-col md:flex-row items-center">
-            <div className="mb-6 md:mb-0 md:mr-6 flex-shrink-0">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border border-gray-200">
-                <img src="/profile5.jpeg" alt="Sarah Johnson" className="w-full h-full object-cover" />
-              </div>
-            </div>
+           
             <div>
               <div className="flex mb-2">
                 {[...Array(5)].map((_, i) => (

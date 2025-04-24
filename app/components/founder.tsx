@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
-import { Mail, Twitter, MessageCircle, Zap, Rocket, Award, Clock, CheckCircle2, Users, Sparkles } from "lucide-react"
+import { Mail, Twitter, MessageCircle, Zap, Rocket, Award, Clock, CheckCircle2, Users, Sparkles, Group } from "lucide-react"
 
 export default function FounderSupportSection() {
   return (
@@ -64,9 +64,7 @@ export default function FounderSupportSection() {
                   difference for my business."
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4 border border-gray-200">
-                    <img src="/kavin.jpeg" alt="Customer" className="w-full h-full object-cover" />
-                  </div>
+                 
                   <div>
                     <div className="font-medium text-gray-900">Kaivan Parekh</div>
                     <div className="text-sm text-gray-500">Marketer</div>

@@ -70,11 +70,7 @@ export function Header() {
                 Home
               </Link>
             </div>
-            <div className="relative group">
-              <Link href="/#results" className="flex items-center text-gray-700 font-medium text-sm">
-                Results
-              </Link>
-            </div>
+            
             <div className="relative group">
               <Link href="/#examples" className="flex items-center text-gray-700 font-medium text-sm">
                 Examples
@@ -110,9 +106,7 @@ export function Header() {
               <Link href="/" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
                 Home
               </Link>
-              <Link href="/#results" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
-                Results
-              </Link>
+              
               <Link href="/#features" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
                 Features
               </Link>

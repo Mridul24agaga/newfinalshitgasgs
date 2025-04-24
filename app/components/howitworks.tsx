@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
       {/* How It Works Section */}
-      <section className="py-16 px-4 max-w-7xl mx-auto">
+      <section id="howitworks" className="py-16 px-4 max-w-7xl mx-auto">
         <div className="mb-4">
           <h3 className="text-sm font-semibold tracking-wider text-gray-700 uppercase">HOW IT WORKS</h3>
         </div>
