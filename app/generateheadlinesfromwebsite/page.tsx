@@ -1,14 +1,11 @@
 "use client"
 
 import type React from "react"
-
-import Link from "next/link"
 import { useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { FileText, Lightbulb, Sparkles, PlusCircle, CreditCard, Globe, Zap, PenLine, LayoutGrid, BarChart2, Database, Home, ExternalLink, Copy, CheckCircle } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { Sparkles, Globe, Copy, CheckCircle } from "lucide-react"
 import { generateHeadlinesFromWebsite } from "../generateHeadlinesFromWebsite "
 import { AppSidebar } from "../components/sidebar"
+
 export default function HeadlineGenerator() {
   // Headline generator state
   const [website, setWebsite] = useState("")
@@ -46,7 +43,7 @@ export default function HeadlineGenerator() {
       {/* Import the sidebar from external component */}
       <AppSidebar />
 
-      <div className="flex flex-col flex-1 w-full lg:pl-72">
+      <div className="flex flex-col flex-1 w-full">
         {/* Mobile header */}
         <div className="sticky top-0 z-30 bg-white border-b border-gray-200 lg:hidden">
           <div className="flex items-center px-6 py-4">
@@ -56,7 +53,7 @@ export default function HeadlineGenerator() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
             {/* Welcome Banner */}
             <div className="relative overflow-hidden bg-gradient-to-r from-[#294fd6] to-[#6284e4] rounded-2xl p-8 text-white mb-8 border border-[#294fd6]/20">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3"></div>

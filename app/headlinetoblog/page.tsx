@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Globe,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react"
 
 interface BlogPost {
@@ -45,6 +46,9 @@ export default function HeadlineToBlog() {
   const supabase = createClient()
   const router = useRouter()
   const [loadingPosts, setLoadingPosts] = useState(false)
+  const [generatedHeadlines, setGeneratedHeadlines] = useState<string[]>([])
+  const [loadingHeadlines, setLoadingHeadlines] = useState(false)
+  const [websiteForHeadlines, setWebsiteForHeadlines] = useState("")
 
   // Sidebar navigation items
   const navItems = [
@@ -167,6 +171,55 @@ export default function HeadlineToBlog() {
     }
   }
 
+  const handleGenerateHeadlines = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoadingHeadlines(true)
+    setError(null)
+
+    try {
+      // Get user data
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !userData.user) {
+        throw new Error("You must be logged in to generate headlines")
+      }
+
+      // Call the API to generate headlines
+      const response = await fetch("/api/generate-headlines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          websiteUrl: websiteForHeadlines,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to generate headlines")
+      }
+
+      const data = await response.json()
+
+      if (!data.headlines || !Array.isArray(data.headlines)) {
+        throw new Error("Invalid response from server")
+      }
+
+      setGeneratedHeadlines(data.headlines)
+    } catch (err: any) {
+      console.error("Error generating headlines:", err.message)
+      setError(`Failed to generate headlines: ${err.message}`)
+    } finally {
+      setLoadingHeadlines(false)
+    }
+  }
+
+  const selectHeadline = (selectedHeadline: string) => {
+    setHeadline(selectedHeadline)
+    setWebsite(websiteForHeadlines)
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -223,13 +276,42 @@ export default function HeadlineToBlog() {
 
       {/* Main Content - with its own scrollbar */}
       <div className="flex-1 overflow-auto">
-        <header className="bg-white border-b border-gray-200 p-6 flex items-center">
-          {/* Add header content if needed */}
-        </header>
+       
 
         <main className="p-6 pr-12">
           {activeTab === "generate" ? (
             <div className="max-w-4xl mx-auto">
+              {/* Data-Driven Headline Generator Card */}
+              <div className="bg-blue-600 rounded-lg shadow-lg overflow-hidden mb-8">
+                <div className="p-8 text-white">
+                  <h2 className="text-3xl font-bold mb-2">Headline To Blog Generator</h2>
+                  <p className="text-blue-100 text-lg">
+                  Effortlessly turn your catchy headlines into full-length, engaging blog posts with AI.
+                  </p>
+                </div>
+
+                {generatedHeadlines.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-3">Generated Headlines</h3>
+                    <div className="space-y-2">
+                      {generatedHeadlines.map((headline, index) => (
+                        <div
+                          key={index}
+                          className="p-3 border border-gray-200 rounded-md hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer flex justify-between items-center"
+                          onClick={() => selectHeadline(headline)}
+                        >
+                          <p className="font-medium text-gray-800">{headline}</p>
+                          <button className="text-blue-600 hover:text-blue-800">
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Original Blog Post Generator UI */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800">Create Your Blog Post</h2>
@@ -290,7 +372,7 @@ export default function HeadlineToBlog() {
                             Normal
                           </label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex')->items-center space-x-2">
                           <input
                             type="radio"
                             id="hardcore"
@@ -461,7 +543,7 @@ export default function HeadlineToBlog() {
                         </div>
                         <button
                           onClick={() => handleViewPost(post.id)}
-                          className="flex items-center px-3 py-1 text-sm border border-[#294fd6] text-[#294fd6] rounded-md hover:bg-[#294fd6] hover:text-white transition-colors"
+                          className="flex items-center px-3 py-1 text-sm border border-[#294fd6] text-[#294fd6] rounded-md hover:bg-[#294fd6 | hover:text-white transition-colors"
                         >
                           View Post
                           <ChevronRight className="ml-1 h-4 w-4" />

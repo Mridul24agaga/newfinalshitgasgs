@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu, Eye, Bell } from "lucide-react"
+import { PlusCircle, FileText, Loader2, AlertCircle, Search, PenTool, Menu, Eye } from "lucide-react"
 import { AppSidebar } from "@/app/components/sidebar"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import Link from "next/link"
@@ -102,8 +102,30 @@ export default function BlogsPage() {
           source: "headline_to_blog",
         }))
 
+        // Create separate maps for each source to remove duplicates within each source
+        const blogGeneratorMap = new Map()
+        const headlineToBlogMap = new Map()
+
+        // Process blog generator blogs and keep only the latest version of each title
+        blogsWithSource.forEach((blog) => {
+          const existingBlog = blogGeneratorMap.get(blog.title)
+          if (!existingBlog || new Date(blog.created_at) > new Date(existingBlog.created_at)) {
+            blogGeneratorMap.set(blog.title, blog)
+          }
+        })
+
+        // Process headline to blog posts and keep only the latest version of each title
+        headlineToBlogWithSource.forEach((blog) => {
+          const existingBlog = headlineToBlogMap.get(blog.title)
+          if (!existingBlog || new Date(blog.created_at) > new Date(existingBlog.created_at)) {
+            headlineToBlogMap.set(blog.title, blog)
+          }
+        })
+
         // Combine both datasets
-        const combinedBlogs = [...blogsWithSource, ...headlineToBlogWithSource]
+        const uniqueBlogGenerator = Array.from(blogGeneratorMap.values())
+        const uniqueHeadlineToBlog = Array.from(headlineToBlogMap.values())
+        const combinedBlogs = [...uniqueBlogGenerator, ...uniqueHeadlineToBlog]
 
         // Sort by created_at date (newest first)
         combinedBlogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -216,30 +238,27 @@ export default function BlogsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* AppSidebar is already handling its own positioning */}
       <AppSidebar />
 
-      <div className="flex flex-col flex-1 w-full lg:pl-72">
+      <div className="flex flex-col flex-1 w-full">
         {/* Improved top navigation bar */}
-        <header className="sticky top-0 z-30 bg-[#f9fafb]">
-          <div className="flex items-center justify-between px-4 sm:px-6 h-16 w-full">
-            <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            <div className="flex items-center">
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors"
+                className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors mr-2"
                 aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
                 type="button"
               >
                 <Menu size={20} />
               </button>
+              <h2 className="text-xl font-bold text-gray-900">Content Library</h2>
+            </div>
 
-              <div className="flex items-center">
-                <div className="bg-blue-100 p-1.5 rounded-md mr-3">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">Published Articles</h2>
-              </div>
-
-              <div className="hidden md:flex items-center ml-4 bg-gray-100 rounded-full pl-3 pr-1 py-1">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="hidden md:flex items-center bg-gray-100 rounded-full pl-3 pr-1 py-1">
                 <Search className="h-4 w-4 text-gray-500 mr-2" />
                 <input
                   type="text"
@@ -249,38 +268,19 @@ export default function BlogsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
               <Link
-                href="/generate-blog"
+                href="/blog-generator"
                 className="hidden sm:flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium shadow-sm"
               >
                 <PlusCircle className="h-4 w-4 mr-1.5" />
                 New Article
               </Link>
-
-              <button className="relative p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              <div className="relative ml-1">
-                <button
-                  className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
-                  onClick={() => {
-                    /* Add profile dropdown toggle */
-                  }}
-                >
-                  {getUserInitials()}
-                </button>
-              </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-8">
             {/* Mobile search - only visible on small screens */}
             <div className="md:hidden mb-6">
               <div className="relative">
@@ -347,22 +347,11 @@ export default function BlogsPage() {
                         <tr>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"
-                          >
-                            <input type="checkbox" className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                          </th>
-                          <th
-                            scope="col"
                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                           >
                             Article Title
                           </th>
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Keywords
-                          </th>
+                          
                           <th
                             scope="col"
                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -380,9 +369,6 @@ export default function BlogsPage() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredBlogs.map((blog) => (
                           <tr key={blog.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input type="checkbox" className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                            </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-gray-900 line-clamp-1">{blog.title}</div>
                               {blog.summary && (
@@ -400,22 +386,7 @@ export default function BlogsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-wrap gap-1">
-                                {blog.tags && blog.tags.length > 0 ? (
-                                  blog.tags.map((tag, index) => (
-                                    <span
-                                      key={index}
-                                      className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded-full"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-gray-400">No tags</span>
-                                )}
-                              </div>
-                            </td>
+                            
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(blog.created_at)}
                             </td>

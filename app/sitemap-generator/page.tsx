@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { FileText, Download, Copy, Loader2, Menu } from "lucide-react"
+import { FileText, Download, Copy, Loader2 } from "lucide-react"
 import { AppSidebar } from "../components/sidebar"
 
 export default function SitemapGenerator() {
@@ -70,35 +70,15 @@ export default function SitemapGenerator() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Mobile sidebar overlay */}
-      <div
-        className={`fixed inset-0 bg-gray-800 bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 ${
-          isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsSidebarOpen(false)}
-      />
-
-      {/* Imported Sidebar Component */}
+      {/* AppSidebar is already handling its own positioning */}
       <AppSidebar />
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1 w-full lg:pl-72">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-            <div className="flex items-center">
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 mr-2 text-gray-500 rounded-md hover:bg-gray-100 lg:hidden"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">Sitemap Generator</h2>
-            </div>
-          </div>
-        </header>
+      {/* Main content - no need for lg:pl-72 as the sidebar handles its own spacing */}
+      <div className="flex flex-col flex-1 w-full">
+        
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="container mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
             {/* Welcome Banner */}
             <div className="relative overflow-hidden bg-gradient-to-r from-[#294fd6] to-[#6284e4] rounded-xl p-6 sm:p-8 text-white mb-6 sm:mb-8 border border-gray-200">
               <div className="relative z-10">

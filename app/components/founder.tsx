@@ -39,7 +39,7 @@ export default function FounderSupportSection() {
                     Email Founders
                   </Button>
                 </Link>
-                <Link href="https://twitter.com/getmoreseo">
+                <Link href="https://twitter.com/innvisionagency">
                   <Button className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white">
                     <Twitter className="mr-2 h-4 w-4" />
                     Connect on X

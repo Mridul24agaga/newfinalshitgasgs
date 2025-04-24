@@ -615,7 +615,7 @@ async function generateSecondHalf(
     2. A personal anecdote or case study
     3. A strong conclusion with a call-to-action
     4. One placeholder for an external link ([EXTERNAL_LINK_3]) to a relevant industry resource
-    5. One placeholder for an internal link ([INTERNAL_LINK_3]) to a page on ${websiteUrl}
+    5. One placeholder for an internal link ha bh to a page on ${websiteUrl}
     
     IMPORTANT FORMATTING INSTRUCTIONS:
     - Make all headings bold by surrounding them with ** (e.g., **Heading**)
@@ -792,6 +792,16 @@ async function finalHumanization(
   `
 
   let finalContent = await callAzureOpenAI(extremeHumanizationPrompt, 3500, 0.99)
+
+  // Clean up any remaining AI-style intro/outro phrases
+  finalContent = finalContent.replace(
+    /^(?:Sure|Here|As requested|I've created|Below is).*?(?:blog post|article|content).*?\n+/i,
+    "",
+  )
+  finalContent = finalContent.replace(
+    /\n+(?:I hope|Let me know|Feel free|Is there anything|Thank you).*?(?:helpful|questions|feedback|else).*?$/i,
+    "",
+  )
 
   console.log("Replacing link placeholders with styled HTML anchor tags...")
 

@@ -1,9 +1,11 @@
 "use client"
 
+import type React from "react"
+
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, FileText, Globe, Sparkles, Star, Menu, X } from "lucide-react"
+import { Home, FileText, Globe, Sparkles, Star, Menu, X, ChevronDown, ChevronRight, LogOut } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
 
@@ -12,22 +14,55 @@ interface AppSidebarProps {
   onSignOut?: () => Promise<void>
 }
 
+// Navigation items grouped by category
+const navigationGroups = [
+  {
+    label: "Main",
+    items: [{ name: "Dashboard", href: "/dashboard", icon: Home }],
+  },
+  {
+    label: "Content Tools",
+    items: [
+      { name: "Blog Generator", href: "/blog-generator", icon: FileText },
+      { name: "Headline to Blog", href: "/headlinetoblog", icon: Sparkles },
+      { name: "Headline Generator", href: "/generateheadlinesfromwebsite", icon: FileText },
+    ],
+  },
+  {
+    label: "SEO Tools",
+    items: [{ name: "Sitemap Generator", href: "/sitemap-generator", icon: Globe }],
+  },
+  {
+    label: "Settings",
+    items: [{ name: "Integration", href: "/api-key", icon: Star }],
+  },
+]
+
 export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   const [isSigningOut, setIsSigningOut] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  // Flattened navigation items (including sub-items)
-  const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Blog Generator", href: "/blog-generator", icon: FileText },
-    { name: "Sitemap Generator", href: "/sitemap-generator", icon: Globe },
-    { name: "Headline to Blog", href: "/headlinetoblog", icon: Sparkles },
-    { name: "Headline Generator", href: "/generateheadlinesfromwebsite", icon: FileText },
-    { name: "Integration", href: "/api-key", icon: Star },
-  ]
+  // Initialize all groups as expanded
+  useEffect(() => {
+    const initialExpandedState: Record<string, boolean> = {}
+    navigationGroups.forEach((group) => {
+      initialExpandedState[group.label] = true
+    })
+    setExpandedGroups(initialExpandedState)
+  }, [])
+
+  // Toggle group expansion
+  const toggleGroup = (groupLabel: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupLabel]: !prev[groupLabel],
+    }))
+  }
 
   // Handle responsive sidebar
   useEffect(() => {
@@ -78,81 +113,119 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isMobileSidebarOpen])
 
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user?.email) return "U"
+    const email = user.email as string
+    return email.charAt(0).toUpperCase()
+  }
+
   return (
     <>
       {/* Mobile menu button */}
       <button
         type="button"
-        className="sidebar-toggle lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md text-white bg-[#294fd6]"
+        className="sidebar-toggle lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md text-white bg-[#294fd6] hover:bg-[#3a61e0] transition-colors shadow-md"
         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         aria-label="Toggle sidebar"
       >
-        {isMobileSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Sidebar */}
       <div
         className={cn(
-          "sidebar fixed inset-y-0 left-0 z-40 w-64 bg-[#294fd6] text-white transition-transform duration-300 ease-in-out transform",
+          "sidebar fixed inset-y-0 left-0 z-40 bg-[#294fd6] text-white transition-all duration-300 ease-in-out flex flex-col",
+          isCollapsed ? "w-16" : "w-64",
           isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "shadow-xl",
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center h-16 px-4 border-b border-[#3a61e0]">
-            <span className="text-xl font-bold text-white font-inter">GetmoreSEO</span>
+          {/* Logo and collapse button */}
+          <div className="flex items-center h-16 px-4 border-b border-[#3a61e0] justify-between">
+            {!isCollapsed && <span className="text-xl font-bold text-white font-inter">GetmoreSEO</span>}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1 rounded-md hover:bg-[#3a61e0] transition-colors hidden lg:block"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+            </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 py-4 overflow-y-auto">
-            <ul className="px-2">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
+          
 
-                return (
-                  <li key={item.name} className="mb-1">
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-lg transition-colors",
-                        isActive ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white",
+          {/* Navigation */}
+          <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-[#3a61e0] scrollbar-track-transparent">
+            {navigationGroups.map((group) => (
+              <div key={group.label} className="mb-4">
+                {/* Group header */}
+                <div
+                  className={cn(
+                    "flex items-center px-4 mb-1 cursor-pointer",
+                    isCollapsed ? "justify-center" : "justify-between",
+                  )}
+                  onClick={() => !isCollapsed && toggleGroup(group.label)}
+                >
+                  {!isCollapsed && (
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/70">{group.label}</span>
+                  )}
+                  {!isCollapsed && (
+                    <button className="p-1 rounded-md hover:bg-[#3a61e0] transition-colors">
+                      {expandedGroups[group.label] ? (
+                        <ChevronDown className="h-4 w-4 text-white/70" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-white/70" />
                       )}
-                    >
-                      <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      <span className="truncate">{item.name}</span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
+                    </button>
+                  )}
+                </div>
+
+                {/* Group items */}
+                {(isCollapsed || expandedGroups[group.label]) && (
+                  <ul className={cn("space-y-1 transition-all", isCollapsed ? "px-2" : "px-3")}>
+                    {group.items.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex items-center rounded-lg transition-all",
+                              isCollapsed ? "justify-center p-2" : "px-3 py-2",
+                              isActive ? "bg-white/15 text-white" : "text-white/80 hover:bg-white/10 hover:text-white",
+                            )}
+                            title={isCollapsed ? item.name : undefined}
+                          >
+                            <Icon className={cn("flex-shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5 mr-3")} />
+                            {!isCollapsed && <span className="truncate">{item.name}</span>}
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            ))}
           </nav>
 
           {/* Log out button */}
-          <div className="p-2 border-t border-[#3a61e0]">
+          <div className={cn("p-3 border-t border-[#3a61e0]", isCollapsed ? "flex justify-center" : "")}>
             <button
               onClick={handleSignOut}
               disabled={isSigningOut}
               className={cn(
-                "w-full flex items-center px-3 py-2 rounded-lg transition-colors",
-                isSigningOut ? "opacity-50 cursor-not-allowed" : "text-white/80 hover:bg-white/10 hover:text-white",
+                "flex items-center rounded-lg transition-colors bg-[#3a61e0] hover:bg-[#4a71f0]",
+                isCollapsed ? "p-2 justify-center" : "px-3 py-2 w-full",
+                isSigningOut ? "opacity-50 cursor-not-allowed" : "",
               )}
+              title={isCollapsed ? "Log out" : undefined}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 mr-3 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span>{isSigningOut ? "Logging out..." : "Log out"}</span>
+              <LogOut className={cn("flex-shrink-0", isCollapsed ? "w-5 h-5" : "w-5 h-5 mr-3")} />
+              {!isCollapsed && <span>{isSigningOut ? "Logging out..." : "Log out"}</span>}
             </button>
           </div>
         </div>
@@ -162,6 +235,31 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 bg-black/20 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
       )}
+
+      {/* Main content wrapper with padding when sidebar is expanded */}
+      <div className={cn("transition-all duration-300 min-h-screen", isCollapsed ? "lg:pl-16" : "lg:pl-64")}>
+        {/* This is where your main content would go */}
+      </div>
     </>
+  )
+}
+
+// ChevronLeft icon component
+function ChevronLeft(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
   )
 }

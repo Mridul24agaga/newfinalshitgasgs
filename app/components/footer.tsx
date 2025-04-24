@@ -7,7 +7,6 @@ export default function Footer() {
     {
       title: "COMPARISONS",
       links: [
-        { name: "GetMoreSEO vs Texta AI", href: "/getmoreseo-vs-texta" },
         { name: "GetMoreSEO vs Outrank.so", href: "/getmoreseo-vs-outrank" },
         { name: "GetMoreSEO vs SebotAI", href: "/getmoreseo-vs-seobotai" },
         { name: "GetMoreSEO vs Surfer SEO", href: "/getmoreseo-vs-surferseo" },
@@ -16,11 +15,11 @@ export default function Footer() {
     {
       title: "QUICK LINKS",
       links: [
-        { name: "Sign Up Today", href: "/signup", highlight: true },
-        { name: "Free Trial", href: "/free-trial" },
-        { name: "Success Stories", href: "/success-stories" },
-        { name: "How It Works", href: "/how-it-works" },
-        { name: "Content Examples", href: "/content-examples" },
+        { name: "Home", href: "/", highlight: true },
+        { name: "Results", href: "/#results" },
+        { name: "Examples", href: "/#examples" },
+        { name: "How It Works", href: "/#howitworks" },
+        { name: "FAQ", href: "/#faq" },
       ],
     },
   ]
@@ -31,7 +30,7 @@ export default function Footer() {
       <div className="relative z-10 mx-auto max-w-6xl px-4">
         <div className="rounded-3xl overflow-hidden shadow-2xl transform translate-y-24">
           {/* White Background with Colorful Accents */}
-          <div className="relative bg-white px-8 py-12 md:px-12 md:py-16">
+          <div className="relative bg-white px-8 py-12 md:px-16 md:py-20">
             {/* Colorful accent elements */}
             <div className="absolute inset-0 overflow-hidden">
               {/* Blue accent */}
@@ -50,8 +49,8 @@ export default function Footer() {
 
             <div className="relative z-10">
               <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-4">
-                  Automate your Blog today
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-6">
+                  Automate your Blogging today
                 </h2>
                 <p className="text-lg text-[#1a1a1a]/80 max-w-2xl mx-auto">
                   Get your samples and start generating articles for your business.
@@ -59,7 +58,7 @@ export default function Footer() {
               </div>
 
               {/* Email Form */}
-              <div className="max-w-3xl mx-auto mb-10">
+              <div className="max-w-3xl mx-auto mb-12">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="email"
@@ -76,7 +75,7 @@ export default function Footer() {
               </div>
 
               {/* Features */}
-              <div className="flex flex-wrap justify-center gap-12 text-[#1a1a1a]">
+              <div className="flex flex-wrap justify-center gap-x-16 gap-y-8 text-[#1a1a1a]">
                 <div className="flex items-center">
                   <div className="p-2 rounded-full bg-[#4f46e5]/10 mr-3">
                     <CreditCard className="h-5 w-5 text-[#4f46e5]" />
@@ -105,13 +104,13 @@ export default function Footer() {
       <footer className="bg-[#0f1116] text-gray-300 pt-40 pb-8">
         <div className="max-w-7xl mx-auto px-4">
           {/* Footer Links and CTA Side-by-Side */}
-          <div className="flex flex-col lg:flex-row gap-8 mb-16">
+          <div className="flex flex-col lg:flex-row gap-8 mb-20">
             {/* Footer Links */}
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-8 lg:flex-1">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-12 lg:flex-1">
               {footerLinks.map((column, i) => (
                 <div key={i}>
-                  <h3 className="text-sm font-medium text-white mb-4">{column.title}</h3>
-                  <ul className="space-y-2">
+                  <h3 className="text-sm font-medium text-white mb-6">{column.title}</h3>
+                  <ul className="space-y-3">
                     {column.links.map((link, j) => (
                       <li key={j}>
                         <Link
@@ -142,9 +141,9 @@ export default function Footer() {
             </div>
 
             {/* Sign Up CTA Side Banner */}
-            <div className="lg:w-1/3 bg-gradient-to-r from-[#4f46e5]/10 to-[#7c3aed]/10 rounded-xl p-6 flex flex-col justify-center">
-              <div className="mb-6">
-                <h3 className="text-white text-xl font-bold mb-2">Ready to transform your content strategy?</h3>
+            <div className="lg:w-1/3 bg-gradient-to-r from-[#4f46e5]/10 to-[#7c3aed]/10 rounded-xl p-8 flex flex-col justify-center">
+              <div className="mb-8">
+                <h3 className="text-white text-xl font-bold mb-3">Ready to transform your content strategy?</h3>
                 <p className="text-gray-400">Join thousands of businesses already using GetMoreSEO.</p>
               </div>
               <Link
@@ -169,16 +168,24 @@ export default function Footer() {
           </div>
 
           {/* Bottom Section */}
-          <div className="pt-8 border-t border-gray-800">
+          <div className="pt-10 border-t border-gray-800">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div className="mb-6 md:mb-0">
                 {/* Logo */}
-                <div className="flex items-center mb-6">
-                  <div className="text-white font-bold text-xl flex items-center">GetMoreSEO</div>
+                <div className="flex items-center">
+                  <Link href="/" className="flex items-center">
+                    <Image
+                      src="/logowhite.png" // Replace this with the path to your logo image
+                      alt="GetMoreSEO Logo"
+                      width={120} // Adjust size as needed
+                      height={120}
+                      className="object-contain"
+                    />
+                  </Link>
                 </div>
 
                 {/* Social Links */}
-                <div className="flex space-x-4 mb-6">
+                <div className="flex space-x-6 mb-6 mt-6">
                   <a
                     href="https://youtube.com"
                     target="_blank"
@@ -206,11 +213,11 @@ export default function Footer() {
                 </div>
 
                 {/* Copyright */}
-                <div className="text-xs text-gray-500">Copyright 2025. MARKUPX BRANDS. All rights reserved!</div>
+                <div className="text-xs text-gray-500 mt-4">Copyright 2025. MARKUPX BRANDS. All rights reserved!</div>
               </div>
 
               {/* Contact & Legal */}
-              <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-8">
                 <a
                   href="mailto:support@getmoreseo.com"
                   className="text-sm text-gray-400 hover:text-white transition-colors flex items-center"
@@ -218,7 +225,7 @@ export default function Footer() {
                   <Mail className="w-4 h-4 mr-2" />
                   hi@mridulthareja.com
                 </a>
-                <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+                <Link href="/privacy-policy" className="text-sm text-gray-400 hover:text-white transition-colors">
                   Privacy
                 </Link>
                 <Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">

@@ -242,17 +242,17 @@ export default function PaymentSuccessPage() {
   }, [router, searchParams, supabase])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-xl p-8 max-w-md w-full">
         {loading ? (
           <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 text-orange-500 animate-spin mb-4" />
+            <Loader2 className="h-12 w-12 text-[#294fd6] animate-spin mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Your Payment</h1>
             <p className="text-gray-600 text-center">Please wait while we confirm your subscription details...</p>
           </div>
         ) : success ? (
           <div className="flex flex-col items-center">
-            <div className="bg-green-100 p-3 rounded-full mb-4">
+            <div className="bg-green-50 ring-2 ring-green-200 p-3 rounded-full mb-4">
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
@@ -260,12 +260,12 @@ export default function PaymentSuccessPage() {
               Your subscription has been activated successfully. You will be redirected to your dashboard in a moment.
             </p>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-              <div className="bg-orange-500 h-2 animate-progress"></div>
+              <div className="bg-[#294fd6] h-2 animate-progress"></div>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <div className="bg-red-100 p-3 rounded-full mb-4">
+            <div className="bg-red-50 ring-2 ring-red-200 p-3 rounded-full mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-12 w-12 text-red-500"
@@ -285,20 +285,15 @@ export default function PaymentSuccessPage() {
             <p className="text-red-600 text-center mb-6">{error}</p>
             <button
               onClick={() => router.push("/upgrade")}
-              className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+              className="bg-[#294fd6] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#294fd6]/80 transition-colors shadow-md hover:shadow-lg"
             >
               Try Again
             </button>
           </div>
         )}
 
-        {debugInfo && (
-          <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg overflow-auto max-h-96">
-            <p className="text-sm font-mono text-gray-600 whitespace-pre-wrap">{debugInfo}</p>
-          </div>
-        )}
+       
       </div>
     </div>
   )
 }
-

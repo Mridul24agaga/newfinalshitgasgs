@@ -28,16 +28,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  Listicles
+                  Keyword Research
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  SaaS SEO: 7 Must-Have Tools for Growth
+                  Where to Discover 5 Keywords That Drive Customer Interest
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  Want to boost your SaaS visibility? Here are 7 must-have tools that will supercharge your SEO
-                  strategy.
+                  Uncover powerful keywords through social media conversations, Google Trends, customer feedback, SEO
+                  tools
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/where-to-discover-5-keywords-that-will-drive-customer-interest" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
@@ -47,16 +47,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  Listicles
+                  AI Tools
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  10 Indie Maker Tips to Boost Your Side Project
+                  How I Created 3 AI Tools in Under 30 Minutes (And You Can Too)
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  These strategies help you connect with users, build a following, and grow your indie project
-                  effectively.
+                  Learn how to build powerful AI tools without coding using Wrapifai's no-code platform for lead
+                  generation, chatbots, and more.
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/how-to-create-3-ai-tools-in-30-minutes" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
@@ -66,16 +66,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  How-to Guides
+                  Startup Research
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  Robots.txt SEO Guide: 10 Best Practices
+                  What Makes Scraping Product Hunt Makers Essential for Founders?
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  Ever wonder how search engines know which parts of your site to crawl? Master robots.txt with these
-                  tips.
+                  Discover how analyzing Product Hunt makers can provide valuable insights for startup founders and
+                  product developers.
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/What-makes-scraping-product-hunt-makers-essentials-for-founders" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
@@ -87,16 +87,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  Checklists
+                  Social Media
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  Google Core Update Checklist: Prepare Your Site
+                How to Book 10X More Meetings with AI-Powered Outreach Today
+
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  Google Core Updates can shake up your rankings and traffic. Here's how to prepare and recover from
-                  algorithm changes.
+                It goes all detective on LinkedIn profiles, pulling out juicy bits of info that help you tailor your outreach. 
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/what-is-syndie-and-how-does-it-works" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
@@ -106,16 +106,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  QA Articles
+                  Open Source
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  Next.js getServerSideProps: Complete Guide
+                What 85% of Developers Adore About Open-Source AI Tools
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  getServerSideProps is a Next.js function for server-side rendering. Learn how to use it effectively in
-                  your projects.
+                  Explore how open-source AI tools like Suna can enhance development workflows and provide flexible
+                  solutions for projects.
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/what-85-developers-love-about-opensource-ai-tools" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
@@ -125,16 +125,16 @@ export default function BlogArticles() {
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[280px] flex flex-col">
               <div className="p-6 flex flex-col h-full">
                 <span className="inline-block px-3 py-1 text-xs font-medium bg-[#294fd6]/10 text-[#294fd6] rounded-md mb-4 w-fit">
-                  Case Studies
+                  No-Code
                 </span>
                 <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                  How We Increased Organic Traffic by 300% in 6 Months
+                What 68% of Businesses Gain from Open Source AI Solutions
+
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  Discover the exact content strategy and technical SEO improvements that tripled our client's website
-                  traffic in just half a year.
+                For real, open-source options often come at a fraction of the cost compared to their proprietary counterparts.
                 </p>
-                <Link href="#" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
+                <Link href="/what-68-of-businesses-gain-from-open-source-ai-solutions" className="inline-flex items-center text-[#294fd6] font-medium hover:underline mt-auto">
                   Read more <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>

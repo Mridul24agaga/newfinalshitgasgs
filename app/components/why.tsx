@@ -63,7 +63,7 @@ export default function WhyBloggingSection() {
             <div className="relative h-[300px] md:h-[400px] w-full group">
               <div className="absolute inset-0 bg-gradient-to-r from-[#294df6]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg pointer-events-none"></div>
               <Image
-                src="/graph.webp"
+                src="/googlie.png"
                 alt="Organic Traffic Growth Chart"
                 fill
                 className="object-contain"
