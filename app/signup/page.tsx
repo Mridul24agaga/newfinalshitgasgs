@@ -23,11 +23,6 @@ export default function SignUpPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Add these new state variables at the top of the component, after the existing state declarations
-  const [signupStep, setSignupStep] = useState("signup") // "signup" or "verify"
-  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""])
-  const [userEmail, setUserEmail] = useState("")
-
   // Animation states
   const [animationStep, setAnimationStep] = useState(0)
   const [showTypingEffect, setShowTypingEffect] = useState(true)
@@ -200,127 +195,6 @@ export default function SignUpPage() {
     return strength
   }
 
-  // Add this new function to handle OTP input changes
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) {
-      value = value.charAt(0)
-    }
-
-    const newOtp = [...otpValues]
-    newOtp[index] = value
-    setOtpValues(newOtp)
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`)
-      if (nextInput) {
-        nextInput.focus()
-      }
-    }
-  }
-
-  // Add this new function to handle keyboard navigation in OTP inputs
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle backspace
-    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`)
-      if (prevInput) {
-        prevInput.focus()
-      }
-    }
-  }
-
-  // Add this new function to handle pasting OTP codes
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    const pastedData = e.clipboardData.getData("text")
-    if (pastedData.length <= 6) {
-      const digits = pastedData.split("")
-      const newOtp = [...otpValues]
-
-      digits.forEach((digit, index) => {
-        if (index < 6 && /^\d$/.test(digit)) {
-          newOtp[index] = digit
-        }
-      })
-
-      setOtpValues(newOtp)
-
-      // Focus the next empty input or the last one
-      for (let i = 0; i < 6; i++) {
-        if (!newOtp[i]) {
-          const input = document.getElementById(`otp-${i}`)
-          if (input) {
-            input.focus()
-            break
-          }
-        } else if (i === 5) {
-          const input = document.getElementById(`otp-5`)
-          if (input) {
-            input.focus()
-          }
-        }
-      }
-    }
-  }
-
-  // Add this new function to verify the OTP
-  const verifyOtp = async () => {
-    setIsLoading(true)
-    setError(null)
-
-    const otpCode = otpValues.join("")
-
-    if (otpCode.length !== 6) {
-      setError("Please enter all 6 digits of the verification code")
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      // Verify the OTP code
-      const { error: verifyError } = await supabase.functions.invoke("verify-otp", {
-        body: { email: userEmail, otp: otpCode },
-      })
-
-      if (verifyError) {
-        throw new Error(verifyError.message || "Failed to verify code")
-      }
-
-      // Redirect to dashboard after successful verification
-      router.push("/dashboard")
-    } catch (err: any) {
-      console.error("OTP verification error:", err)
-      setError(err.message || "Invalid verification code. Please try again.")
-      setIsLoading(false)
-    }
-  }
-
-  // Add this new function to resend the OTP
-  const resendOtp = async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const { error: resendError } = await supabase.functions.invoke("send-otp", {
-        body: { email: userEmail },
-      })
-
-      if (resendError) {
-        throw new Error(resendError.message || "Failed to resend verification code")
-      }
-
-      setIsLoading(false)
-      // Show temporary success message
-      setError(null)
-    } catch (err: any) {
-      console.error("Resend OTP error:", err)
-      setError(err.message || "Failed to resend verification code. Please try again.")
-      setIsLoading(false)
-    }
-  }
-
-  // Modify the handleSubmit function to update the flow
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
@@ -366,7 +240,7 @@ export default function SignUpPage() {
         return
       }
 
-      // Step 1: Sign up with Supabase Auth
+      // Step 1: Sign up with Supabase Auth - MODIFIED to use a simpler approach
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -416,26 +290,11 @@ export default function SignUpPage() {
         console.error("Error updating user metadata:", updateError)
       }
 
-      // Step 4: Send OTP and move to verification step
-      try {
-        // Send OTP to user's email
-        const { error: otpError } = await supabase.functions.invoke("send-otp", {
-          body: { email },
-        })
-
-        if (otpError) {
-          console.error("Error sending OTP:", otpError)
-          throw new Error("Failed to send verification code. Please try again.")
-        }
-
-        // Store email and move to verification step
-        setUserEmail(email)
-        setSignupStep("verify")
-        setIsLoading(false)
-      } catch (err: any) {
-        console.error("OTP error:", err)
-        setError(err.message || "Failed to send verification code. Please try again.")
-        setIsLoading(false)
+      // Step 4: Handle redirect based on email confirmation
+      if (authData.session === null) {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+      } else {
+        router.push("/onboarding")
       }
     } catch (err: any) {
       console.error("Signup error:", err)
@@ -586,221 +445,143 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Right side - Sign up form or OTP verification */}
+      {/* Right side - Sign up form */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8">
-          {signupStep === "signup" ? (
-            <>
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">Create an account</h1>
-                <p className="text-gray-500">You are just 2 clicks away from creating your blogging account!</p>
-              </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold">Create an account</h1>
+            <p className="text-gray-500">You are just 2 clicks away from creating your blogging account!</p>
+          </div>
 
-              {error && (
-                <div
-                  className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-md mb-4 flex items-start"
-                  role="alert"
-                >
-                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-                  <span className="text-sm">{error}</span>
-                </div>
-              )}
+          {error && (
+            <div
+              className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-md mb-4 flex items-start"
+              role="alert"
+            >
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+              <span className="text-sm">{error}</span>
+            </div>
+          )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                    Username
-                  </label>
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
-                    placeholder="Choose a username"
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
+                placeholder="Choose a username"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
-                    placeholder="name@example.com"
-                  />
-                </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
+                placeholder="name@example.com"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      className="w-full px-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  <div className="text-right">
-                    <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700">
-                      forgot password?
-                    </Link>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className={`h-1.5 flex-1 rounded-full ${
-                        passwordStrength(password) >= 1 ? "bg-red-500" : "bg-gray-200"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-1.5 flex-1 rounded-full ${
-                        passwordStrength(password) >= 2 ? "bg-yellow-500" : "bg-gray-200"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-1.5 flex-1 rounded-full ${
-                        passwordStrength(password) >= 3 ? "bg-green-500" : "bg-gray-200"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-1.5 flex-1 rounded-full ${
-                        passwordStrength(password) >= 4 ? "bg-green-700" : "bg-gray-200"
-                      }`}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Password strength:{" "}
-                    {["Weak", "Fair", "Good", "Strong"][passwordStrength(password) - 1] || "Very Weak"}
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-2 px-4 bg-[#294fd6] hover:bg-[#1e3eb8] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294fd6] disabled:opacity-50 transition-colors"
-                >
-                  {isLoading ? "Creating account..." : "Sign up with Email"}
-                </button>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">
-                    Already have an account?{" "}
-                    <Link href="/login" className="font-medium text-[#294fd6] hover:text-[#1e3eb8]">
-                      Sign in
-                    </Link>
-                  </p>
-                </div>
-              </form>
-
-              <div className="text-center text-xs text-gray-500">
-                By clicking continue, you agree to our{" "}
-                <Link href="/terms" className="text-[#294fd6] hover:text-[#1e3eb8]">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="text-[#294fd6] hover:text-[#1e3eb8]">
-                  Privacy Policy
-                </Link>
-                .
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Verify Your Email</h1>
-                <p className="text-gray-500">
-                  We've sent a 6-digit code to {userEmail}. Enter the code below to verify your account.
-                </p>
-              </div>
-
-              {error && (
-                <div
-                  className="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-md mb-4 flex items-start"
-                  role="alert"
-                >
-                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-                  <span className="text-sm">{error}</span>
-                </div>
-              )}
-
-              <div className="mt-8 space-y-6">
-                <div className="flex justify-center space-x-2">
-                  {otpValues.map((digit, index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      onPaste={index === 0 ? handleOtpPaste : undefined}
-                      className="h-12 w-12 rounded-md border border-gray-300 text-center text-lg font-semibold focus:border-[#294fd6] focus:outline-none focus:ring-1 focus:ring-[#294fd6]"
-                      required
-                    />
-                  ))}
-                </div>
-
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-[#294fd6]"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
                 <button
                   type="button"
-                  onClick={verifyOtp}
-                  disabled={isLoading || otpValues.join("").length !== 6}
-                  className="w-full py-2 px-4 bg-[#294fd6] hover:bg-[#1e3eb8] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294fd6] disabled:opacity-50 transition-colors"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                  {isLoading ? "Verifying..." : "Verify Email"}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
-
-                <div className="text-center text-sm">
-                  <p className="text-gray-600">
-                    Didn't receive the code?{" "}
-                    <button
-                      type="button"
-                      onClick={resendOtp}
-                      disabled={isLoading}
-                      className="font-medium text-[#294fd6] hover:text-[#1e3eb8] disabled:opacity-50"
-                    >
-                      Resend Code
-                    </button>
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep("signup")}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    ← Back to signup
-                  </button>
-                </div>
               </div>
-            </>
-          )}
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700">
+                  forgot password?
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div
+                  className={`h-1.5 flex-1 rounded-full ${
+                    passwordStrength(password) >= 1 ? "bg-red-500" : "bg-gray-200"
+                  }`}
+                ></div>
+                <div
+                  className={`h-1.5 flex-1 rounded-full ${
+                    passwordStrength(password) >= 2 ? "bg-yellow-500" : "bg-gray-200"
+                  }`}
+                ></div>
+                <div
+                  className={`h-1.5 flex-1 rounded-full ${
+                    passwordStrength(password) >= 3 ? "bg-green-500" : "bg-gray-200"
+                  }`}
+                ></div>
+                <div
+                  className={`h-1.5 flex-1 rounded-full ${
+                    passwordStrength(password) >= 4 ? "bg-green-700" : "bg-gray-200"
+                  }`}
+                ></div>
+              </div>
+              <div className="text-xs text-gray-600">
+                Password strength: {["Weak", "Fair", "Good", "Strong"][passwordStrength(password) - 1] || "Very Weak"}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2 px-4 bg-[#294fd6] hover:bg-[#1e3eb8] text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294fd6] disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? "Creating account..." : "Sign up with Email"}
+            </button>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                Already have an account?{" "}
+                <Link href="/login" className="font-medium text-[#294fd6] hover:text-[#1e3eb8]">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </form>
+
+          <div className="text-center text-xs text-gray-500">
+            By clicking continue, you agree to our{" "}
+            <Link href="/terms" className="text-[#294fd6] hover:text-[#1e3eb8]">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-[#294fd6] hover:text-[#1e3eb8]">
+              Privacy Policy
+            </Link>
+            .
+          </div>
         </div>
       </div>
     </div>

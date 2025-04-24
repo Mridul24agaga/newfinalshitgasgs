@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Home, FileText, Globe, Sparkles, Star, Menu, X, ChevronDown, ChevronRight, LogOut } from "lucide-react"
+import { CreditCard } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +35,12 @@ const navigationGroups = [
   },
   {
     label: "Settings",
-    items: [{ name: "Integration", href: "/api-key", icon: Star }],
+    items: [
+      { name: "Integration", href: "/api-key", icon: Star },
+      { name: "Billing", href: "/billing", icon: CreditCard }
+
+    ],
+    
   },
 ]
 

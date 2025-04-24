@@ -60,6 +60,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   const progressRef = useRef<ProgressTimerRef>(null)
   const stepRef = useRef<NodeJS.Timeout | null>(null)
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true)
+  const [nextCreditAdditionDate, setNextCreditAdditionDate] = useState<string | null>(null)
 
   const steps = [
     { icon: <Search className="w-4 h-4" />, text: "Extracting website content" },
@@ -272,9 +273,62 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
 
         console.log("Setting credits to:", credits)
         setUserCredits(credits)
+
+        // Check if the subscription is yearly
+        const isYearlyPlan =
+          subscriptionData.plan_name?.toLowerCase().includes("yearly") ||
+          subscriptionData.interval === "year" ||
+          subscriptionData.billing_cycle === "yearly"
+
+        // For yearly plans, ensure they have the correct number of credits
+        if (isYearlyPlan) {
+          // Determine the plan type and set appropriate yearly credits
+          const isGrowthPlan = subscriptionData.plan_name?.toLowerCase().includes("growth")
+          const isProfessionalPlan = subscriptionData.plan_name?.toLowerCase().includes("professional")
+
+          // Calculate total yearly credits
+          let yearlyCredits = 0
+          if (isGrowthPlan) {
+            yearlyCredits = 30 * 12 // 360 credits for yearly growth plan
+          } else if (isProfessionalPlan) {
+            yearlyCredits = 60 * 12 // 720 credits for yearly professional plan
+          }
+
+          console.log(`Yearly plan detected: ${subscriptionData.plan_name}, should have ${yearlyCredits} credits`)
+
+          // Only update credits if the current credits are significantly lower
+          // This prevents resetting credits if the user has already been using them
+          if (credits < yearlyCredits * 0.9) {
+            // If they have less than 90% of expected yearly credits
+            console.log(`Updating credits from ${credits} to ${yearlyCredits}`)
+
+            // Update credits in the database
+            try {
+              await supabase
+                .from("subscriptions")
+                .update({
+                  credits_available: yearlyCredits,
+                  credits: yearlyCredits,
+                  available_credits: yearlyCredits,
+                })
+                .eq("user_id", userData.user.id)
+
+              // Update local state
+              credits = yearlyCredits
+            } catch (updateError) {
+              console.error("Error updating yearly credits:", updateError)
+            }
+          }
+
+          // Remove the next credit addition date since all credits are given upfront
+          setNextCreditAdditionDate(null)
+        } else {
+          setNextCreditAdditionDate(null)
+        }
       } else {
         console.log("No subscription found for user")
         setUserCredits(0)
+        setNextCreditAdditionDate(null)
       }
     } catch (error) {
       console.error("Error in fetchUserAndSubscription:", error)
@@ -336,6 +390,9 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                 <span className="text-xs sm:text-sm font-medium text-[#294fd6]">
                   {userCredits} Credit{userCredits !== 1 ? "s" : ""}
                   {subscription?.plan_name && ` • ${subscription.plan_name}`}
+                  {nextCreditAdditionDate && (
+                    <span className="block text-xs">Next credit addition: {nextCreditAdditionDate}</span>
+                  )}
                 </span>
               )}
             </div>
@@ -438,17 +495,35 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                     </div>
 
                     {/* Credit Information */}
-                    <div className="flex items-center justify-between p-3 sm:p-4 bg-blue-50 border border-blue-100 w-full">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 sm:w-5 h-4 sm:h-5 text-[#294fd6]" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">Available Credits</p>
-                          <p className="text-xs sm:text-sm text-gray-600">
-                            You can generate up to {userCredits} blog{userCredits !== 1 ? "s" : ""}
-                          </p>
+                    <div className="flex flex-col p-3 sm:p-4 bg-blue-50 border border-blue-100 w-full">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 sm:w-5 h-4 sm:h-5 text-[#294fd6]" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">Available Credits</p>
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              You can generate up to {userCredits} blog{userCredits !== 1 ? "s" : ""}
+                            </p>
+                          </div>
                         </div>
+                        <div className="text-xl sm:text-2xl font-bold text-[#294fd6]">{userCredits}</div>
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-[#294fd6]">{userCredits}</div>
+
+                      {subscription?.plan_name?.toLowerCase().includes("yearly") && (
+                        <div className="mt-3 pt-3 border-t border-blue-100">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-[#294fd6]" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">Yearly Plan Benefits</p>
+                              <p className="text-xs sm:text-sm text-gray-600">
+                                {subscription.plan_name.toLowerCase().includes("growth")
+                                  ? "You received 360 credits (30 × 12 months) with your yearly Growth plan"
+                                  : "You received 720 credits (60 × 12 months) with your yearly Professional plan"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Submit Button */}

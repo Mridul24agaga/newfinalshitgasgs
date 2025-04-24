@@ -6,7 +6,7 @@ import { createClient } from "@/utitls/supabase/client"
 import { Check } from "lucide-react"
 
 // Use the test mode URL for Dodo Payments
-const DODO_URL = "https://test.checkout.dodopayments.com/buy"
+const DODO_URL = "https://checkout.dodopayments.com/buy"
 
 interface Plan {
   id: string
@@ -18,7 +18,10 @@ interface Plan {
     yearlyTotal: number
   }
   credits: number
-  dodoProductId: string
+  dodoProductId: {
+    monthly: string
+    annually: string
+  }
   features: string[]
   discount?: string
   isBestValue?: boolean
@@ -28,114 +31,112 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    id: "basic",
-    name: "Basic",
-    description: "Perfect for individuals just getting started",
+    id: "trial",
+    name: "Trial",
+    description: "Ideal for testing our platform's potential",
     priceUSD: {
       monthly: 7,
-      annually: 6,
-      yearlyTotal: 72,
+      annually: 7,
+      yearlyTotal: 7,
     },
     credits: 2,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    annualDiscountPercentage: 15,
-    features: [
-      "2 professionally written blog posts per month",
-      "Basic SEO optimization",
-      "Content calendar",
-      "Email support",
-    ],
+    dodoProductId: {
+      monthly: "pdt_z3XRRMgR6dGV5Z66ElFhm",
+      annually: "pdt_z3XRRMgR6dGV5Z66ElFhm",
+    },
+    features: ["2 professionally crafted articles", "Basic keyword research", "Standard email support"],
   },
   {
     id: "starter",
     name: "Starter",
-    description: "Great for small businesses and startups",
+    description: "Ideal for individuals and startups aiming to boost visibility and online presence",
     priceUSD: {
       monthly: 25,
       annually: 21,
       yearlyTotal: 252,
     },
     credits: 15,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
+    dodoProductId: {
+      monthly: "pdt_lm80fduM23lgLSCJhXQBf",
+      annually: "pdt_lm80fduM23lgLSCJhXQBf",
+    },
     annualDiscountPercentage: 15,
     features: [
-      "15 professionally written blog posts per month",
-      "Standard SEO optimization",
-      "Content strategy",
-      "Social media integration",
-      "Email and chat support",
+      "15 professionally crafted articles/month",
+      "Standard keyword research",
+      "Standard email & chat support",
     ],
   },
   {
     id: "growth",
     name: "Growth",
-    description: "Ideal for growing your online presence",
+    description: "Ideal for growing businesses seeking substantial online growth",
     priceUSD: {
       monthly: 40,
-      annually: 25, // $300/year ÷ 12 months = $25/month
-      yearlyTotal: 66,
+      annually: 17.25, // $300/year ÷ 12 months = $25/month
+      yearlyTotal: 207,
     },
     credits: 30,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 68% WITH ANNUAL BILLING",
+    dodoProductId: {
+      monthly: "pdt_P2vmzA58J1kOlgHBKlGNN",
+      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5", // Replace with actual annual product ID
+    },
+    discount: "SAVE 57% WITH ANNUAL BILLING",
     annualDiscountPercentage: 68,
     isBestValue: true,
     showOnAnnual: true,
     features: [
-      "30 professionally written blog posts per month",
-      "Advanced SEO optimization",
-      "Comprehensive content strategy",
-      "Social media integration",
-      "Content performance analytics",
-      "Priority support",
+      "30 professionally crafted articles/month",
+      "Advanced keyword research for enhanced visibility",
+      "Priority support & unlimited support calls",
     ],
   },
   {
     id: "professional",
     name: "Professional",
-    description: "For businesses serious about content marketing",
+    description: "Perfect for established businesses aiming for high-impact results",
     priceUSD: {
       monthly: 70,
-      annually: 50, // $600/year ÷ 12 months = $50/month
-      yearlyTotal: 132,
+      annually: 30, // $600/year ÷ 12 months = $50/month
+      yearlyTotal: 362,
     },
     credits: 60,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
-    discount: "SAVE 68% WITH ANNUAL BILLING",
+    dodoProductId: {
+      monthly: "pdt_09SSladZHqE5hTjxb2Pst",
+      annually: "pdt_EaLdjsytLh65LQmAECiJ2", // Replace with actual annual product ID
+    },
+    discount: "SAVE 57% WITH ANNUAL BILLING",
     annualDiscountPercentage: 68,
     showOnAnnual: true,
     features: [
-      "60 professionally written blog posts per month",
-      "Premium SEO optimization",
-      "Advanced content strategy and planning",
-      "Full suite of social media integrations",
-      "Content performance analytics",
-      "Dedicated account manager",
-      "Priority support",
+      "60 professionally crafted articles/month",
+      "Premium SEO optimization with custom keyword research",
+      "Dedicated account manager for personalized strategies",
+      "Unlimited priority support",
     ],
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    description: "For large organizations with extensive content needs",
+    description: "Designed specifically for large organizations with extensive content requirements",
     priceUSD: {
       monthly: 100,
       annually: 85,
       yearlyTotal: 1020,
     },
     credits: 120,
-    dodoProductId: "pdt_aKk7uYTudrZ8lzrpba34K",
+    dodoProductId: {
+      monthly: "pdt_w3Fr4POKROMWHzMnEueLq",
+      annually: "pdt_w3Fr4POKROMWHzMnEueLq",
+    },
     discount: "SAVE 15% WITH ANNUAL BILLING",
     annualDiscountPercentage: 15,
     features: [
-      "120 professionally written blog posts per month",
-      "Enterprise-grade SEO optimization",
-      "Custom content strategy",
-      "Multi-channel content distribution",
-      "Advanced analytics and reporting",
-      "Dedicated account team",
-      "24/7 priority support",
-      "Custom integrations",
+      "120 professionally crafted articles/month (daily publishing)",
+      "Enterprise-grade SEO strategies and bespoke keyword research",
+      "Custom integrations tailored to your business needs",
+      "Dedicated account team for strategic guidance",
+      "24/7 priority support for ultimate reliability and service",
     ],
   },
 ]
@@ -315,7 +316,10 @@ export default function PaymentPage() {
           `annual_price=${annualPrice}&` +
           `annual_discount=${annualDiscountPercentage}`,
       )
-      const checkoutUrl = `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${successUrl}`
+
+      // Use the correct product ID based on billing cycle
+      const productId = billingCycle === "annually" ? plan.dodoProductId.annually : plan.dodoProductId.monthly
+      const checkoutUrl = `${DODO_URL}/${productId}?quantity=1&redirect_url=${successUrl}`
 
       setDebugInfo(`Redirecting to checkout URL: ${checkoutUrl}`)
 
@@ -382,7 +386,7 @@ export default function PaymentPage() {
           </button>
           {billingCycle === "annually" && (
             <span className="ml-2 bg-blue-50 text-[#294fd6] text-xs font-medium px-2 py-1 rounded-full self-center">
-              SAVE UP TO 68%
+              SAVE UP TO 57%
             </span>
           )}
         </div>
@@ -448,7 +452,11 @@ export default function PaymentPage() {
                   onClick={() => handleSubscribe(plan)}
                   disabled={loading && selectedPlan === plan.id}
                 >
-                  {loading && selectedPlan === plan.id ? "Processing..." : `Choose ${plan.name}`}
+                  {loading && selectedPlan === plan.id
+                    ? "Processing..."
+                    : plan.id === "trial"
+                      ? "Start Your Trial"
+                      : `Choose ${plan.name}`}
                 </button>
 
                 <div>
@@ -467,46 +475,6 @@ export default function PaymentPage() {
           ))}
         </div>
       </div>
-
-      <div className="max-w-3xl mx-auto bg-gray-50 rounded-xl p-8 border border-gray-200 mt-16 shadow-sm">
-        <h3 className="text-xl font-bold mb-6 text-gray-900">Frequently Asked Questions</h3>
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">What happens when I run out of credits?</h4>
-            <p className="text-gray-600">
-              You can purchase additional credits at any time or upgrade to a higher plan for more credits.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Can I cancel my subscription?</h4>
-            <p className="text-gray-600">
-              Yes, you can cancel your subscription at any time. Your plan will remain active until the end of your
-              billing period.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">
-              What's the difference between monthly and annual billing?
-            </h4>
-            <p className="text-gray-600">
-              Annual billing offers significant savings compared to monthly billing. You'll be charged once per year
-              instead of monthly, with discounts of up to 68% depending on the plan.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mt-8 p-4 bg-red-50 border-l-4 border-red-200 rounded-lg">
-          <p className="text-red-600">{error}</p>
-        </div>
-      )}
-
-      {debugInfo && (
-        <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm font-mono text-gray-600 whitespace-pre-wrap">{debugInfo}</p>
-        </div>
-      )}
     </div>
   )
 }
