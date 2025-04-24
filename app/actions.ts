@@ -793,16 +793,6 @@ async function finalHumanization(
 
   let finalContent = await callAzureOpenAI(extremeHumanizationPrompt, 3500, 0.99)
 
-  // Clean up any remaining AI-style intro/outro phrases
-  finalContent = finalContent.replace(
-    /^(?:Sure|Here|As requested|I've created|Below is).*?(?:blog post|article|content).*?\n+/i,
-    "",
-  )
-  finalContent = finalContent.replace(
-    /\n+(?:I hope|Let me know|Feel free|Is there anything|Thank you).*?(?:helpful|questions|feedback|else).*?$/i,
-    "",
-  )
-
   console.log("Replacing link placeholders with styled HTML anchor tags...")
 
   // Replace external link placeholders with styled anchor tags

@@ -202,12 +202,7 @@ export default function OnboardingPage() {
         </div>
       </main>
 
-      <footer className="p-6 text-center relative z-10">
-        <button className="flex items-center justify-center gap-1 mx-auto text-gray-500 hover:text-[#294fd6] transition-colors bg-white/80 backdrop-blur-sm py-2 px-4 rounded-full shadow-sm hover:shadow">
-          <HelpCircle className="w-4 h-4" />
-          <span>Need help? Contact support</span>
-        </button>
-      </footer>
+      
 
       {/* Custom styles for animations */}
       <style jsx global>{`
