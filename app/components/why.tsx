@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Search, Activity, BarChart3, Users, DollarSign } from "lucide-react"
+import { BarChart3, Users, DollarSign } from "lucide-react"
 
 const WhyBloggingSection = () => {
   return (
@@ -20,7 +20,6 @@ const WhyBloggingSection = () => {
               <div className="border border-gray-100 rounded-xl shadow-sm p-6 bg-white">
                 {/* Key Blogging Benefits instead of metrics */}
                 <div className="grid grid-cols-1 gap-4 mb-6">
-
                   <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col items-center p-3 border border-gray-100 rounded-lg hover:border-[#294df6]/30 hover:bg-gray-50 transition-all">
                       <BarChart3 className="w-8 h-8 text-[#294df6] mb-2" />
@@ -46,8 +45,6 @@ const WhyBloggingSection = () => {
                       </div>
                     </div>
                   </div>
-
-                  
                 </div>
 
                 {/* Graph Image */}
@@ -64,65 +61,16 @@ const WhyBloggingSection = () => {
                 </div>
               </div>
 
-              {/* Right side - Feature Cards */}
-              <div className="space-y-6">
-                {/* First Feature Card */}
-                <div className="border border-gray-100 rounded-xl p-6 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300 bg-white group">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mr-5">
-                      <div className="p-3 bg-[#294df6]/10 rounded-full group-hover:bg-[#294df6]/20 transition-colors duration-300">
-                        <Search className="w-6 h-6 text-[#294df6]" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-[#294df6] mb-3">In-Depth, Research-Backed Content</h3>
-                      <ul className="mt-3 space-y-3">
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Comprehensive articles (up to 4,000 words)</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Fact-checked from reliable sources</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Audience-specific problem-solving content</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
+              {/* Right side - Image (replacing feature cards) */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden border border-gray-100 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300">
+                  <Image
+                    src="/loading.png"
+                    alt="Content marketing strategy illustration"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-
-                {/* Second Feature Card */}
-                <div className="border border-gray-100 rounded-xl p-6 hover:border-[#294df6]/30 hover:shadow-md transition-all duration-300 bg-white group">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mr-5">
-                      <div className="p-3 bg-[#294df6]/10 rounded-full group-hover:bg-[#294df6]/20 transition-colors duration-300">
-                        <Activity className="w-6 h-6 text-[#294df6]" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-[#294df6] mb-3">Complete SEO Framework</h3>
-                      <ul className="mt-3 space-y-3">
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Strategic keyword placement (primary & longtail)</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Effective internal & external linking</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-[#294df6] mr-2 text-lg leading-tight">•</span>
-                          <span className="text-gray-700">Organized in search-friendly structures</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
-import { Button } from "@/app/components/ui/button"
+import Image from "next/image"
+import Link from "next/link"
 
 export default function Howthisisworking() {
   return (
@@ -23,7 +24,10 @@ export default function Howthisisworking() {
             <p className="text-gray-700 mb-8">
               Set your preferences once. Watch your content calendar auto-fill with optimized, ranking-ready articles.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+            >
               <span>Start for Free</span>
               <svg
                 className="ml-2 h-4 w-4"
@@ -40,16 +44,16 @@ export default function Howthisisworking() {
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
-            </Button>
+            </Link>
           </div>
           <div className="md:w-1/2 relative">
-            <div className="absolute -top-10 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg]">
+            <div className="absolute -top-20 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               AI-powered
               <br />
               automation
             </div>
-            <div className="h-[300px] md:h-[350px] flex items-center justify-center">
-              <div className="text-gray-400 text-sm">Autopilot Experience Image</div>
+            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden ">
+              <Image src="/true.png" alt="AI-powered content automation dashboard" fill className="object-cover" />
             </div>
           </div>
         </div>
@@ -63,7 +67,10 @@ export default function Howthisisworking() {
             <p className="text-gray-700 mb-8">
               Engineered by top SEO experts from BlogoSocial.com, aligned with Google's best practices.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+            >
               <span>Learn More</span>
               <svg
                 className="ml-2 h-4 w-4"
@@ -80,16 +87,16 @@ export default function Howthisisworking() {
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
-            </Button>
+            </Link>
           </div>
           <div className="md:w-1/2 relative">
-            <div className="absolute -top-10 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg]">
+            <div className="absolute -top-20 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               Expert
               <br />
               knowledge
             </div>
-            <div className="h-[300px] md:h-[350px] flex items-center justify-center">
-              <div className="text-gray-400 text-sm">SEO Expert System Image</div>
+            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
+              <Image src="/seoo.png" alt="SEO experts analyzing website data" fill className="object-cover" />
             </div>
           </div>
         </div>
@@ -103,8 +110,11 @@ export default function Howthisisworking() {
             <p className="text-gray-700 mb-8">
               Unlike competitors, start building your content without any upfront costs or payment barriers.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <span>Try It Free</span>
+            <Link
+              href="/try-free"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+            >
+              <span>Get Started Today</span>
               <svg
                 className="ml-2 h-4 w-4"
                 fill="none"
@@ -120,16 +130,16 @@ export default function Howthisisworking() {
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
-            </Button>
+            </Link>
           </div>
           <div className="md:w-1/2 relative">
-            <div className="absolute -top-10 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg]">
+            <div className="absolute -top-20 left-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               No upfront
               <br />
               costs
             </div>
-            <div className="h-[300px] md:h-[350px] flex items-center justify-center">
-              <div className="text-gray-400 text-sm">Risk-Free Start Image</div>
+            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
+              <Image src="/start.png" alt="Risk-free trial signup with no credit card" fill className="object-cover" />
             </div>
           </div>
         </div>
@@ -144,7 +154,10 @@ export default function Howthisisworking() {
               Generate fully humanized, engaging blog posts complete with multimedia and structured formatting
               effortlessly.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Link
+              href="/#examples"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
+            >
               <span>See Examples</span>
               <svg
                 className="ml-2 h-4 w-4"
@@ -161,16 +174,16 @@ export default function Howthisisworking() {
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
-            </Button>
+            </Link>
           </div>
           <div className="md:w-1/2 relative">
-            <div className="absolute -top-10 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg]">
+            <div className="absolute -top-20 right-10 text-blue-600 font-handwriting text-lg rotate-[-5deg] z-10">
               Human-like
               <br />
               quality
             </div>
-            <div className="h-[300px] md:h-[350px] flex items-center justify-center">
-              <div className="text-gray-400 text-sm">Human-Quality Content Image</div>
+            <div className="h-[300px] md:h-[350px] relative rounded-xl overflow-hidden">
+              <Image src="/humann.png" alt="Human-quality blog content with multimedia" fill className="object-cover" />
             </div>
           </div>
         </div>

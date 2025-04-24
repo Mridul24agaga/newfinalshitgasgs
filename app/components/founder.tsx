@@ -1,19 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
-import {
-  ArrowRight,
-  Mail,
-  Twitter,
-  MessageCircle,
-  Zap,
-  Rocket,
-  Award,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Users,
-  Sparkles,
-} from "lucide-react"
+import { Mail, Twitter, MessageCircle, Zap, Rocket, Award, Clock, CheckCircle2, Users, Sparkles } from "lucide-react"
 
 export default function FounderSupportSection() {
   return (
@@ -91,11 +78,7 @@ export default function FounderSupportSection() {
             {/* Right image */}
             <div className="flex-1 relative">
               <div className="relative h-[400px] w-full md:h-[500px] rounded-2xl overflow-hidden shadow-xl">
-                <img
-                  src="/collaborative-success.png"
-                  alt="Founder Support Team"
-                  className="w-full h-full object-cover"
-                />
+                <img src="/founder.png" alt="Founder Support Team" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                 <div className="absolute bottom-6 left-6 right-6 text-white">
                   <div className="text-xl font-bold mb-1">Our Founder Team</div>
@@ -218,40 +201,71 @@ export default function FounderSupportSection() {
                   status: "Early Planning",
                 },
               ].map((item, index) => (
-                <div key={index} className="relative flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div key={index} className="relative flex items-start">
                   {/* Timeline node */}
-                  <div className="absolute left-4 md:left-1/2 w-8 h-8 rounded-full bg-[#294fd6] flex items-center justify-center transform -translate-x-1/2 z-10">
+                  <div className="absolute left-4 md:left-1/2 w-8 h-8 rounded-full bg-[#294fd6] flex items-center justify-center transform md:-translate-x-1/2 z-10">
                     {item.icon}
                   </div>
 
-                  {/* Content */}
-                  <div className={`md:w-1/2 pl-16 md:pl-0 ${index % 2 === 0 ? "md:pr-16 md:text-right" : "md:pl-16"}`}>
-                    <div
-                      className={`bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm ${index % 2 === 0 ? "md:ml-auto" : ""}`}
-                    >
-                      <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800 mb-3">
-                        <Calendar className="mr-1 h-3 w-3" />
-                        <span>{item.date}</span>
+                  {/* Left side (even indices) */}
+                  {index % 2 === 0 && (
+                    <>
+                      <div className="hidden md:block md:w-1/2 pr-12">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm ml-auto text-right">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
+                          <p className="text-gray-600 mb-4">{item.description}</p>
+                          <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            <span>{item.status}</span>
+                          </div>
+                        </div>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
-                      <p className="text-gray-600 mb-4">{item.description}</p>
-                      <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
-                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                        <span>{item.status}</span>
+                      <div className="md:hidden pl-16 w-full">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
+                          <p className="text-gray-600 mb-4">{item.description}</p>
+                          <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            <span>{item.status}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                      <div className="hidden md:block md:w-1/2"></div>
+                    </>
+                  )}
 
-                  {/* Empty div for alternating layout */}
-                  <div className={`hidden md:block md:w-1/2 ${index % 2 === 0 ? "" : ""}`}></div>
+                  {/* Right side (odd indices) */}
+                  {index % 2 === 1 && (
+                    <>
+                      <div className="hidden md:block md:w-1/2"></div>
+                      <div className="md:hidden pl-16 w-full">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
+                          <p className="text-gray-600 mb-4">{item.description}</p>
+                          <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            <span>{item.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="hidden md:block md:w-1/2 pl-12">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 transition-all hover:border-[#294fd6]/30 hover:shadow-sm">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{item.title}</h3>
+                          <p className="text-gray-600 mb-4">{item.description}</p>
+                          <div className="inline-flex items-center rounded-full bg-[#294fd6]/10 px-3 py-1 text-sm font-medium text-[#294fd6]">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            <span>{item.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         </div>
       </section>
-
-      
     </div>
   )
 }

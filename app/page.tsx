@@ -37,22 +37,23 @@ import FounderSupportSection from "./components/founder"
 import Home from "./components/howitworks"
 import Howthisisworking from "./components/whatmakesusbetter"
 export const metadata: Metadata = {
-  title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
+  title: "GetMoreSEO - Automated SEO Blogging on Autopilot",
   description:
-    "Expert blogs powered by AI & ICP strategies. Create content that ranks fast in Google and engages your audience with our AI-powered blogging platform.",
+    "Fully automated blog creation that ranks on Google and grows your business—without lifting a finger. The #1 ranked most affordable automated blogging AI agent.",
   openGraph: {
-    title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
+    title: "GetMoreSEO - Automated SEO Blogging on Autopilot",
     description:
-      "Expert blogs powered by AI & ICP strategies. Create content that ranks fast in Google and engages your audience with our AI-powered blogging platform.",
+      "Fully automated blog creation that ranks on Google and grows your business—without lifting a finger. The #1 ranked most affordable automated blogging AI agent.",
     images: [
       {
-        url: "https://blogosocial.com/og.jpeg", // Replace with your actual OG image
+        url: "https://getmoreseo.org/og.jpeg", // Replace with your actual OG image
         width: 1200,
         height: 630,
-        alt: "Blogosocial - AI-Powered Blogging Platform",
+        alt: "GetMoreSEO - Automated SEO Blogging Platform",
       },
     ],
   },
+  metadataBase: new URL("https://getmoreseo.org"),
 }
 
 export default function Page() {

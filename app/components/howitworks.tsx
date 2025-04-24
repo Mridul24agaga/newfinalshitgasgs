@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Button } from "@/app/components/ui/button"
 import { ArrowRight } from "lucide-react"
 
@@ -41,8 +42,15 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Card 1: Keyword Research */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-gray-400 text-sm">Magnifying Glass / AI Robot Researching</div>
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden bg-white flex items-center justify-center">
+              <Image
+                src="/keyword.png"
+                alt="AI-powered keyword research and analysis"
+                width={250}
+                height={180}
+                className="object-contain"
+                style={{ maxWidth: "100%", maxHeight: "100%" }}
+              />
             </div>
 
             <h3 className="text-2xl font-bold mb-3">Keyword & Topic Research</h3>
@@ -55,8 +63,15 @@ export default function Home() {
 
           {/* Card 2: Content Creation & Structuring (Combined) */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-gray-400 text-sm">Document with Keywords & Structured Article Outline</div>
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden bg-white flex items-center justify-center">
+              <Image
+                src="/optimize.png"
+                alt="SEO-optimized content creation process"
+                width={250}
+                height={180}
+                className="object-contain"
+                style={{ maxWidth: "100%", maxHeight: "100%" }}
+              />
             </div>
 
             <h3 className="text-2xl font-bold mb-3">SEO-Optimized Content Creation</h3>
@@ -69,8 +84,8 @@ export default function Home() {
 
           {/* Card 3: Auto-Publishing */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-gray-400 text-sm">Automatic Publishing Button</div>
+          <div className="h-48 mb-6 relative rounded-lg overflow-hidden">
+              <Image src="/api.png" alt="Automatic blog publishing system" fill className="object-cover" />
             </div>
 
             <h3 className="text-2xl font-bold mb-3">Auto-Publish to Your Blog</h3>

@@ -1,6 +1,4 @@
 "use client"
-
-import type React from "react"
 import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
 import { Menu, X } from "lucide-react"
@@ -9,19 +7,14 @@ import Image from "next/image"
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [currentTime, setCurrentTime] = useState("0:00")
-  const [duration, setDuration] = useState("2:15")
-  const [showControls, setShowControls] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const [isVideoHovered, setIsVideoHovered] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const [timeLeft, setTimeLeft] = useState({
     hours: 3,
     minutes: 49,
     seconds: 32,
   })
-  const [isVideoHovered, setIsVideoHovered] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,59 +44,35 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
-  // Pulse animation for the play button
   useEffect(() => {
-    if (!isPlaying) {
-      const interval = setInterval(() => {
-        const playButton = document.getElementById("play-button")
-        if (playButton) {
-          playButton.classList.add("animate-pulse-once")
-          setTimeout(() => {
-            playButton.classList.remove("animate-pulse-once")
-          }, 1000)
-        }
-      }, 3000)
+    // Simulate loading time and then hide the loader
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 2000)
 
-      return () => clearInterval(interval)
-    }
-  }, [isPlaying])
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-      setIsPlaying(!isPlaying)
-    }
-  }
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const currentProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100
-      setProgress(currentProgress)
-      setCurrentTime(formatTime(videoRef.current.currentTime))
-    }
-  }
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (videoRef.current) {
-      const progressBar = e.currentTarget
-      const rect = progressBar.getBoundingClientRect()
-      const pos = (e.clientX - rect.left) / rect.width
-      videoRef.current.currentTime = pos * videoRef.current.duration
-    }
-  }
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col font-poppins">
+      {isLoading && (
+        <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+          <div className="relative">
+            <div className="w-24 h-24 border-t-4 border-[#294df6] rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-24 h-24 border-t-4 border-[#7733ee] rounded-full animate-spin-slow"></div>
+          </div>
+          <div className="mt-8 flex flex-col items-center">
+            <Image
+              src="/logoblack.png"
+              alt="GetMoreSEO Logo"
+              width={150}
+              height={150}
+              className="object-contain animate-pulse"
+            />
+            <p className="text-gray-600 mt-4 font-medium">Loading amazing content...</p>
+          </div>
+        </div>
+      )}
       {/* Promotion Banner */}
       <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
         <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
@@ -248,6 +217,17 @@ export default function Home() {
       {/* Hero Section */}
       <main className="flex-grow">
         <div className="relative overflow-hidden bg-white">
+          {/* Grid Background */}
+          <div
+            className="absolute inset-0 bg-[#f8f8f8]"
+            style={{
+              backgroundImage: `linear-gradient(to right, #c0c0c0 1px, transparent 1px), 
+                linear-gradient(to bottom, #c0c0c0 1px, transparent 1px)`,
+              backgroundSize: "40px 40px",
+              backgroundPosition: "0 0",
+            }}
+          ></div>
+
           {/* Background Elements */}
           <div className="absolute top-20 right-0 w-64 h-64 bg-[#294df6]/5 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 left-0 w-96 h-96 bg-[#f92d6]/5 rounded-full blur-3xl"></div>
@@ -315,7 +295,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Video Section - Perfectly Centered */}
+          {/* YouTube Video Section - Perfectly Centered */}
           <div className="flex justify-center items-center w-full mt-24 mb-24">
             <div
               className="w-full max-w-[1000px] aspect-[16/9] h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] relative flex items-center justify-center rounded-xl overflow-hidden shadow-2xl border-8 border-gray-800 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(41,77,246,0.5)] z-20"
@@ -355,73 +335,37 @@ export default function Home() {
                 @keyframes bounce {
                   0%, 100% { transform: translateY(0); }
                   50% { transform: translateY(-10px); }
+                  100% { transform: translateY(0); }
+                }
+                @keyframes spin-slow {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(-360deg); }
+                }
+                .animate-spin-slow {
+                  animation: spin-slow 3s linear infinite;
                 }
               `}</style>
 
-              {/* Animated "WATCH NOW" Badge */}
-              <div className="absolute top-6 right-6 bg-[#294df6] text-white px-4 py-2 rounded-full font-bold z-30 video-badge">
+              {/* Animated "WATCH NOW" Badge - Positioned to not interfere with video controls */}
+              <div className="absolute top-4 right-4 bg-[#294df6] text-white px-4 py-2 rounded-full font-bold z-30 video-badge pointer-events-none">
                 WATCH NOW
               </div>
 
-              {/* Duration Badge */}
-              <div className="absolute bottom-6 right-6 bg-black/70 text-white px-3 py-1 rounded-md font-medium z-30">
-                2:15
-              </div>
+              {/* YouTube Embed */}
+              <iframe
+                src="https://www.youtube.com/embed/eqn0Uv0xm_o?autoplay=0&rel=0&showinfo=1&modestbranding=1&controls=1"
+                title="100% Autopilot SEO Blogging AI agent | GetMoreSEO | Markupx Brands"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full object-cover z-20"
+              ></iframe>
 
-              <div className="text-white text-6xl sm:text-7xl md:text-8xl font-bold z-10 video-label">VIDEO</div>
-              <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/80"></div>
-
-              {/* Animated Glow Effect */}
+              {/* Animated Glow Effect - Only on the border, not covering the video */}
               <div
-                className={`absolute inset-0 bg-[#294df6]/10 opacity-0 ${
-                  isVideoHovered ? "opacity-100" : ""
-                } transition-opacity duration-500`}
+                className={`absolute inset-0 pointer-events-none border-4 border-[#294df6]/0 ${
+                  isVideoHovered ? "border-[#294df6]/30" : ""
+                } transition-all duration-500 z-10`}
               ></div>
-
-              <video
-                ref={videoRef}
-                className="absolute inset-0 w-full h-full object-cover"
-                poster="/video-thumbnail.png"
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onTimeUpdate={handleTimeUpdate}
-              >
-                <source src="/demo-video.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-
-              {/* Play Button Overlay with Animation */}
-              {!isPlaying && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center cursor-pointer z-20"
-                  onClick={togglePlay}
-                >
-                  <div
-                    id="play-button"
-                    className="w-28 h-28 rounded-full bg-white/90 flex items-center justify-center shadow-lg transform transition-all duration-300 hover:scale-110 hover:bg-white"
-                    style={{
-                      boxShadow: "0 0 30px rgba(41,77,246,0.5)",
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-12 w-12 text-[#294fd6] ml-2"
-                      viewBox="0 0 24 24"
-                      fill="#294fd6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                  </div>
-                  <div className="absolute bottom-10 left-6 right-6 text-white font-medium text-center">
-                    <p className="text-2xl font-bold mb-2">See it in action</p>
-                    <p className="text-lg opacity-90">Click to watch our 2-minute demo</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

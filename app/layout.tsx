@@ -1,22 +1,21 @@
-import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter } from 'next/font/google'
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: {
-    default: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
-    template: "%s | Blogosocial",
+    default: "GetMoreSeo - Professional SEO Services to Boost Your Rankings",
+    template: "%s | GetMoreSeo",
   },
   description:
-    "Expert blogs powered by AI & ICP strategies. Create content that ranks fast in Google and engages your audience with our AI-powered blogging platform.",
-  keywords: ["blogging platform", "AI content creation", "SEO blogging", "content marketing", "Google rankings"],
-  authors: [{ name: "Blogosocial Team" }],
-  creator: "Blogosocial",
-  publisher: "Blogosocial",
-  metadataBase: new URL("https://blogosocial.com"),
+    "Expert SEO services to improve your website's visibility and rankings. Get more traffic, leads, and sales with our proven SEO strategies and techniques.",
+  keywords: ["SEO services", "search engine optimization", "website rankings", "SEO strategy", "digital marketing"],
+  authors: [{ name: "GetMoreSeo Team" }],
+  creator: "GetMoreSeo",
+  publisher: "GetMoreSeo",
+  metadataBase: new URL("https://getmoreseo.org"),
   alternates: {
     canonical: "/",
   },
@@ -37,30 +36,30 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://blogosocial.com",
-    title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
+    url: "https://getmoreseo.org",
+    title: "GetMoreSeo - Professional SEO Services to Boost Your Rankings",
     description:
-      "Expert blogs powered by AI & ICP strategies. Create content that ranks fast in Google and engages your audience with our AI-powered blogging platform.",
-    siteName: "Blogosocial",
+      "Expert SEO services to improve your website's visibility and rankings. Get more traffic, leads, and sales with our proven SEO strategies and techniques.",
+    siteName: "GetMoreSeo",
     images: [
       {
-        url: "https://blogosocial.com/og.jepg", // Replace with your actual OG image
+        url: "https://getmoreseo.org/og.jpeg", 
         width: 1200,
         height: 630,
-        alt: "Blogosocial - AI-Powered Blogging Platform",
+        alt: "GetMoreSeo - Professional SEO Services",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blogosocial - Strategic Blogging Loved by Readers, Ranked by Google",
+    title: "GetMoreSeo - Professional SEO Services to Boost Your Rankings",
     description:
-      "Expert blogs powered by AI & ICP strategies. Create content that ranks fast in Google and engages your audience with our AI-powered blogging platform.",
-    images: ["https://blogosocial.com/og.jpeg"], // Replace with your actual Twitter image
-    creator: "@blogosocial", // Replace with your actual Twitter handle
-    site: "@blogosocial", // Replace with your actual Twitter handle
+      "Expert SEO services to improve your website's visibility and rankings. Get more traffic, leads, and sales with our proven SEO strategies and techniques.",
+    images: ["https://getmoreseo.org/og.jpeg"],
+    creator: "@getmoreseo", 
+    site: "@getmoreseo", 
   },
-  category: "Technology",
+  category: "Business",
 }
 
 export default function RootLayout({
@@ -74,4 +73,3 @@ export default function RootLayout({
     </html>
   )
 }
-
