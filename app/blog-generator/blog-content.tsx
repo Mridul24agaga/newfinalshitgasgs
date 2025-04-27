@@ -159,7 +159,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     localStorage.setItem("dailyGeneratedCount", newCount.toString())
 
     // If this generation will reach or exceed the daily limit, set next generation time
-    if (newCount >= 2) {
+    if (newCount >= 1) {
       const nextGenTime = new Date()
       nextGenTime.setHours(nextGenTime.getHours() + 24) // 24 hours from now
       setNextGenerationTime(nextGenTime)
@@ -195,8 +195,8 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     }
 
     // Check if this generation would exceed daily limit
-    if (dailyGeneratedCount + bulkQuantity > 2) {
-      alert(`You can only generate 2 articles per day. You have already generated ${dailyGeneratedCount} today.`)
+    if (dailyGeneratedCount + bulkQuantity > 1) {
+      alert(`You can only generate 1 article per day. You have already generated ${dailyGeneratedCount} today.`)
       return
     }
 
@@ -506,7 +506,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     // Don't allow setting quantity that would exceed daily limit
     const maxAllowed = Math.min(
       Math.max(1, userCredits), // Max based on credits
-      dailyLimitReached ? 0 : 2 - dailyGeneratedCount, // Max based on daily limit
+      dailyLimitReached ? 0 : 1 - dailyGeneratedCount, // Max based on daily limit
     )
 
     setBulkQuantity(Math.min(value, maxAllowed))
@@ -621,7 +621,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                             >
                               <path
                                 fillRule="evenodd"
-                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2-2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                                 clipRule="evenodd"
                               />
                             </svg>
@@ -648,13 +648,13 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                           Number of blogs to generate{" "}
                           {dailyLimitReached
                             ? "(Daily limit reached)"
-                            : `(${2 - dailyGeneratedCount} of 2 remaining today)`}
+                            : `(${1 - dailyGeneratedCount} of 1 remaining today)`}
                         </label>
                         <div className="flex items-center">
                           <input
                             type="range"
                             min="1"
-                            max={Math.min(Math.max(1, userCredits), dailyLimitReached ? 1 : 2 - dailyGeneratedCount)}
+                            max={Math.min(Math.max(1, userCredits), dailyLimitReached ? 1 : 1 - dailyGeneratedCount)}
                             value={bulkQuantity}
                             onChange={(e) => handleBulkQuantityChange(Number.parseInt(e.target.value))}
                             className={`flex-1 h-2 bg-gray-200 appearance-none ${dailyLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
@@ -694,7 +694,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                             <p className="text-xs sm:text-sm text-gray-600">
                               {dailyLimitReached
                                 ? `Limit reached. Reset in ${formatNextGenerationTime()}.`
-                                : `${dailyGeneratedCount}/2 articles generated today`}
+                                : `${dailyGeneratedCount}/1 article generated today`}
                             </p>
                           </div>
                         </div>
