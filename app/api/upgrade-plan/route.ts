@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { data: userData, error: userError } = await supabase
       .from("userssignuped")
       .select("*")
-      .eq("user_id", user_id)
+      .eq("id", user_id)
       .single()
 
     if (userError || !userData) {
