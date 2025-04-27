@@ -20,14 +20,8 @@ export default function PaymentSuccessPage() {
         // Get URL parameters
         const userId = searchParams.get("user_id")
         const planId = searchParams.get("plan_id")
-        const price = searchParams.get("price")
-        const existingCredits = searchParams.get("existing_credits")
-          ? Number.parseInt(searchParams.get("existing_credits")!, 10)
-          : 0
-        const newCredits = searchParams.get("new_credits") ? Number.parseInt(searchParams.get("new_credits")!, 10) : 0
-        const totalCredits = searchParams.get("total_credits")
-          ? Number.parseInt(searchParams.get("total_credits")!, 10)
-          : 0
+        const planName = searchParams.get("plan_name")
+        const credits = searchParams.get("credits")
         const billingCycle = searchParams.get("billing_cycle") || "monthly"
         const currency = searchParams.get("currency") || "USD"
         const subscriptionId = searchParams.get("subscription_id")
@@ -38,10 +32,8 @@ export default function PaymentSuccessPage() {
             {
               userId,
               planId,
-              price,
-              existingCredits,
-              newCredits,
-              totalCredits,
+              planName,
+              credits,
               billingCycle,
               currency,
               subscriptionId,
@@ -52,21 +44,13 @@ export default function PaymentSuccessPage() {
           )}`,
         )
 
-        if (!userId || !planId || (!totalCredits && !newCredits)) {
+        if (!userId || !planId || !credits) {
           setError("Missing required payment information. Please contact support.")
           setLoading(false)
           return
         }
 
-        console.log("Processing payment success with params:", {
-          userId,
-          planId,
-          existingCredits,
-          newCredits,
-          totalCredits,
-          billingCycle,
-          currency,
-        })
+        console.log("Processing payment success with params:", { userId, planId, credits, billingCycle, currency })
 
         // Check if the authenticated user matches the userId in the URL
         const {
@@ -124,7 +108,7 @@ export default function PaymentSuccessPage() {
         const subscriptionData = {
           user_id: user.id,
           plan_id: planId,
-          credits: totalCredits || existingCredits + newCredits,
+          credits: Number.parseInt(credits),
           status: status || "active",
           billing_cycle: isAnnual ? "annually" : "monthly",
           subscription_type: isAnnual ? "annual" : "monthly",
@@ -214,7 +198,7 @@ export default function PaymentSuccessPage() {
             body: JSON.stringify({
               user_id: user.id,
               plan_id: planId,
-              credits: totalCredits || existingCredits + newCredits,
+              credits: Number.parseInt(credits),
               billing_cycle: billingCycle,
               timestamp: currentDate.toISOString(),
             }),
@@ -239,7 +223,7 @@ export default function PaymentSuccessPage() {
         // Redirect to dashboard after 3 seconds
         setTimeout(() => {
           router.push(
-            `/dashboard?user_id=${user.id}&plan=${planId}&credits=${totalCredits || existingCredits + newCredits}&billing_cycle=${billingCycle}&currency=${currency}`,
+            `/dashboard?user_id=${user.id}&plan=${planId}&credits=${credits}&billing_cycle=${billingCycle}&currency=${currency}`,
           )
         }, 3000)
       } catch (err) {
@@ -307,6 +291,8 @@ export default function PaymentSuccessPage() {
             </button>
           </div>
         )}
+
+       
       </div>
     </div>
   )

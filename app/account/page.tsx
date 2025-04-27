@@ -5,6 +5,7 @@ import { createClient } from "@/utitls/supabase/client"
 import { AppSidebar } from "../components/sidebar"
 import type { User } from "@supabase/supabase-js"
 import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface UserProfile {
   username: string
@@ -188,6 +189,7 @@ export default function AccountPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [processingUpgrade, setProcessingUpgrade] = useState(false)
   const [showTooltip, setShowTooltip] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchUserData() {
@@ -195,7 +197,7 @@ export default function AccountPage() {
         setLoading(true)
 
         // Create client and get current user
-        const supabase = await createClient()
+        const supabase = createClient()
         const {
           data: { user },
           error: authError,
@@ -360,7 +362,7 @@ export default function AccountPage() {
     setSelectedPlan(plan.id)
 
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
 
       // Check if user exists
       const {
@@ -401,12 +403,13 @@ export default function AccountPage() {
         billing_cycle: billingCycleValue,
       })
 
-      // Construct the checkout URL with redirect and include billing cycle, price information, and credit information
+      // Build success URL with all necessary parameters
       const successUrl = encodeURIComponent(
-        `${window.location.origin}/payment-success?` +
+        `${window.location.origin}/payment-upgrade?` +
           `user_id=${user.id}&` +
           `plan_id=${plan.id}&` +
           `price=${price}&` +
+          `credits=${newCredits}&` +
           `existing_credits=${existingCredits}&` +
           `new_credits=${newCredits}&` +
           `total_credits=${totalCredits}&` +
@@ -514,7 +517,10 @@ export default function AccountPage() {
                 <p className="text-gray-500 text-sm mt-1">Please sign in to view your account details.</p>
               </div>
               <div className="p-6 pt-0">
-                <button className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <button
+                  onClick={() => router.push("/login")}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
                   Sign In
                 </button>
               </div>
