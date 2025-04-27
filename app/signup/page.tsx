@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/utitls/supabase/client"
-import { Eye, EyeOff, AlertCircle, FileText, ArrowRight, Check, Code, Globe } from "lucide-react"
+import { Eye, EyeOff, AlertCircle, FileText, ArrowRight, Check, Code, Globe, Mail, RefreshCw } from "lucide-react"
 import { Inter } from "next/font/google"
 
 const inter = Inter({
@@ -32,6 +32,13 @@ export default function SignUpPage() {
   const [publishProgress, setPublishProgress] = useState(0)
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0)
   const animationRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Email verification states
+  const [showVerification, setShowVerification] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState("")
+  const [isResending, setIsResending] = useState(false)
+  const [countdown, setCountdown] = useState(60)
+  const [canResend, setCanResend] = useState(false)
 
   const codeSnippet = `async function generateBlogPost() {
   const topic = await analyzeWebsite(url);
@@ -80,14 +87,48 @@ export default function SignUpPage() {
   ]
 
   useEffect(() => {
-    // Start animation sequence
-    startAnimationSequence()
+    // Start animation sequence if not in verification mode
+    if (!showVerification) {
+      startAnimationSequence()
+    }
 
     return () => {
       if (animationRef.current) {
         clearTimeout(animationRef.current)
       }
     }
+  }, [showVerification])
+
+  // Start countdown for resend button when verification is shown
+  useEffect(() => {
+    if (showVerification) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            setCanResend(true)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [showVerification])
+
+  // Check URL parameters for verification status
+  useEffect(() => {
+    const checkUrlParams = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const error = urlParams.get("error")
+
+      if (error === "verification_failed") {
+        setError("Email verification failed. Please try again or contact support.")
+      }
+    }
+
+    checkUrlParams()
   }, [])
 
   const startAnimationSequence = () => {
@@ -240,10 +281,17 @@ export default function SignUpPage() {
         return
       }
 
-      // Step 1: Sign up with Supabase Auth - MODIFIED to use a simpler approach
+      // Step 1: Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // Redirect to production site
+          emailRedirectTo: `https://getmoreseo.org/auth/callback?next=/onboarding`,
+          data: {
+            username: username,
+          },
+        },
       })
 
       if (authError) {
@@ -279,23 +327,10 @@ export default function SignUpPage() {
         // Continue anyway - we can update the profile later
       }
 
-      // Step 3: Update user metadata separately
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          username: username,
-        },
-      })
-
-      if (updateError) {
-        console.error("Error updating user metadata:", updateError)
-      }
-
-      // Step 4: Handle redirect based on email confirmation
-      if (authData.session === null) {
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
-      } else {
-        router.push("/onboarding")
-      }
+      // Step 4: Show simplified verification UI
+      setVerificationEmail(email)
+      setShowVerification(true)
+      setIsLoading(false)
     } catch (err: any) {
       console.error("Signup error:", err)
       setError(err.message || "An unexpected error occurred during signup. Please try again.")
@@ -303,8 +338,168 @@ export default function SignUpPage() {
     }
   }
 
+  const resendVerificationEmail = async () => {
+    if (!verificationEmail) {
+      setError("Email address is missing. Please try signing up again.")
+      return
+    }
+
+    setIsResending(true)
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: verificationEmail,
+        options: {
+          // Redirect to production site
+          emailRedirectTo: `https://getmoreseo.org/auth/callback?next=/onboarding`,
+        },
+      })
+
+      if (error) throw error
+
+      // Reset countdown
+      setCountdown(60)
+      setCanResend(false)
+    } catch (err: any) {
+      console.error("Resend verification error:", err)
+      setError(err.message || "Failed to resend verification email. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
+  // Render simplified verification UI
+  if (showVerification) {
+    return (
+      <div className={`${inter.className} flex h-screen`}>
+        {/* Left side - Dark background with animation */}
+        <div className="hidden md:flex md:w-1/2 bg-black text-white flex-col justify-between p-12 relative overflow-hidden">
+          {/* Animation for verification */}
+          <div className="absolute inset-0 flex items-center justify-center p-12 pointer-events-none">
+            <div className="w-full max-w-md">
+              <div className="space-y-8">
+                <div className="transition-all duration-500 opacity-100 transform translate-y-0">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 rounded-full bg-[#294df6]/20 flex items-center justify-center mr-3">
+                      <Mail className="h-5 w-5 text-[#294df6]" />
+                    </div>
+                    <h3 className="text-xl font-medium text-white">Email Verification</h3>
+                  </div>
+
+                  <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+                    <div className="flex items-center mb-4">
+                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                          <Check className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div className="text-green-400">Account created successfully</div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center mr-3">
+                          <Mail className="h-4 w-4 text-yellow-400" />
+                        </div>
+                        <div className="text-yellow-400">Verification email sent</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Background elements */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute top-20 right-20 w-40 h-40 bg-[#294df6] rounded-full blur-3xl"></div>
+            <div className="absolute bottom-40 left-10 w-60 h-60 bg-purple-600 rounded-full blur-3xl"></div>
+          </div>
+        </div>
+
+        {/* Right side - Simplified Verification UI */}
+        <div className="w-full md:w-1/2 flex items-center justify-center p-6">
+          <div className="w-full max-w-md space-y-6">
+            <div className="text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
+                <Mail className="h-10 w-10 text-[#294df6]" />
+              </div>
+              <h1 className="text-3xl font-bold">Check your email</h1>
+              <p className="text-gray-500 mt-3">
+                We've sent a verification link to
+                <br />
+                <span className="font-medium text-gray-800">{verificationEmail}</span>
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-100 rounded-md p-5 text-blue-800">
+              <h3 className="font-medium text-lg mb-2 flex items-center">
+                <Check className="h-5 w-5 mr-2" />
+                Just one more step!
+              </h3>
+              <p className="text-sm">
+                Click the verification link in your email to complete your registration and log in automatically.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                Didn't receive the email?
+                {!canResend && ` You can resend in ${countdown} seconds.`}
+              </p>
+
+              <button
+                onClick={resendVerificationEmail}
+                disabled={isResending || !canResend}
+                className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-[#294df6] hover:bg-[#1e3eb8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isResending ? (
+                  <>
+                    <RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    Resending...
+                  </>
+                ) : (
+                  "Resend verification email"
+                )}
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex justify-between">
+                <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                  Back to login
+                </Link>
+
+                <button
+                  onClick={() => setShowVerification(false)}
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  Back to signup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render signup form
   return (
     <div className={`${inter.className} flex h-screen`}>
       {/* Left side - Dark background with animation */}

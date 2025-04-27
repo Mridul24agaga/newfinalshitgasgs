@@ -1,12 +1,14 @@
-import Image from "next/image";
-import { BarChart3, Users, DollarSign } from "lucide-react";
+import Image from "next/image"
+import { BarChart3, Users, DollarSign } from "lucide-react"
 
 const WhyBloggingSection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="bg-white">
       <div className="container px-4 mx-auto max-w-6xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Why Blogging Matters</h2>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-6 tracking-tight">
+            Why Blogging Matters
+          </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Discover the power of blogging for your business and personal brand.
           </p>
@@ -88,7 +90,7 @@ const WhyBloggingSection = () => {
         </div>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default WhyBloggingSection;
+export default WhyBloggingSection

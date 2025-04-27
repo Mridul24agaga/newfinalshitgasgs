@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { CheckCircle, Loader2 } from "lucide-react"
+import { CheckCircle, AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 export default function PaymentSuccessPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<Record<string, any> | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const processPayment = async () => {
@@ -21,36 +22,36 @@ export default function PaymentSuccessPage() {
         const userId = searchParams.get("user_id")
         const planId = searchParams.get("plan_id")
         const planName = searchParams.get("plan_name")
-        const credits = searchParams.get("credits")
+        const existingCredits = searchParams.get("existing_credits")
+        const newCredits = searchParams.get("new_credits")
+        const totalCredits = searchParams.get("total_credits")
         const billingCycle = searchParams.get("billing_cycle") || "monthly"
         const currency = searchParams.get("currency") || "USD"
         const subscriptionId = searchParams.get("subscription_id")
-        const status = searchParams.get("status")
+        const status = searchParams.get("status") || "active"
+        const price = searchParams.get("price")
 
-        setDebugInfo(
-          `URL params: ${JSON.stringify(
-            {
-              userId,
-              planId,
-              planName,
-              credits,
-              billingCycle,
-              currency,
-              subscriptionId,
-              status,
-            },
-            null,
-            2,
-          )}`,
-        )
+        // Collect all parameters for debugging
+        const allParams = Object.fromEntries([...searchParams.entries()])
+        setDebugInfo(allParams)
 
-        if (!userId || !planId || !credits) {
+        // Validate required parameters
+        if (!userId || !planId || !totalCredits) {
+          console.error("Missing required parameters:", { userId, planId, totalCredits })
           setError("Missing required payment information. Please contact support.")
           setLoading(false)
           return
         }
 
-        console.log("Processing payment success with params:", { userId, planId, credits, billingCycle, currency })
+        console.log("Processing payment success with params:", {
+          userId,
+          planId,
+          existingCredits,
+          newCredits,
+          totalCredits,
+          billingCycle,
+          currency,
+        })
 
         // Check if the authenticated user matches the userId in the URL
         const {
@@ -59,6 +60,7 @@ export default function PaymentSuccessPage() {
         } = await supabase.auth.getUser()
 
         if (authError) {
+          console.error("Authentication error:", authError)
           setError(`Authentication error: ${authError.message}`)
           setLoading(false)
           return
@@ -71,14 +73,11 @@ export default function PaymentSuccessPage() {
         }
 
         if (user.id !== userId) {
+          console.error("User ID mismatch:", { urlUserId: userId, authUserId: user.id })
           setError("User ID mismatch. Please contact support.")
           setLoading(false)
           return
         }
-
-        // Debug authentication state
-        console.log("Authenticated user:", user)
-        setDebugInfo((prev) => `${prev}\n\nAuthenticated user: ${JSON.stringify(user, null, 2)}`)
 
         // Define subscription data
         const currentDate = new Date()
@@ -91,25 +90,24 @@ export default function PaymentSuccessPage() {
           periodEnd.setMonth(periodEnd.getMonth() + 1)
         }
 
-        // Get price information from URL parameters and ensure they're proper numbers
+        // Get price information from URL parameters
         const monthlyPrice = searchParams.get("monthly_price")
-          ? Number.parseInt(searchParams.get("monthly_price")!, 10) || undefined
+          ? Number.parseFloat(searchParams.get("monthly_price")!)
           : undefined
 
         const annualPrice = searchParams.get("annual_price")
-          ? Number.parseInt(searchParams.get("annual_price")!, 10) || undefined
+          ? Number.parseFloat(searchParams.get("annual_price")!)
           : undefined
 
-        // Convert discount percentage to integer (round to nearest whole number)
         const annualDiscount = searchParams.get("annual_discount")
-          ? Math.round(Number(searchParams.get("annual_discount")))
+          ? Number.parseInt(searchParams.get("annual_discount")!, 10)
           : undefined
 
         const subscriptionData = {
           user_id: user.id,
           plan_id: planId,
-          credits: Number.parseInt(credits),
-          status: status || "active",
+          credits: Number.parseInt(totalCredits, 10),
+          status: status,
           billing_cycle: isAnnual ? "annually" : "monthly",
           subscription_type: isAnnual ? "annual" : "monthly",
           currency: currency,
@@ -120,101 +118,86 @@ export default function PaymentSuccessPage() {
           monthly_price: monthlyPrice,
           annual_price: annualPrice,
           annual_discount_percentage: annualDiscount,
+          price: price ? Number.parseFloat(price) : undefined,
         }
 
-        setDebugInfo((prev) => `${prev}\n\nSubscription data: ${JSON.stringify(subscriptionData, null, 2)}`)
+        console.log("Subscription data:", subscriptionData)
 
-        // Try to create or update the subscription using the API
-        try {
-          const response = await fetch("/api/create-subscription", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              subscriptionData,
-              userId: user.id,
-            }),
-          })
+        // First, check if subscription already exists
+        const { data: existingSubscription, error: subCheckError } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle()
 
-          const responseText = await response.text()
-          setDebugInfo((prev) => `${prev}\n\nAPI response: ${responseText}`)
-
-          if (!response.ok) {
-            try {
-              const errorData = JSON.parse(responseText)
-              throw new Error(errorData.error || "Failed to create subscription")
-            } catch (jsonError) {
-              throw new Error(`API error: ${responseText}`)
-            }
-          }
-
-          // Try to parse the response as JSON
-          try {
-            const responseData = JSON.parse(responseText)
-            setDebugInfo((prev) => `${prev}\n\nAPI response parsed: ${JSON.stringify(responseData, null, 2)}`)
-          } catch (e) {
-            setDebugInfo((prev) => `${prev}\n\nCouldn't parse API response as JSON`)
-          }
-        } catch (apiError) {
-          setDebugInfo(
-            (prev) => `${prev}\n\nAPI error: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
-          )
-          throw apiError
+        if (subCheckError) {
+          console.error("Error checking existing subscription:", subCheckError)
         }
 
-        // Also update onboarding_status to mark it as completed
-        try {
-          // Use the existing API route for this
-          const onboardingResponse = await fetch("/api/update-onboarding", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ user_id: user.id }),
-          })
+        // Update or insert subscription directly with Supabase
+        let subscriptionResult
+        if (existingSubscription) {
+          // Update existing subscription
+          const { data, error: updateError } = await supabase
+            .from("subscriptions")
+            .update(subscriptionData)
+            .eq("user_id", user.id)
+            .select()
+            .single()
 
-          if (!onboardingResponse.ok) {
-            setDebugInfo((prev) => `${prev}\n\nError updating onboarding status via API route`)
-          } else {
-            setDebugInfo((prev) => `${prev}\n\nUpdated onboarding status successfully via API route`)
+          if (updateError) {
+            console.error("Error updating subscription:", updateError)
+            throw new Error(`Failed to update subscription: ${updateError.message}`)
           }
-        } catch (onboardingError) {
-          console.error("Error updating onboarding status:", onboardingError)
-          setDebugInfo(
-            (prev) =>
-              `${prev}\n\nException updating onboarding: ${onboardingError instanceof Error ? onboardingError.message : "Unknown error"}`,
-          )
+
+          subscriptionResult = data
+        } else {
+          // Insert new subscription
+          const { data, error: insertError } = await supabase
+            .from("subscriptions")
+            .insert(subscriptionData)
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error("Error creating subscription:", insertError)
+            throw new Error(`Failed to create subscription: ${insertError.message}`)
+          }
+
+          subscriptionResult = data
         }
 
-        // Record the payment success
-        try {
-          // Use the existing API route for this
-          const paymentRecordResponse = await fetch("/api/record-payment", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              user_id: user.id,
-              plan_id: planId,
-              credits: Number.parseInt(credits),
-              billing_cycle: billingCycle,
-              timestamp: currentDate.toISOString(),
-            }),
-          })
+        console.log("Subscription saved:", subscriptionResult)
 
-          if (!paymentRecordResponse.ok) {
-            setDebugInfo((prev) => `${prev}\n\nError recording payment success via API route`)
-          } else {
-            setDebugInfo((prev) => `${prev}\n\nRecorded payment success via API route`)
-          }
-        } catch (paymentRecordError) {
-          console.error("Error recording payment success:", paymentRecordError)
-          setDebugInfo(
-            (prev) =>
-              `${prev}\n\nException recording payment: ${paymentRecordError instanceof Error ? paymentRecordError.message : "Unknown error"}`,
-          )
+        // Update onboarding status
+        const { error: onboardingError } = await supabase
+          .from("userssignuped")
+          .update({
+            onboarding_completed: true,
+            website_onboarding_completed: true,
+          })
+          .eq("user_id", user.id)
+
+        if (onboardingError) {
+          console.warn("Error updating onboarding status:", onboardingError)
+        }
+
+        // Record payment in payment_history
+        const paymentData = {
+          user_id: user.id,
+          plan_id: planId,
+          amount: price ? Number.parseFloat(price) : null,
+          currency: currency,
+          credits: Number.parseInt(newCredits || totalCredits, 10),
+          billing_cycle: billingCycle,
+          payment_date: currentDate.toISOString(),
+          payment_status: "completed",
+        }
+
+        const { error: paymentError } = await supabase.from("payment_history").insert(paymentData)
+
+        if (paymentError) {
+          console.warn("Error recording payment:", paymentError)
         }
 
         setSuccess(true)
@@ -222,9 +205,7 @@ export default function PaymentSuccessPage() {
 
         // Redirect to dashboard after 3 seconds
         setTimeout(() => {
-          router.push(
-            `/dashboard?user_id=${user.id}&plan=${planId}&credits=${credits}&billing_cycle=${billingCycle}&currency=${currency}`,
-          )
+          router.push("/dashboard")
         }, 3000)
       } catch (err) {
         console.error("Payment processing error:", err)
@@ -233,7 +214,6 @@ export default function PaymentSuccessPage() {
         } else {
           setError("An unknown error occurred while processing your payment.")
         }
-        setDebugInfo((prev) => `${prev}\n\nFinal error: ${err instanceof Error ? err.message : JSON.stringify(err)}`)
         setLoading(false)
       }
     }
@@ -242,17 +222,20 @@ export default function PaymentSuccessPage() {
   }, [router, searchParams, supabase])
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-lg border border-gray-200 shadow-xl p-8 max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 max-w-md w-full">
         {loading ? (
           <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 text-[#294fd6] animate-spin mb-4" />
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 border-t-4 border-[#294df6] rounded-full animate-spin"></div>
+              <div className="absolute inset-0 border-t-4 border-[#7733ee] rounded-full animate-spin-slow opacity-70"></div>
+            </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Your Payment</h1>
             <p className="text-gray-600 text-center">Please wait while we confirm your subscription details...</p>
           </div>
         ) : success ? (
           <div className="flex flex-col items-center">
-            <div className="bg-green-50 ring-2 ring-green-200 p-3 rounded-full mb-4">
+            <div className="bg-green-50 p-4 rounded-full mb-4">
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
@@ -260,40 +243,58 @@ export default function PaymentSuccessPage() {
               Your subscription has been activated successfully. You will be redirected to your dashboard in a moment.
             </p>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-              <div className="bg-[#294fd6] h-2 animate-progress"></div>
+              <div className="bg-gradient-to-r from-[#294df6] to-[#7733ee] h-2 animate-progress"></div>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <div className="bg-red-50 ring-2 ring-red-200 p-3 rounded-full mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+            <div className="bg-red-50 p-4 rounded-full mb-4">
+              <AlertCircle className="h-12 w-12 text-red-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Error</h1>
             <p className="text-red-600 text-center mb-6">{error}</p>
-            <button
-              onClick={() => router.push("/upgrade")}
-              className="bg-[#294fd6] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#294fd6]/80 transition-colors shadow-md hover:shadow-lg"
-            >
-              Try Again
-            </button>
+            <div className="space-y-3 w-full">
+              <button
+                onClick={() => router.push("/account")}
+                className="w-full bg-gradient-to-r from-[#294df6] to-[#3a5bff] text-white px-6 py-3 rounded-lg font-medium hover:from-[#1a3ca8] hover:to-[#2a4ac8] transition-colors"
+              >
+                Return to Account
+              </button>
+              <Link
+                href="/contact"
+                className="block w-full text-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Contact Support
+              </Link>
+            </div>
+
+            {/* Debug information for development - remove in production */}
+            {process.env.NODE_ENV === "development" && debugInfo && (
+              <div className="mt-8 p-4 bg-gray-100 rounded-lg w-full">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Debug Information:</h3>
+                <pre className="text-xs text-gray-600 overflow-auto max-h-40">{JSON.stringify(debugInfo, null, 2)}</pre>
+              </div>
+            )}
           </div>
         )}
-
-       
       </div>
+
+      <style jsx global>{`
+        @keyframes progress {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        @keyframes spin-slow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(-360deg); }
+        }
+        .animate-progress {
+          animation: progress 3s linear forwards;
+        }
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }
+      `}</style>
     </div>
   )
 }

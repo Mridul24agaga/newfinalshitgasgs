@@ -16,6 +16,12 @@ type BlogPost = {
   url?: string
 }
 
+export type TableOfContentsItem = {
+  level: number
+  text: string
+  id: string
+}
+
 // Function to generate external links from search results and research
 async function generateExternalLinks(
   searchResults: any[],

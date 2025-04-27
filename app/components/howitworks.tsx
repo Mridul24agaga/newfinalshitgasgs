@@ -16,7 +16,6 @@ export default function Home() {
           <div className="md:w-1/2">
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               How we <span className="text-[#294fd6]">make magic</span> happen
-           
             </h1>
           </div>
 
@@ -40,12 +39,12 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Card 1: Keyword Research */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 relative rounded-lg overflow-hidden bg-white flex items-center justify-center">
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src="/keyword.png"
+                src="/keyword1.jpeg"
                 alt="AI-powered keyword research and analysis"
-                width={250}
-                height={180}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-contain"
                 style={{ maxWidth: "100%", maxHeight: "100%" }}
               />
@@ -59,14 +58,14 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Card 2: Content Creation & Structuring (Combined) */}
+          {/* Card 2: Content Creation & Structuring */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 relative rounded-lg overflow-hidden bg-white flex items-center justify-center">
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src="/optimize.png"
+                src="/unlock2.jpeg"
                 alt="SEO-optimized content creation process"
-                width={250}
-                height={180}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-contain"
                 style={{ maxWidth: "100%", maxHeight: "100%" }}
               />
@@ -82,8 +81,15 @@ export default function Home() {
 
           {/* Card 3: Auto-Publishing */}
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="h-48 mb-6 relative rounded-lg overflow-hidden">
-              <Image src="/api.png" alt="Automatic blog publishing system" fill className="object-cover" />
+            <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
+              <Image
+                src="/seo3.jpeg"
+                alt="Automatic blog publishing system"
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-contain"
+                style={{ maxWidth: "100%", maxHeight: "100%" }}
+              />
             </div>
 
             <h3 className="text-2xl font-bold mb-3">Auto-Publish to Your Blog</h3>

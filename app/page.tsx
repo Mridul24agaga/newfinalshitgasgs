@@ -77,9 +77,8 @@ export default function Page() {
       {/* Hero Section */}
       <Hero />
       <WhyBloggingSection />
-      <Howthisisworking />
+      <FeaturesSection/>
       <HowItWorks />
-      <FeaturesSection />
       <TrustedBySection />
       <BlogArticles />
 

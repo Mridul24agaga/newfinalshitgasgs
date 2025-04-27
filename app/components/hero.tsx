@@ -11,9 +11,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const [timeLeft, setTimeLeft] = useState({
-    hours: 3,
-    minutes: 49,
-    seconds: 32,
+    days: 7,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
   })
 
   useEffect(() => {
@@ -25,21 +26,25 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        const newSeconds = prev.seconds - 1
-        if (newSeconds >= 0) return { ...prev, seconds: newSeconds }
+    // Set end date to 7 days from now
+    const endDate = new Date()
+    endDate.setDate(endDate.getDate() + 7)
 
-        const newMinutes = prev.minutes - 1
-        if (newMinutes >= 0) return { ...prev, minutes: newMinutes, seconds: 59 }
+    const calculateTimeLeft = () => {
+      const difference = endDate.getTime() - new Date().getTime()
 
-        const newHours = prev.hours - 1
-        if (newHours >= 0) return { hours: newHours, minutes: 59, seconds: 59 }
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        })
+      }
+    }
 
-        clearInterval(timer)
-        return { hours: 0, minutes: 0, seconds: 0 }
-      })
-    }, 1000)
+    calculateTimeLeft()
+    const timer = setInterval(calculateTimeLeft, 1000)
 
     return () => clearInterval(timer)
   }, [])
@@ -73,13 +78,44 @@ export default function Home() {
           </div>
         </div>
       )}
-      {/* Promotion Banner */}
-      <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
-        <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
-          <span className="mr-2">🚀</span>
-          Launch Offer: 57% OFF on All Plans 
-        </span>
-        
+
+      {/* Enhanced Promotion Banner - PC Only for Countdown and Button */}
+      <div className="bg-gradient-to-r from-[#294df6] to-[#3a5bff] text-white py-3 px-4 lg:px-8">
+        <div className="container mx-auto flex items-center justify-center gap-3 lg:gap-8">
+          <span className="font-medium flex items-center text-sm lg:text-base">
+            <span className="mr-2 lg:mr-3 text-base lg:text-xl">🚀</span>
+            Launch Offer: <span className="font-bold mx-1">57% OFF</span> on All Plans
+          </span>
+
+          <div className="hidden lg:flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-1.5">
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold">{timeLeft.days}</span>
+              <span className="text-xs uppercase tracking-wide">Days</span>
+            </div>
+            <span className="text-xl font-light">:</span>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
+              <span className="text-xs uppercase tracking-wide">Hours</span>
+            </div>
+            <span className="text-xl font-light">:</span>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
+              <span className="text-xs uppercase tracking-wide">Mins</span>
+            </div>
+            <span className="text-xl font-light">:</span>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
+              <span className="text-xs uppercase tracking-wide">Secs</span>
+            </div>
+          </div>
+
+          <Link
+            href="/get-started"
+            className="hidden lg:block bg-white text-[#294df6] px-6 py-2 rounded-md font-semibold hover:bg-opacity-90 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          >
+            Get Started
+          </Link>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -117,7 +153,7 @@ export default function Home() {
                 Home
               </Link>
             </div>
-            
+
             <div className="relative group">
               <Link href="#examples" className="flex items-center text-gray-700 font-medium text-sm">
                 Examples
@@ -153,7 +189,7 @@ export default function Home() {
               <Link href="/" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
                 Home
               </Link>
-             
+
               <Link href="#features" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
                 Features
               </Link>
@@ -344,8 +380,6 @@ export default function Home() {
               ></div>
             </div>
           </div>
-
-         
         </div>
       </main>
     </div>

@@ -9,6 +9,9 @@ import { Home, FileText, Globe, Sparkles, Star, Menu, X, ChevronDown, ChevronRig
 import { CreditCard } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cn } from "@/lib/utils"
+import { Settings } from "lucide-react"
+import { Users } from "lucide-react"
+
 
 interface AppSidebarProps {
   user?: any
@@ -24,7 +27,7 @@ const navigationGroups = [
   {
     label: "Content Tools",
     items: [
-      { name: "Blog Generator", href: "/blog-generator", icon: FileText },
+      { name: "Blog Generator", href: "/dashboard/blog-generator", icon: FileText },
       { name: "Headline to Blog", href: "/headlinetoblog", icon: Sparkles },
       { name: "Headline Generator", href: "/generateheadlinesfromwebsite", icon: FileText },
     ],
@@ -37,7 +40,9 @@ const navigationGroups = [
     label: "Settings",
     items: [
       { name: "Integration", href: "/api-key", icon: Star },
-      { name: "Billing", href: "/billing", icon: CreditCard }
+      { name: "Manage Your Account", href: "/account", icon: Users },
+      { name: "Website Settings", href: "/dashboard/settings", icon: Settings }
+
 
     ],
     

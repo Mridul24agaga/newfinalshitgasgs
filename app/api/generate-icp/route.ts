@@ -58,17 +58,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Summary parameter is required" }, { status: 400 })
     }
 
-    // Generate ICP using Azure OpenAI based on the website summary
-    const icp = await generateICPWithAzureOpenAI(url, summary)
+    try {
+      // Generate ICP using Azure OpenAI based on the website summary
+      const icp = await generateICPWithAzureOpenAI(url, summary)
 
-    return NextResponse.json({
-      url,
-      icp,
-      message: "Ideal Customer Profile generated successfully",
-    })
+      return NextResponse.json({
+        url,
+        icp,
+        message: "Ideal Customer Profile generated successfully",
+      })
+    } catch (error: any) {
+      console.error("Error in ICP generation:", error.message)
+      // Ensure we always return a valid JSON response
+      return NextResponse.json(
+        {
+          error: "Failed to generate ICP",
+          details: error.message || "Unknown error in ICP generation",
+        },
+        { status: 500 },
+      )
+    }
   } catch (error: any) {
-    console.error("Error generating ICP:", error.message)
-    return NextResponse.json({ error: "Failed to generate ICP", details: error.message }, { status: 500 })
+    console.error("Error in API route:", error.message)
+    // Ensure we always return a valid JSON response even for unexpected errors
+    return NextResponse.json(
+      {
+        error: "API error",
+        details: error.message || "Unknown error in API route",
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -107,23 +126,49 @@ async function generateICPWithAzureOpenAI(url: string, summary: string): Promise
     }
     
     Ensure your analysis is specific, data-driven, and actionable. Base your analysis solely on the website summary provided.
+    
+    IMPORTANT: Your response must be valid JSON only, with no additional text before or after the JSON.
   `
 
-  // Call Azure OpenAI to generate the ICP
-  const response = await callAzureOpenAI(prompt, 1500)
-
-  // Find JSON in the response (in case there's additional text)
-  const jsonMatch = response.match(/\{[\s\S]*\}/)
-
-  if (!jsonMatch) {
-    throw new Error("Failed to parse ICP data from OpenAI response")
-  }
-
   try {
-    const icpData = JSON.parse(jsonMatch[0]) as ICP
-    return icpData
-  } catch (error) {
-    throw new Error("Failed to parse JSON from OpenAI response")
+    // Call Azure OpenAI to generate the ICP
+    const response = await callAzureOpenAI(prompt, 1500)
+
+    // Find JSON in the response (in case there's additional text)
+    const jsonMatch = response.match(/\{[\s\S]*\}/)
+
+    if (!jsonMatch) {
+      throw new Error("Failed to parse ICP data from OpenAI response")
+    }
+
+    try {
+      // Provide a fallback ICP in case parsing fails
+      const icpData = JSON.parse(jsonMatch[0]) as ICP
+
+      // Validate the ICP data to ensure it has the required fields
+      if (!icpData.industries || !Array.isArray(icpData.industries)) {
+        throw new Error("Invalid ICP data: missing or invalid industries field")
+      }
+
+      return icpData
+    } catch (error: any) {
+      console.error("JSON parse error:", error.message, "Response:", response)
+
+      // Provide a fallback ICP in case parsing fails
+      return {
+        industries: ["Technology", "Software"],
+        companySize: "Small to medium businesses (10-500 employees)",
+        jobTitles: ["CEO", "CTO", "Marketing Director"],
+        painPoints: ["Difficulty reaching target audience", "Inefficient processes"],
+        goals: ["Increase revenue", "Improve efficiency"],
+        budget: "Mid-range budget ($10,000 - $50,000)",
+        technographics: ["Cloud services", "CRM software"],
+        geographics: ["North America", "Europe"],
+        buyingProcess: "Committee-based decision making with 2-3 month sales cycle",
+      }
+    }
+  } catch (error: any) {
+    console.error("Error in generateICPWithAzureOpenAI:", error.message)
+    throw new Error(`Failed to generate ICP: ${error.message}`)
   }
 }
-

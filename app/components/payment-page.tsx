@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { Check } from "lucide-react"
 
 // Use the test mode URL for Dodo Payments
-const DODO_URL = "https://checkout.dodopayments.com/buy"
+const DODO_URL = "https://test.checkout.dodopayments.com/buy"
 
 interface Plan {
   id: string
@@ -27,6 +26,7 @@ interface Plan {
   isBestValue?: boolean
   annualDiscountPercentage?: number
   showOnAnnual?: boolean
+  tier?: 1 | 2 // To control which row the plan appears in
 }
 
 const plans: Plan[] = [
@@ -45,11 +45,12 @@ const plans: Plan[] = [
       annually: "pdt_z3XRRMgR6dGV5Z66ElFhm",
     },
     features: ["2 professionally crafted articles", "Basic keyword research", "Standard email support"],
+    tier: 1,
   },
   {
     id: "starter",
     name: "Starter",
-    description: "Ideal for individuals and startups aiming to boost visibility and online presence",
+    description: "Ideal for individuals and startups aiming to boost visibility",
     priceUSD: {
       monthly: 25,
       annually: 21,
@@ -66,6 +67,7 @@ const plans: Plan[] = [
       "Standard keyword research",
       "Standard email & chat support",
     ],
+    tier: 1,
   },
   {
     id: "growth",
@@ -78,7 +80,7 @@ const plans: Plan[] = [
     },
     credits: 30,
     dodoProductId: {
-      monthly: "pdt_P2vmzA58J1kOlgHBKlGNN",
+      monthly: "pdt_aKk7uYTudrZ8lzrpba34K",
       annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5", // Replace with actual annual product ID
     },
     discount: "SAVE 57% WITH ANNUAL BILLING",
@@ -90,6 +92,7 @@ const plans: Plan[] = [
       "Advanced keyword research for enhanced visibility",
       "Priority support & unlimited support calls",
     ],
+    tier: 1,
   },
   {
     id: "professional",
@@ -114,6 +117,7 @@ const plans: Plan[] = [
       "Dedicated account manager for personalized strategies",
       "Unlimited priority support",
     ],
+    tier: 2,
   },
   {
     id: "enterprise",
@@ -138,6 +142,7 @@ const plans: Plan[] = [
       "Dedicated account team for strategic guidance",
       "24/7 priority support for ultimate reliability and service",
     ],
+    tier: 2,
   },
 ]
 
@@ -147,6 +152,9 @@ export default function PaymentPage() {
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("monthly")
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [sliderValue, setSliderValue] = useState(2) // Default to Growth plan (index 2)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const tooltipRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -167,7 +175,7 @@ export default function PaymentPage() {
 
         if (!user) {
           setDebugInfo("No authenticated user found.")
-          setError("You must be logged in to purchase a subscription.")
+          // Don't set error message for unauthenticated users
           return
         }
 
@@ -218,27 +226,31 @@ export default function PaymentPage() {
 
         if (subscription) {
           setDebugInfo(`Subscription found: ${JSON.stringify(subscription)}`)
-          // IMPORTANT: Don't redirect to dashboard here, just show a message
-          setError(
-            `You already have an active ${subscription.plan_id} subscription. You can manage it from your dashboard.`,
-          )
+          // Don't set error message for existing subscriptions
         } else {
           setDebugInfo("No active subscription found.")
         }
       } catch (err) {
         console.error("Error checking subscription:", err)
-        if (err instanceof Error) {
-          setError(`Failed to check subscription status: ${err.message}`)
-          setDebugInfo(`Error details: ${JSON.stringify(err)}`)
-        } else {
-          setError("An unknown error occurred while checking subscription status.")
-          setDebugInfo(`Unknown error: ${JSON.stringify(err)}`)
-        }
+        // Don't set error messages for any errors
       }
     }
 
     checkSubscription()
   }, [router, supabase])
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowTooltip(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   const handleSubscribe = async (plan: Plan) => {
     setLoading(true)
@@ -340,139 +352,254 @@ export default function PaymentPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return `${amount}`
-  }
-
-  const getPriceDisplay = (plan: Plan) => {
-    if (billingCycle === "monthly") {
-      return formatCurrency(plan.priceUSD.monthly)
-    } else {
-      return formatCurrency(plan.priceUSD.annually)
-    }
-  }
-
-  const getYearlyTotal = (plan: Plan) => {
-    return formatCurrency(plan.priceUSD.yearlyTotal)
-  }
-
   // Filter plans based on billing cycle
-  const filteredPlans = billingCycle === "annually" ? plans.filter((plan) => plan.showOnAnnual) : plans
+  const getFilteredPlans = () => {
+    // When in annual mode, only show Growth and Professional plans
+    if (billingCycle === "annually") {
+      return plans.filter((plan) => plan.id === "growth" || plan.id === "professional")
+    }
+    // In monthly mode, show all plans
+    return plans
+  }
+
+  const filteredPlans = getFilteredPlans()
+  const currentPlan = filteredPlans[Math.min(sliderValue, filteredPlans.length - 1)]
+
+  // Fixed features list for the right side
+  const features = [
+    'Effortless Onboarding: Simply enter your URL and click "Go"—we handle the rest.',
+    "Automated SEO Research: Comprehensive analysis of your site, audience, and strategic keywords.",
+    "Weekly Content Production: Automated planning and regular article publishing tailored for SEO success.",
+    "Article Management: Easy approval or moderation options and automated internal linking to boost your site's SEO.",
+    "Rich Media Content: Articles up to 4000 words, enhanced with AI-generated images, YouTube embeds, Google Image insertions, tables, and lists.",
+    "Accuracy Guaranteed: Advanced anti-hallucination system with rigorous fact-checking and source citations.",
+    "Optimized for SEO: Fully keyword-targeted and SEO-optimized content.",
+    "Seamless Integrations: Effortlessly connect with WordPress, Webflow, Shopify, and more.",
+  ]
 
   return (
-    <div className="w-full mx-auto px-6 py-12 bg-white min-h-screen">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900">We've got a plan that's perfect for you.</h1>
-      </div>
-
-      {/* Billing Toggle */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-12">
-        <div className="inline-flex rounded-full bg-gray-100 p-1.5 shadow-sm">
-          <button
-            onClick={() => setBillingCycle("monthly")}
-            className={`px-6 py-2.5 rounded-full font-medium transition-all ${
-              billingCycle === "monthly" ? "bg-[#294fd6] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingCycle("annually")}
-            className={`px-6 py-2.5 rounded-full font-medium transition-all ${
-              billingCycle === "annually" ? "bg-[#294fd6] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Annually
-          </button>
-          {billingCycle === "annually" && (
-            <span className="ml-2 bg-blue-50 text-[#294fd6] text-xs font-medium px-2 py-1 rounded-full self-center">
-              SAVE UP TO 57%
-            </span>
-          )}
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+            Simple, transparent pricing
+          </h1>
+          <p className="mt-5 max-w-xl mx-auto text-xl text-gray-500">Choose the perfect plan for your content needs</p>
         </div>
-      </div>
 
-      {/* Pricing Cards */}
-      <div className="max-w-[1400px] mx-auto px-4">
-        <div
-          className={`grid grid-cols-1 ${
-            billingCycle === "annually"
-              ? "md:grid-cols-2 max-w-[700px] mx-auto gap-6"
-              : "md:grid-cols-3 lg:grid-cols-5 gap-6"
-          }`}
-        >
-          {filteredPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`border border-gray-200 rounded-md overflow-hidden ${plan.isBestValue ? "relative" : ""}`}
-            >
-              {plan.isBestValue && (
-                <div className="bg-[#294fd6] text-white text-center py-1 font-medium text-sm">BEST VALUE</div>
-              )}
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          {/* Left side - Pricing with slider */}
+          <div className="bg-white rounded-2xl p-8 lg:sticky lg:top-8 transition-all duration-300 transform hover:scale-[1.02]">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">{currentPlan.name} Plan</h2>
 
-              <div className={`p-6 ${plan.isBestValue ? "" : "pt-7"}`}>
-                <div className="text-center">
-                  <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
-                  <p className="text-gray-600 text-sm mb-4 h-10">{plan.description}</p>
-                </div>
-
-                {billingCycle === "annually" && (
-                  <div className="bg-blue-50 rounded-md py-1.5 px-2 mb-4 flex items-center justify-center">
-                    <Check className="h-4 w-4 text-[#294fd6] mr-1.5" />
-                    <span className="text-[#294fd6] text-xs font-medium">
-                      SAVE {plan.annualDiscountPercentage}% ANNUALLY
-                    </span>
-                  </div>
-                )}
-
-                <div className="text-center mb-1">
-                  <div className="flex items-center justify-center">
-                    <span className="text-3xl font-bold">$</span>
-                    <span className="text-4xl font-bold">{getPriceDisplay(plan)}</span>
-                  </div>
-                  <div className="text-gray-500 text-sm">/month</div>
-                </div>
-
-                {billingCycle === "annually" && (
-                  <div className="text-center mb-4 text-sm text-gray-600">
-                    ${getYearlyTotal(plan)} billed yearly ({plan.annualDiscountPercentage}% off)
-                  </div>
-                )}
-
-                <div className="bg-blue-50 rounded-md py-2 px-2 mb-4 text-center">
-                  <span className="text-[#294fd6] font-medium">{plan.credits} credits/month</span>
-                </div>
-
-                <button
-                  className={`w-full py-2.5 rounded-md font-medium mb-6 transition-all ${
-                    plan.isBestValue
-                      ? "bg-[#294fd6] text-white hover:bg-[#1e3eb8]"
-                      : "border border-[#294fd6] text-[#294fd6] hover:bg-blue-50"
-                  }`}
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={loading && selectedPlan === plan.id}
+              {/* Custom toggle switch */}
+              <div className="flex items-center space-x-2">
+                <label
+                  htmlFor="billing-toggle"
+                  className={`cursor-pointer ${billingCycle === "monthly" ? "font-bold" : ""}`}
                 >
-                  {loading && selectedPlan === plan.id
-                    ? "Processing..."
-                    : plan.id === "trial"
-                      ? "Start Your Trial"
-                      : `Choose ${plan.name}`}
-                </button>
+                  Monthly
+                </label>
+                <div className="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
+                  <input
+                    type="checkbox"
+                    id="billing-toggle"
+                    className="absolute w-0 h-0 opacity-0"
+                    checked={billingCycle === "annually"}
+                    onChange={(e) => setBillingCycle(e.target.checked ? "annually" : "monthly")}
+                  />
+                  <label
+                    htmlFor="billing-toggle"
+                    className={`block h-6 overflow-hidden rounded-full cursor-pointer ${
+                      billingCycle === "annually" ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`block h-6 w-6 rounded-full bg-white shadow transform transition-transform duration-200 ${
+                        billingCycle === "annually" ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    />
+                  </label>
+                </div>
+                <label
+                  htmlFor="billing-toggle"
+                  className={`cursor-pointer ${billingCycle === "annually" ? "font-bold" : ""}`}
+                >
+                  Annually
+                </label>
+              </div>
+            </div>
 
-                <div>
-                  <p className="font-medium mb-3">Includes:</p>
-                  <ul className="space-y-2.5">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <Check className="h-4 w-4 text-[#294fd6] mr-2 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+            <div className="mb-4">
+              <p className="text-gray-500">{currentPlan.description}</p>
+            </div>
+
+            <div className="flex items-baseline mb-8">
+              <span className="text-5xl font-extrabold text-gray-900">
+                ${billingCycle === "annually" ? currentPlan.priceUSD.annually : currentPlan.priceUSD.monthly}
+              </span>
+              <span className="ml-2 text-xl text-gray-500">/month</span>
+
+              {currentPlan.discount && billingCycle === "annually" && (
+                <span className="ml-4 px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                  SAVE {currentPlan.annualDiscountPercentage}%
+                </span>
+              )}
+            </div>
+
+            <div className="mb-8">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-500">Basic</span>
+                <span className="text-sm font-medium text-gray-500">Enterprise</span>
+              </div>
+
+              {/* Custom slider */}
+              <div className="relative mb-6">
+                <input
+                  type="range"
+                  min="0"
+                  max={filteredPlans.length - 1}
+                  step="1"
+                  value={sliderValue}
+                  onChange={(e) => setSliderValue(Number.parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
+                      (sliderValue / (filteredPlans.length - 1)) * 100
+                    }%, #e5e7eb ${(sliderValue / (filteredPlans.length - 1)) * 100}%, #e5e7eb 100%)`,
+                  }}
+                />
+                <style jsx>{`
+                  input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: #2563eb;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                  }
+                  input[type="range"]::-moz-range-thumb {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: #2563eb;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                  }
+                `}</style>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {currentPlan.credits} articles/month
+                </div>
+
+                {/* Custom tooltip */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    onClick={() => setShowTooltip(!showTooltip)}
+                    aria-label="More info"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                  </button>
+                  {showTooltip && (
+                    <div
+                      ref={tooltipRef}
+                      className="absolute right-0 z-10 w-64 p-2 mt-2 text-sm text-gray-600 bg-white border rounded shadow-lg"
+                    >
+                      Adjust the slider to see different pricing plans. All plans include the full feature set.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          ))}
+
+            <ul className="space-y-3 mb-8">
+              {currentPlan.features.map((feature, index) => (
+                <li key={index} className="flex items-start">
+                  <svg
+                    className="h-5 w-5 text-green-500 flex-shrink-0 mr-2 mt-0.5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span className="text-gray-600">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              className={`w-full py-4 text-lg text-white font-medium rounded-lg transition-colors ${
+                loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+              }`}
+              onClick={() => handleSubscribe(currentPlan)}
+              disabled={loading}
+            >
+              {loading && selectedPlan === currentPlan.id ? "Processing..." : `Get started with ${currentPlan.name}`}
+            </button>
+          </div>
+
+          {/* Right side - Features */}
+          <div className="bg-white rounded-2xl p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Everything you need for SEO success</h2>
+
+            <ul className="space-y-6">
+              {features.map((feature, index) => {
+                const [title, description] = feature.split(": ")
+                return (
+                  <li key={index} className="grid gap-2">
+                    <div className="flex items-start">
+                      <div className="bg-blue-100 p-2 rounded-full mr-4 mt-1">
+                        <svg
+                          className="h-5 w-5 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{title}</h3>
+                        <p className="text-gray-600">{description}</p>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </div>
       </div>
     </div>

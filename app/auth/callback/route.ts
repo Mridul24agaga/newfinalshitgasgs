@@ -1,31 +1,29 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/utitls/supabase/server";
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get("code")
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+
+  // Always redirect to the production site
+  const redirectUrl = "https://getmoreseo.org/onboarding";
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient(); // Add await here
 
     try {
-      await supabase.auth.exchangeCodeForSession(code)
+      // Exchange the code for a session
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-      // After successful authentication, redirect to the dashboard
-      return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
-    } catch (error: unknown) {
-      console.error("Error exchanging code for session:", error)
-      // Redirect to error page with error details
-      let errorMessage = "An unknown error occurred"
-      if (error instanceof Error) {
-        errorMessage = error.message
+      if (!error) {
+        // Successful verification, redirect to production site with auth flag
+        return NextResponse.redirect(`${redirectUrl}?verified=true`);
       }
-      return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=${encodeURIComponent(errorMessage)}`)
+    } catch (err) {
+      console.error("Auth callback error:", err);
     }
   }
 
-  // If there's no code, redirect to the login page
-  return NextResponse.redirect(`${requestUrl.origin}/login?error=No_auth_code`)
+  // If there's an error or no code, redirect to error page on production site
+  return NextResponse.redirect(`https://getmoreseo.org/signup?error=verification_failed`);
 }
-

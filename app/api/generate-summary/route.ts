@@ -19,7 +19,7 @@ async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<strin
       messages: [{ role: "user", content: prompt }],
       model: "gpt-4o-mini",
       max_tokens: maxTokens,
-      temperature: 0.9,
+      temperature: 0.7,
       n: 1,
     })
 
@@ -28,7 +28,7 @@ async function callAzureOpenAI(prompt: string, maxTokens: number): Promise<strin
     return result
   } catch (error: any) {
     console.error("Error calling Azure OpenAI:", error.message)
-    return `Fallback: Couldn't generate this part due to ${error.message}. Let's roll with what we've got!`
+    return `Unable to generate analysis due to ${error.message}. Please try again later.`
   }
 }
 
@@ -93,54 +93,49 @@ async function scrapeWebsite(url: string): Promise<string> {
   }
 }
 
-// Function to create ultra-natural, casual summaries that don't sound AI-generated
-async function createUltraNaturalSummary(content: string, url: string): Promise<string> {
+// Function to create professional website summaries
+async function createProfessionalSummary(content: string, url: string): Promise<string> {
   try {
-    console.log("Creating ultra-natural summary...")
+    console.log("Creating professional summary...")
 
-    const naturalPrompt = `
-      I need you to write a SUPER casual, completely natural summary of this website that sounds like a real person just texting their friend about it. 
+    const professionalPrompt = `
+      Create a professional, comprehensive summary of this website that would be valuable for business analysis.
       
-      IMPORTANT: This should NOT sound like an AI wrote it AT ALL. It should sound like a real human who just checked out the website and is sharing their thoughts.
-      
-      Make it:
-      - Use casual language, slang, and the occasional typo (but not too many)
-      - Include personal reactions and opinions
-      - Have some sentence fragments and run-ons (like real people write)
-      - Use contractions, abbreviations, and casual punctuation
-      - Include filler words occasionally (like, you know, actually, basically)
-      - Add personality quirks (excitement, skepticism, humor)
-      - Mention 1-2 specific things from the website that caught your attention
-      - Keep paragraphs short and conversational
-      - Avoid ANY formal language or perfect grammar
-      - NEVER use phrases that sound like marketing copy
+      Guidelines:
+      - Use professional, polished language
+      - Maintain an objective, analytical tone
+      - Structure the summary in clear, well-organized paragraphs
+      - Focus on factual observations rather than opinions
+      - Highlight the business purpose, target audience, and key offerings
+      - Include insights about the website's positioning and value proposition
+      - Identify the industry sector and market positioning
+      - Keep the analysis concise yet thorough (4-5 paragraphs maximum)
       
       The summary should cover:
-      - What the website is about (in casual terms)
-      - What they offer or do
-      - Who it seems to be for
-      - Your honest impression of it
+      - Primary business purpose and core offerings
+      - Target audience and customer segments
+      - Key value propositions and differentiators
+      - Industry context and market positioning
+      - Overall professional assessment of the website's effectiveness
       
       Website URL: ${url}
       Website Content:
       ${content.slice(0, 8000)}
-      
-      Remember: This should read like a text message or casual email from a friend, NOT like a professional review or AI-generated content.
     `
 
-    const naturalSummary = await callAzureOpenAI(naturalPrompt, 1200)
-    console.log("Ultra-natural summary created")
+    const professionalSummary = await callAzureOpenAI(professionalPrompt, 1200)
+    console.log("Professional summary created")
 
-    return naturalSummary
+    return professionalSummary
   } catch (error: any) {
-    console.error("Error creating ultra-natural summary:", error.message)
+    console.error("Error creating professional summary:", error.message)
 
-    // Fallback to a simple summary if the process fails
-    const fallbackPrompt = `Summarize this website content in a very casual, conversational way: ${content.slice(0, 1000)}`
+    // Fallback to a simpler summary if the process fails
+    const fallbackPrompt = `Provide a concise, professional summary of this website content: ${content.slice(0, 1000)}`
     try {
       return await callAzureOpenAI(fallbackPrompt, 800)
     } catch {
-      return `So I checked out this website (${url}) and it seems to be about ${content.slice(0, 100)}... [couldn't get more details right now]`
+      return `We were unable to complete a full analysis of ${url} at this time. Please try again later.`
     }
   }
 }
@@ -185,30 +180,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // If we still don't have good content, generate a casual error message
+    // If we still don't have good content, generate a professional error message
     if (websiteContent.length < 100 || websiteContent.startsWith("Failed to scrape content")) {
-      const summary = `Hey, so I tried to check out that site (${validatedUrl}) but couldn't really get in. Could be a few things:
+      const summary = `We were unable to access the website at ${validatedUrl} for analysis. This could be due to:
 
-Maybe the site blocks bots (happens a lot these days)
-Might need a login to see the good stuff
-Could be down right now
-Or maybe the URL got typed wrong?
+1. Access restrictions or security measures on the website
+2. Authentication requirements
+3. Temporary website unavailability
+4. URL configuration issues
 
-If you still want me to take a look, maybe try:
-- A different URL
-- Copy/paste some of the content directly
-- Just tell me what the site is about and I can work with that!`
+Recommendations:
+- Verify the URL is correct and publicly accessible
+- Ensure the website doesn't require login credentials
+- Try again at a later time
+- Consider providing alternative website information for analysis`
 
       return NextResponse.json({ summary })
     }
 
-    // Create an ultra-natural, casual summary that doesn't sound AI-generated
-    const ultraNaturalSummary = await createUltraNaturalSummary(websiteContent, validatedUrl)
+    // Create a professional summary
+    const professionalSummary = await createProfessionalSummary(websiteContent, validatedUrl)
 
-    return NextResponse.json({ summary: ultraNaturalSummary })
+    return NextResponse.json({ summary: professionalSummary })
   } catch (error: any) {
     console.error("Error in generate-summary API route:", error.message)
     return NextResponse.json({ error: "Failed to generate summary", details: error.message }, { status: 500 })
   }
 }
-

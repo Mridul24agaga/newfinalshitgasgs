@@ -17,6 +17,7 @@ import {
   CreditCard,
   Settings,
   Clock,
+  AlertTriangle,
 } from "lucide-react"
 import { AppSidebar } from "../components/sidebar"
 import { createClient } from "@/utitls/supabase/client"
@@ -61,6 +62,13 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   const stepRef = useRef<NodeJS.Timeout | null>(null)
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true)
   const [nextCreditAdditionDate, setNextCreditAdditionDate] = useState<string | null>(null)
+  const [dailyGeneratedCount, setDailyGeneratedCount] = useState(0)
+  const [nextGenerationTime, setNextGenerationTime] = useState<Date | null>(null)
+  const [dailyLimitReached, setDailyLimitReached] = useState(false)
+  const [showLowCreditsModal, setShowLowCreditsModal] = useState(false)
+
+  // Credit threshold for showing the low credits popup
+  const LOW_CREDITS_THRESHOLD = 5
 
   const steps = [
     { icon: <Search className="w-4 h-4" />, text: "Extracting website content" },
@@ -89,6 +97,89 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     },
   ]
 
+  // Load daily generation data from localStorage
+  useEffect(() => {
+    const storedCount = localStorage.getItem("dailyGeneratedCount")
+    const storedNextGenTime = localStorage.getItem("nextGenerationTime")
+
+    if (storedCount) {
+      setDailyGeneratedCount(Number.parseInt(storedCount))
+    }
+
+    if (storedNextGenTime) {
+      const nextGenDate = new Date(storedNextGenTime)
+      setNextGenerationTime(nextGenDate)
+
+      // Check if we're still within the limit period
+      const now = new Date()
+      if (nextGenDate > now) {
+        setDailyLimitReached(true)
+      } else {
+        // Reset if the time has passed
+        setDailyGeneratedCount(0)
+        setNextGenerationTime(null)
+        setDailyLimitReached(false)
+        localStorage.removeItem("dailyGeneratedCount")
+        localStorage.removeItem("nextGenerationTime")
+      }
+    }
+  }, [])
+
+  // Check if credits are low and show popup if needed
+  useEffect(() => {
+    // Only show the popup if:
+    // 1. Credits are below threshold
+    // 2. User is not already on a loading state
+    // 3. We have a subscription (meaning we've loaded user data)
+    // 4. We haven't shown the popup recently (check localStorage)
+    if (
+      userCredits <= LOW_CREDITS_THRESHOLD &&
+      !loading &&
+      !externalLoading &&
+      subscription &&
+      !isLoadingSubscription
+    ) {
+      // Check if we've shown this popup recently
+      const lastShownTime = localStorage.getItem("lowCreditsPopupLastShown")
+      const now = new Date().getTime()
+
+      // Only show once every 24 hours
+      if (!lastShownTime || now - Number.parseInt(lastShownTime) > 24 * 60 * 60 * 1000) {
+        setShowLowCreditsModal(true)
+        // Record that we've shown the popup
+        localStorage.setItem("lowCreditsPopupLastShown", now.toString())
+      }
+    }
+  }, [userCredits, loading, externalLoading, subscription, isLoadingSubscription])
+
+  // Add this function to update the daily generation count
+  const updateDailyGenerationCount = () => {
+    const newCount = dailyGeneratedCount + bulkQuantity
+    setDailyGeneratedCount(newCount)
+    localStorage.setItem("dailyGeneratedCount", newCount.toString())
+
+    // If this generation will reach or exceed the daily limit, set next generation time
+    if (newCount >= 2) {
+      const nextGenTime = new Date()
+      nextGenTime.setHours(nextGenTime.getHours() + 24) // 24 hours from now
+      setNextGenerationTime(nextGenTime)
+      setDailyLimitReached(true)
+      localStorage.setItem("nextGenerationTime", nextGenTime.toISOString())
+    }
+  }
+
+  // Add this function to format the next generation time
+  const formatNextGenerationTime = () => {
+    if (!nextGenerationTime) return ""
+
+    const now = new Date()
+    const diffMs = nextGenerationTime.getTime() - now.getTime()
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+
+    return `${diffHrs}h ${diffMins}m`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -103,8 +194,17 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
       return
     }
 
+    // Check if this generation would exceed daily limit
+    if (dailyGeneratedCount + bulkQuantity > 2) {
+      alert(`You can only generate 2 articles per day. You have already generated ${dailyGeneratedCount} today.`)
+      return
+    }
+
     setUrlEntered(true)
     setGenerationStarted(true)
+
+    // Update daily generation count
+    updateDailyGenerationCount()
 
     // If external onGenerate is provided, use it
     if (onGenerate) {
@@ -342,6 +442,45 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     fetchUserAndSubscription()
   }, [])
 
+  // Add this useEffect after the other useEffect hooks
+  useEffect(() => {
+    const fetchSavedWebsite = async () => {
+      try {
+        const supabase = createClient()
+        const { data: userData } = await supabase.auth.getUser()
+
+        if (userData?.user) {
+          // Try to get the website from the database
+          const { data, error } = await supabase
+            .from("user_websites")
+            .select("website_url")
+            .eq("user_id", userData.user.id)
+            .single()
+
+          if (data && data.website_url) {
+            setUrl(data.website_url)
+            setUrlEntered(true)
+          } else if (error) {
+            // Fallback to localStorage if database fetch fails
+            const savedUrl = localStorage.getItem("websiteUrl")
+            if (savedUrl) {
+              setUrl(savedUrl)
+              setUrlEntered(true)
+            } else {
+              // If no URL is found, redirect to onboarding
+              alert("Please complete the onboarding process first to set your website URL.")
+              window.location.href = "/onboarding"
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching saved website:", error)
+      }
+    }
+
+    fetchSavedWebsite()
+  }, [])
+
   // Add this useEffect hook after the other useEffect hooks, before the formatTime function
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
@@ -361,6 +500,21 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const handleBulkQuantityChange = (value: number) => {
+    // Don't allow setting quantity that would exceed daily limit
+    const maxAllowed = Math.min(
+      Math.max(1, userCredits), // Max based on credits
+      dailyLimitReached ? 0 : 2 - dailyGeneratedCount, // Max based on daily limit
+    )
+
+    setBulkQuantity(Math.min(value, maxAllowed))
+  }
+
+  // Handle upgrade button click
+  const handleUpgradeClick = () => {
+    window.location.href = "/account"
   }
 
   return (
@@ -444,22 +598,39 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                     <div className="w-full">
                       <label htmlFor="url" className="flex items-center gap-2 text-gray-700 font-medium mb-2 sm:mb-3">
                         <Globe className="w-4 h-4 text-[#294fd6]" />
-                        Website URL
+                        Website URL{" "}
+                        <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Locked</span>
                       </label>
                       <div className="relative w-full">
                         <input
                           type="url"
                           id="url"
                           value={url}
-                          onChange={(e) => setUrl(e.target.value)}
-                          placeholder="https://example.com"
-                          className="w-full p-2 sm:p-3 pl-8 sm:pl-10 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#294fd6] focus:border-transparent transition-all"
-                          disabled={loading || externalLoading}
+                          readOnly
+                          className="w-full p-2 sm:p-3 pl-8 sm:pl-10 border border-gray-200 bg-gray-50 cursor-not-allowed focus:outline-none transition-all"
+                          disabled={true}
                         />
                         <Globe className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
+                        <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full flex items-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3 mr-1"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Locked
+                          </span>
+                        </div>
                       </div>
                       <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-500">
-                        Enter the URL of the website you want to generate a blog from
+                        This URL was set during onboarding and cannot be changed
                       </p>
                     </div>
 
@@ -474,22 +645,27 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
 
                       <div>
                         <label className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">
-                          Number of blogs to generate (1-{userCredits} credits available)
+                          Number of blogs to generate{" "}
+                          {dailyLimitReached
+                            ? "(Daily limit reached)"
+                            : `(${2 - dailyGeneratedCount} of 2 remaining today)`}
                         </label>
                         <div className="flex items-center">
                           <input
                             type="range"
                             min="1"
-                            max={Math.max(1, userCredits)}
+                            max={Math.min(Math.max(1, userCredits), dailyLimitReached ? 1 : 2 - dailyGeneratedCount)}
                             value={bulkQuantity}
-                            onChange={(e) => setBulkQuantity(Number.parseInt(e.target.value))}
-                            className="flex-1 h-2 bg-gray-200 appearance-none cursor-pointer"
+                            onChange={(e) => handleBulkQuantityChange(Number.parseInt(e.target.value))}
+                            className={`flex-1 h-2 bg-gray-200 appearance-none ${dailyLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                            disabled={dailyLimitReached}
                           />
                           <span className="ml-3 w-8 sm:w-10 text-center font-medium text-gray-700">{bulkQuantity}</span>
                         </div>
                         <p className="mt-1 sm:mt-2 text-xs text-gray-500">
-                          This will generate {bulkQuantity} blog{bulkQuantity > 1 ? "s" : ""} from the same URL, using{" "}
-                          {bulkQuantity} credit{bulkQuantity > 1 ? "s" : ""}
+                          {dailyLimitReached
+                            ? `Daily limit reached. You can generate more in ${formatNextGenerationTime()}.`
+                            : `This will generate ${bulkQuantity} blog${bulkQuantity > 1 ? "s" : ""} from the same URL, using ${bulkQuantity} credit${bulkQuantity > 1 ? "s" : ""}`}
                         </p>
                       </div>
                     </div>
@@ -507,6 +683,21 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                           </div>
                         </div>
                         <div className="text-xl sm:text-2xl font-bold text-[#294fd6]">{userCredits}</div>
+                      </div>
+
+                      {/* Daily limit indicator */}
+                      <div className="mt-3 pt-3 border-t border-blue-100">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[#294fd6]" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">Daily Generation Limit</p>
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              {dailyLimitReached
+                                ? `Limit reached. Reset in ${formatNextGenerationTime()}.`
+                                : `${dailyGeneratedCount}/2 articles generated today`}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
                       {subscription?.plan_name?.toLowerCase().includes("yearly") && (
@@ -530,16 +721,23 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                     <button
                       type="submit"
                       className={`w-full py-3 sm:py-4 px-4 font-medium flex items-center justify-center gap-2 transition-all text-sm sm:text-base ${
-                        loading || externalLoading || !url.trim() || userCredits < bulkQuantity
+                        loading || externalLoading || !url.trim() || userCredits < bulkQuantity || dailyLimitReached
                           ? "bg-gray-300 cursor-not-allowed text-gray-500"
                           : "bg-[#294fd6] hover:bg-blue-700 text-white"
                       }`}
-                      disabled={loading || externalLoading || !url.trim() || userCredits < bulkQuantity}
+                      disabled={
+                        loading || externalLoading || !url.trim() || userCredits < bulkQuantity || dailyLimitReached
+                      }
                     >
                       {loading || externalLoading ? (
                         <>
                           <div className="animate-spin w-4 sm:w-5 h-4 sm:h-5 border-2 border-white border-t-transparent"></div>
                           <span>Generating...</span>
+                        </>
+                      ) : dailyLimitReached ? (
+                        <>
+                          <Clock className="w-4 sm:w-5 h-4 sm:h-5" />
+                          <span>Daily Limit Reached</span>
                         </>
                       ) : (
                         <>
@@ -551,6 +749,11 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                         </>
                       )}
                     </button>
+                    {dailyLimitReached && (
+                      <div className="text-red-500 text-sm mt-2 text-center">
+                        Daily limit reached. Next article available in {formatNextGenerationTime()}.
+                      </div>
+                    )}
                   </form>
                 </div>
               </div>
@@ -767,6 +970,33 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                     <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
                     <span>Purchase more credits to increase your generation capacity</span>
                   </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Daily limit of 2 articles per 24-hour period to ensure quality content</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 sm:pt-6">
+                <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-2 sm:mb-3">
+                  Daily Generation Limit
+                </h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+                  To ensure high-quality content and prevent overuse:
+                </p>
+                <ul className="space-y-2 text-sm sm:text-base text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>You can generate up to 2 articles per day</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>The limit resets 24 hours after you reach your daily maximum</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>A countdown timer shows when you can generate more articles</span>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -778,6 +1008,62 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
               >
                 Got it
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Low Credits Modal */}
+      {showLowCreditsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white max-w-md w-full rounded-lg overflow-hidden">
+            <div className="p-5 sm:p-6 bg-amber-50 border-b border-amber-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Low Credits Alert</h2>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-6">
+              <p className="text-gray-700 mb-4">
+                You only have{" "}
+                <span className="font-bold text-amber-600">
+                  {userCredits} credit{userCredits !== 1 ? "s" : ""}
+                </span>{" "}
+                remaining. To continue generating high-quality blog content, we recommend upgrading your plan.
+              </p>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Credits Remaining</span>
+                  <span className="text-sm font-bold text-amber-600">
+                    {userCredits}/{subscription?.credits || 0}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-amber-500 h-full"
+                    style={{ width: `${Math.min(100, (userCredits / (subscription?.credits || 1)) * 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button
+                  onClick={handleUpgradeClick}
+                  className="flex-1 py-2.5 px-4 bg-[#294fd6] text-white rounded hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Upgrade Plan
+                </button>
+                <button
+                  onClick={() => setShowLowCreditsModal(false)}
+                  className="flex-1 py-2.5 px-4 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           </div>
         </div>

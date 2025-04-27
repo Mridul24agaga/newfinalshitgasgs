@@ -198,22 +198,6 @@ export default function BlogsPage() {
     return classes.filter(Boolean).join(" ")
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100">
-        <div className="text-center bg-white p-8 rounded-xl max-w-md w-full mx-4 border border-slate-200 shadow-sm">
-          <div className="relative w-20 h-20 mx-auto mb-6">
-            <Loader2 className="h-20 w-20 animate-spin text-blue-600 absolute" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <PenTool className="h-8 w-8 text-blue-600/70" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Loading your content</h2>
-          <p className="text-slate-500">Preparing your creative workspace...</p>
-        </div>
-      </div>
-    )
-  }
 
   if (error) {
     return (
