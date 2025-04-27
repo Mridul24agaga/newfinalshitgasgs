@@ -428,10 +428,14 @@ export default function WebsiteAnalysisContent() {
 
         try {
           const data = JSON.parse(text)
+          console.log("Parsed ICP data:", data)
+
+          // Check if the ICP data is in the expected format
           if (!data.icp) {
             console.error("No ICP data in response:", data)
             throw new Error("Invalid ICP data received")
           }
+
           return data.icp
         } catch (parseError) {
           console.error("JSON parse error:", parseError, "Response:", text)
@@ -453,6 +457,11 @@ export default function WebsiteAnalysisContent() {
 
     try {
       const icpResult = await attemptGeneration(0)
+      console.log("Successfully generated ICP:", icpResult)
+
+      // Update the state with the ICP data
+      setIcpData(icpResult)
+
       // Save the ICP immediately and update UI with saved data
       await saveAnalysisToSupabase(summaryText, icpResult)
       showToast(
