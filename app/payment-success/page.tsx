@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/utitls/supabase/client"
 import { CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
@@ -13,191 +12,161 @@ export default function PaymentSuccessPage() {
   const [debugInfo, setDebugInfo] = useState<Record<string, any> | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const processPayment = async () => {
       try {
-        // Get URL parameters
-        const userId = searchParams.get("user_id")
-        const planId = searchParams.get("plan_id")
-        const planName = searchParams.get("plan_name")
-        const existingCredits = searchParams.get("existing_credits")
-        const newCredits = searchParams.get("new_credits")
-        const totalCredits = searchParams.get("total_credits")
-        const billingCycle = searchParams.get("billing_cycle") || "monthly"
-        const currency = searchParams.get("currency") || "USD"
-        const subscriptionId = searchParams.get("subscription_id")
-        const status = searchParams.get("status") || "active"
-        const price = searchParams.get("price")
-
-        // Collect all parameters for debugging
+        // Get all URL parameters as an object for debugging
         const allParams = Object.fromEntries([...searchParams.entries()])
         setDebugInfo(allParams)
+        console.log("URL parameters:", allParams)
+
+        // Get the payment type (upgrade or new subscription)
+        const paymentType = searchParams.get("payment_type") || "subscription"
+        const isUpgrade = paymentType === "upgrade"
+
+        // Extract common parameters
+        const userId = searchParams.get("user_id")
+        const planId = searchParams.get("plan_id")
+        const billingCycle = searchParams.get("billing_cycle") || "monthly"
+        const currency = searchParams.get("currency") || "USD"
+        const price = searchParams.get("price")
+        const status = searchParams.get("status") || "active"
+
+        // Credits handling
+        const existingCredits = searchParams.get("existing_credits")
+          ? Number.parseInt(searchParams.get("existing_credits")!, 10)
+          : 0
+        const newCredits = searchParams.get("new_credits") ? Number.parseInt(searchParams.get("new_credits")!, 10) : 0
+        const totalCredits = searchParams.get("total_credits")
+          ? Number.parseInt(searchParams.get("total_credits")!, 10)
+          : existingCredits + newCredits
 
         // Validate required parameters
-        if (!userId || !planId || !totalCredits) {
-          console.error("Missing required parameters:", { userId, planId, totalCredits })
-          setError("Missing required payment information. Please contact support.")
-          setLoading(false)
-          return
+        if (!userId || !planId) {
+          throw new Error("Missing required parameters: user_id and plan_id are required")
         }
 
-        console.log("Processing payment success with params:", {
-          userId,
-          planId,
-          existingCredits,
-          newCredits,
-          totalCredits,
-          billingCycle,
-          currency,
-        })
+        if (isUpgrade) {
+          // For upgrades, use the record-payment route with the expected format
+          console.log("Processing as an upgrade using record-payment")
 
-        // Check if the authenticated user matches the userId in the URL
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser()
+          const response = await fetch("/api/record-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              plan_id: planId,
+              credits: newCredits || totalCredits,
+              billing_cycle: billingCycle,
+              amount: price ? Number.parseFloat(price) : null,
+              currency: currency,
+              timestamp: new Date().toISOString(),
+            }),
+          })
 
-        if (authError) {
-          console.error("Authentication error:", authError)
-          setError(`Authentication error: ${authError.message}`)
-          setLoading(false)
-          return
-        }
+          const result = await response.json()
 
-        if (!user) {
-          setError("You must be logged in to complete this process.")
-          setLoading(false)
-          return
-        }
-
-        if (user.id !== userId) {
-          console.error("User ID mismatch:", { urlUserId: userId, authUserId: user.id })
-          setError("User ID mismatch. Please contact support.")
-          setLoading(false)
-          return
-        }
-
-        // Define subscription data
-        const currentDate = new Date()
-        const periodEnd = new Date(currentDate)
-        const isAnnual = billingCycle === "annually" || billingCycle === "annual"
-
-        if (isAnnual) {
-          periodEnd.setFullYear(periodEnd.getFullYear() + 1)
-        } else {
-          periodEnd.setMonth(periodEnd.getMonth() + 1)
-        }
-
-        // Get price information from URL parameters
-        const monthlyPrice = searchParams.get("monthly_price")
-          ? Number.parseFloat(searchParams.get("monthly_price")!)
-          : undefined
-
-        const annualPrice = searchParams.get("annual_price")
-          ? Number.parseFloat(searchParams.get("annual_price")!)
-          : undefined
-
-        const annualDiscount = searchParams.get("annual_discount")
-          ? Number.parseInt(searchParams.get("annual_discount")!, 10)
-          : undefined
-
-        const subscriptionData = {
-          user_id: user.id,
-          plan_id: planId,
-          credits: Number.parseInt(totalCredits, 10),
-          status: status,
-          billing_cycle: isAnnual ? "annually" : "monthly",
-          subscription_type: isAnnual ? "annual" : "monthly",
-          currency: currency,
-          current_period_start: currentDate.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          onboarding_completed: true,
-          website_onboarding_completed: true,
-          monthly_price: monthlyPrice,
-          annual_price: annualPrice,
-          annual_discount_percentage: annualDiscount,
-          price: price ? Number.parseFloat(price) : undefined,
-        }
-
-        console.log("Subscription data:", subscriptionData)
-
-        // First, check if subscription already exists
-        const { data: existingSubscription, error: subCheckError } = await supabase
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle()
-
-        if (subCheckError) {
-          console.error("Error checking existing subscription:", subCheckError)
-        }
-
-        // Update or insert subscription directly with Supabase
-        let subscriptionResult
-        if (existingSubscription) {
-          // Update existing subscription
-          const { data, error: updateError } = await supabase
-            .from("subscriptions")
-            .update(subscriptionData)
-            .eq("user_id", user.id)
-            .select()
-            .single()
-
-          if (updateError) {
-            console.error("Error updating subscription:", updateError)
-            throw new Error(`Failed to update subscription: ${updateError.message}`)
+          if (!response.ok) {
+            console.error("Payment recording failed:", result)
+            throw new Error(result.error || "Failed to record payment")
           }
 
-          subscriptionResult = data
+          console.log("Payment recorded successfully:", result)
         } else {
-          // Insert new subscription
-          const { data, error: insertError } = await supabase
-            .from("subscriptions")
-            .insert(subscriptionData)
-            .select()
-            .single()
+          // For new subscriptions, use the create-subscription route with the expected format
+          console.log("Processing as a new subscription using create-subscription")
 
-          if (insertError) {
-            console.error("Error creating subscription:", insertError)
-            throw new Error(`Failed to create subscription: ${insertError.message}`)
+          // Calculate period dates
+          const currentDate = new Date()
+          const periodEnd = new Date(currentDate)
+          const isAnnual = billingCycle === "annually" || billingCycle === "annual"
+
+          if (isAnnual) {
+            periodEnd.setFullYear(periodEnd.getFullYear() + 1)
+          } else {
+            periodEnd.setMonth(periodEnd.getMonth() + 1)
           }
 
-          subscriptionResult = data
-        }
-
-        console.log("Subscription saved:", subscriptionResult)
-
-        // Update onboarding status
-        const { error: onboardingError } = await supabase
-          .from("userssignuped")
-          .update({
+          // Prepare subscription data in the format expected by the backend
+          const subscriptionData = {
+            user_id: userId,
+            plan_id: planId,
+            credits: totalCredits,
+            status: status,
+            billing_cycle: billingCycle,
+            subscription_type: isAnnual ? "annual" : "monthly",
+            currency: currency,
+            current_period_start: currentDate.toISOString(),
+            current_period_end: periodEnd.toISOString(),
             onboarding_completed: true,
             website_onboarding_completed: true,
+            price: price ? Number.parseFloat(price) : null,
+            monthly_price: searchParams.get("monthly_price")
+              ? Number.parseFloat(searchParams.get("monthly_price")!)
+              : null,
+            annual_price: searchParams.get("annual_price")
+              ? Number.parseFloat(searchParams.get("annual_price")!)
+              : null,
+            annual_discount_percentage: searchParams.get("annual_discount")
+              ? Number.parseInt(searchParams.get("annual_discount")!, 10)
+              : null,
+            created_at: currentDate.toISOString(),
+            updated_at: currentDate.toISOString(),
+          }
+
+          console.log("Subscription data:", subscriptionData)
+
+          const response = await fetch("/api/create-subscription", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              subscriptionData,
+              userId,
+            }),
           })
-          .eq("user_id", user.id)
 
-        if (onboardingError) {
-          console.warn("Error updating onboarding status:", onboardingError)
-        }
+          const result = await response.json()
 
-        // Record payment in payment_history
-        const paymentData = {
-          user_id: user.id,
-          plan_id: planId,
-          amount: price ? Number.parseFloat(price) : null,
-          currency: currency,
-          credits: Number.parseInt(newCredits || totalCredits, 10),
-          billing_cycle: billingCycle,
-          payment_date: currentDate.toISOString(),
-          payment_status: "completed",
-        }
+          if (!response.ok) {
+            console.error("Subscription creation failed:", result)
+            throw new Error(result.error || "Failed to create subscription")
+          }
 
-        const { error: paymentError } = await supabase.from("payment_history").insert(paymentData)
+          console.log("Subscription created/updated successfully:", result)
 
-        if (paymentError) {
-          console.warn("Error recording payment:", paymentError)
+          // Also record the payment for new subscriptions
+          try {
+            const paymentResponse = await fetch("/api/record-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                user_id: userId,
+                plan_id: planId,
+                credits: totalCredits,
+                billing_cycle: billingCycle,
+                amount: price ? Number.parseFloat(price) : null,
+                currency: currency,
+                timestamp: currentDate.toISOString(),
+              }),
+            })
+
+            const paymentResult = await paymentResponse.json()
+
+            if (!paymentResponse.ok) {
+              console.warn("Payment recording failed, but subscription was created:", paymentResult)
+            } else {
+              console.log("Payment recorded successfully:", paymentResult)
+            }
+          } catch (paymentError) {
+            console.warn("Error recording payment, but subscription was created:", paymentError)
+          }
         }
 
         setSuccess(true)
@@ -219,7 +188,7 @@ export default function PaymentSuccessPage() {
     }
 
     processPayment()
-  }, [router, searchParams, supabase])
+  }, [router, searchParams])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
@@ -268,13 +237,11 @@ export default function PaymentSuccessPage() {
               </Link>
             </div>
 
-            {/* Debug information for development - remove in production */}
-            {process.env.NODE_ENV === "development" && debugInfo && (
-              <div className="mt-8 p-4 bg-gray-100 rounded-lg w-full">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Debug Information:</h3>
-                <pre className="text-xs text-gray-600 overflow-auto max-h-40">{JSON.stringify(debugInfo, null, 2)}</pre>
-              </div>
-            )}
+            {/* Debug information - always show for troubleshooting */}
+            <div className="mt-8 p-4 bg-gray-100 rounded-lg w-full">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Debug Information:</h3>
+              <pre className="text-xs text-gray-600 overflow-auto max-h-40">{JSON.stringify(debugInfo, null, 2)}</pre>
+            </div>
           </div>
         )}
       </div>

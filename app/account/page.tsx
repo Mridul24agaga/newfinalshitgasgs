@@ -106,7 +106,7 @@ const plans: Plan[] = [
     credits: 30,
     dodoProductId: {
       monthly: "pdt_aKk7uYTudrZ8lzrpba34K",
-      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5",
+      annually: "pdt_aKk7uYTudrZ8lzrpba34K",
     },
     discount: "SAVE 57% WITH ANNUAL BILLING",
     annualDiscountPercentage: 68,
