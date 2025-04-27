@@ -406,7 +406,6 @@ export default function AccountPage() {
         `${window.location.origin}/payment-success?` +
           `user_id=${user.id}&` +
           `plan_id=${plan.id}&` +
-          `plan_name=${plan.name}&` +
           `price=${price}&` +
           `existing_credits=${existingCredits}&` +
           `new_credits=${newCredits}&` +
