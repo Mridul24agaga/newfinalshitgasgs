@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
 
 // Use the test mode URL for Dodo Payments
-const DODO_URL = "https://test.checkout.dodopayments.com/buy"
+const DODO_URL = "https://checkout.dodopayments.com/buy"
 
 interface Plan {
   id: string
@@ -80,7 +80,7 @@ const plans: Plan[] = [
     },
     credits: 30,
     dodoProductId: {
-      monthly: "pdt_aKk7uYTudrZ8lzrpba34K",
+      monthly: "pdt_P2vmzA58J1kOlgHBKlGNN",
       annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5", // Replace with actual annual product ID
     },
     discount: "SAVE 57% WITH ANNUAL BILLING",
@@ -305,6 +305,16 @@ export default function PaymentPage() {
       const annualPrice = prices.annually
       const annualDiscountPercentage = plan.annualDiscountPercentage || 20
 
+      // Calculate credits based on billing cycle
+      let credits = plan.credits
+      if (billingCycle === "annually") {
+        if (plan.id === "growth") {
+          credits = 30 * 12 // 360 credits for yearly Growth plan
+        } else if (plan.id === "professional") {
+          credits = 60 * 12 // 720 credits for yearly Professional plan
+        }
+      }
+
       // Make sure billing cycle is correctly formatted
       const billingCycleValue = billingCycle === "annually" ? "annually" : "monthly"
 
@@ -322,7 +332,7 @@ export default function PaymentPage() {
           `plan_id=${plan.id}&` +
           `plan_name=${plan.name}&` +
           `price=${price}&` +
-          `credits=${plan.credits}&` +
+          `credits=${credits}&` +
           `billing_cycle=${billingCycleValue}&` +
           `monthly_price=${monthlyPrice}&` +
           `annual_price=${annualPrice}&` +

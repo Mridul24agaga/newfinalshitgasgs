@@ -48,7 +48,7 @@ interface Plan {
 }
 
 // Use the test mode URL for Dodo Payments
-const DODO_URL = "https://test.checkout.dodopayments.com/buy"
+const DODO_URL = "https://checkout.dodopayments.com/buy"
 
 // Plans data with enhanced styling
 const plans: Plan[] = [
@@ -106,8 +106,8 @@ const plans: Plan[] = [
     },
     credits: 30,
     dodoProductId: {
-      monthly: "pdt_aKk7uYTudrZ8lzrpba34K",
-      annually: "pdt_aKk7uYTudrZ8lzrpba34K",
+      monthly: "pdt_P2vmzA58J1kOlgHBKlGNN",
+      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5",
     },
     discount: "SAVE 57% WITH ANNUAL BILLING",
     annualDiscountPercentage: 68,

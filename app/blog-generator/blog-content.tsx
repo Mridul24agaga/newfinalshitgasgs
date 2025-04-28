@@ -67,6 +67,9 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
   const [dailyLimitReached, setDailyLimitReached] = useState(false)
   const [showLowCreditsModal, setShowLowCreditsModal] = useState(false)
 
+  // Daily limit constant - set to 1 article per day
+  const DAILY_LIMIT = 1
+
   // Credit threshold for showing the low credits popup
   const LOW_CREDITS_THRESHOLD = 5
 
@@ -97,33 +100,64 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     },
   ]
 
-  // Load daily generation data from localStorage
+  // Load daily generation data from database
   useEffect(() => {
-    const storedCount = localStorage.getItem("dailyGeneratedCount")
-    const storedNextGenTime = localStorage.getItem("nextGenerationTime")
+    // This will fetch the user's daily generation count from the database
+    const fetchDailyGenerationCount = async () => {
+      try {
+        const supabase = createClient()
+        const { data: userData } = await supabase.auth.getUser()
 
-    if (storedCount) {
-      setDailyGeneratedCount(Number.parseInt(storedCount))
-    }
+        if (userData?.user) {
+          // Get the current date in YYYY-MM-DD format
+          const today = new Date().toISOString().split("T")[0]
 
-    if (storedNextGenTime) {
-      const nextGenDate = new Date(storedNextGenTime)
-      setNextGenerationTime(nextGenDate)
+          // Fetch the user's generation count for today
+          const { data, error } = await supabase
+            .from("user_generation_stats")
+            .select("count, next_available_time")
+            .eq("user_id", userData.user.id)
+            .eq("date", today)
+            .single()
 
-      // Check if we're still within the limit period
-      const now = new Date()
-      if (nextGenDate > now) {
-        setDailyLimitReached(true)
-      } else {
-        // Reset if the time has passed
-        setDailyGeneratedCount(0)
-        setNextGenerationTime(null)
-        setDailyLimitReached(false)
-        localStorage.removeItem("dailyGeneratedCount")
-        localStorage.removeItem("nextGenerationTime")
+          if (error && error.code !== "PGRST116") {
+            console.error("Error fetching daily generation count:", error)
+            return
+          }
+
+          if (data) {
+            setDailyGeneratedCount(data.count)
+
+            if (data.next_available_time) {
+              const nextGenDate = new Date(data.next_available_time)
+              setNextGenerationTime(nextGenDate)
+
+              // Check if we're still within the limit period
+              const now = new Date()
+              if (nextGenDate > now) {
+                setDailyLimitReached(true)
+              }
+            }
+          } else {
+            // No record for today, create one
+            await supabase.from("user_generation_stats").insert({
+              user_id: userData.user.id,
+              date: today,
+              count: 0,
+              next_available_time: null,
+            })
+
+            setDailyGeneratedCount(0)
+            setDailyLimitReached(false)
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchDailyGenerationCount:", error)
       }
     }
-  }, [])
+
+    fetchDailyGenerationCount()
+  }, [user]) // Depend on user to refetch when user changes
 
   // Check if credits are low and show popup if needed
   useEffect(() => {
@@ -152,23 +186,44 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     }
   }, [userCredits, loading, externalLoading, subscription, isLoadingSubscription])
 
-  // Add this function to update the daily generation count
-  const updateDailyGenerationCount = () => {
-    const newCount = dailyGeneratedCount + bulkQuantity
-    setDailyGeneratedCount(newCount)
-    localStorage.setItem("dailyGeneratedCount", newCount.toString())
+  // Update the daily generation count and set cooldown timer
+  const updateDailyGenerationCount = async () => {
+    try {
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
 
-    // If this generation will reach or exceed the daily limit, set next generation time
-    if (newCount >= 1) {
-      const nextGenTime = new Date()
-      nextGenTime.setHours(nextGenTime.getHours() + 24) // 24 hours from now
-      setNextGenerationTime(nextGenTime)
-      setDailyLimitReached(true)
-      localStorage.setItem("nextGenerationTime", nextGenTime.toISOString())
+      if (userData?.user) {
+        const newCount = dailyGeneratedCount + bulkQuantity
+        setDailyGeneratedCount(newCount)
+
+        // Get the current date in YYYY-MM-DD format
+        const today = new Date().toISOString().split("T")[0]
+
+        // Always set the next generation time after generating an article
+        // This enforces a 24-hour cooldown after any generation
+        const nextGenTime = new Date()
+        nextGenTime.setHours(nextGenTime.getHours() + 24) // 24 hours from now
+        setNextGenerationTime(nextGenTime)
+        setDailyLimitReached(true)
+
+        // Update the database
+        const { error } = await supabase.from("user_generation_stats").upsert({
+          user_id: userData.user.id,
+          date: today,
+          count: newCount,
+          next_available_time: nextGenTime.toISOString(),
+        })
+
+        if (error) {
+          console.error("Error updating generation count:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Error in updateDailyGenerationCount:", error)
     }
   }
 
-  // Add this function to format the next generation time
+  // Format the next generation time
   const formatNextGenerationTime = () => {
     if (!nextGenerationTime) return ""
 
@@ -180,6 +235,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     return `${diffHrs}h ${diffMins}m`
   }
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -195,16 +251,18 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     }
 
     // Check if this generation would exceed daily limit
-    if (dailyGeneratedCount + bulkQuantity > 1) {
-      alert(`You can only generate 1 article per day. You have already generated ${dailyGeneratedCount} today.`)
+    if (dailyGeneratedCount + bulkQuantity > DAILY_LIMIT) {
+      alert(
+        `You can only generate ${DAILY_LIMIT} article per day. You have already generated ${dailyGeneratedCount} today.`,
+      )
       return
     }
 
     setUrlEntered(true)
     setGenerationStarted(true)
 
-    // Update daily generation count
-    updateDailyGenerationCount()
+    // Update daily generation count and set cooldown
+    await updateDailyGenerationCount()
 
     // If external onGenerate is provided, use it
     if (onGenerate) {
@@ -506,7 +564,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
     // Don't allow setting quantity that would exceed daily limit
     const maxAllowed = Math.min(
       Math.max(1, userCredits), // Max based on credits
-      dailyLimitReached ? 0 : 1 - dailyGeneratedCount, // Max based on daily limit
+      dailyLimitReached ? 0 : DAILY_LIMIT - dailyGeneratedCount, // Max based on daily limit
     )
 
     setBulkQuantity(Math.min(value, maxAllowed))
@@ -648,13 +706,16 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                           Number of blogs to generate{" "}
                           {dailyLimitReached
                             ? "(Daily limit reached)"
-                            : `(${1 - dailyGeneratedCount} of 1 remaining today)`}
+                            : `(${DAILY_LIMIT - dailyGeneratedCount} of ${DAILY_LIMIT} remaining today)`}
                         </label>
                         <div className="flex items-center">
                           <input
                             type="range"
                             min="1"
-                            max={Math.min(Math.max(1, userCredits), dailyLimitReached ? 1 : 1 - dailyGeneratedCount)}
+                            max={Math.min(
+                              Math.max(1, userCredits),
+                              dailyLimitReached ? 1 : DAILY_LIMIT - dailyGeneratedCount,
+                            )}
                             value={bulkQuantity}
                             onChange={(e) => handleBulkQuantityChange(Number.parseInt(e.target.value))}
                             className={`flex-1 h-2 bg-gray-200 appearance-none ${dailyLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
@@ -694,7 +755,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                             <p className="text-xs sm:text-sm text-gray-600">
                               {dailyLimitReached
                                 ? `Limit reached. Reset in ${formatNextGenerationTime()}.`
-                                : `${dailyGeneratedCount}/1 article generated today`}
+                                : `${dailyGeneratedCount}/${DAILY_LIMIT} article generated today`}
                             </p>
                           </div>
                         </div>
@@ -972,7 +1033,7 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Daily limit of 2 articles per 24-hour period to ensure quality content</span>
+                    <span>Daily limit of 1 article per 24-hour period to ensure quality content</span>
                   </li>
                 </ul>
               </div>
@@ -987,15 +1048,15 @@ const BlogGenerator: React.FC<BlogGeneratorProps> = ({ onGenerate, loading: exte
                 <ul className="space-y-2 text-sm sm:text-base text-gray-600">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>You can generate up to 2 articles per day</span>
+                    <span>You can generate 1 article per day</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>The limit resets 24 hours after you reach your daily maximum</span>
+                    <span>After generating an article, there's a 24-hour cooldown period</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>A countdown timer shows when you can generate more articles</span>
+                    <span>A countdown timer shows when you can generate your next article</span>
                   </li>
                 </ul>
               </div>
