@@ -828,6 +828,14 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     9. Add some content that references specific time periods or seasons
     10. Include some content that shows the writer's personality quirks
 
+    ABSOLUTELY CRITICAL REQUIREMENTS:
+    - DO NOT start with "Sure!" or any other response phrase
+    - DO NOT include any meta-commentary about the writing process
+    - DO NOT include any text that sounds like an AI assistant responding to a request
+    - DO NOT end with "I hope this helps" or similar concluding remarks
+    - START DIRECTLY with the blog content itself
+    - The content should read like a standalone blog post, not a response to a prompt
+
     CRITICAL REQUIREMENTS:
     - The writing must feel like it comes from a SPECIFIC person with their own unique voice
     - Include at least 2-3 personal anecdotes with very specific details
@@ -883,6 +891,27 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     .replace(/^Let's dive in!.*$/gm, "")
     .replace(/^Here's the final.*$/gm, "")
     .replace(/^I've also included.*$/gm, "")
+
+  // Final cleanup to remove any remaining AI-like phrases
+  const aiPhrases = [
+    /^Sure!.*?\n/i,
+    /^Here's.*?\n/i,
+    /^I've (created|written|generated|transformed).*?\n/i,
+    /^As requested.*?\n/i,
+    /^Below is.*?\n/i,
+    /^This is.*?version of your blog.*?\n/i,
+    /\n\nI hope this (helps|works for you|meets your needs).*?$/i,
+    /\n\nLet me know if.*?$/i,
+    /\n\nDoes this work.*?$/i,
+    /\n\nIs there anything else.*?$/i,
+  ]
+
+  for (const phrase of aiPhrases) {
+    finalContent = finalContent.replace(phrase, "")
+  }
+
+  // Ensure the content starts directly with a heading or paragraph
+  finalContent = finalContent.trim()
 
   console.log("Final humanization with images completed successfully")
   return finalContent

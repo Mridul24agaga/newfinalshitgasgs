@@ -744,7 +744,13 @@ export default function AccountPage() {
                                   style={{ width: `${Math.min(100, (subscription.credits / 100) * 100)}%` }}
                                 ></div>
                               </div>
-                              <button className="mt-6 w-full px-4 py-2.5 border border-indigo-300 text-indigo-600 rounded-lg text-sm font-medium bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center justify-center">
+                              <button
+                                onClick={() => {
+                                  setBillingCycle("monthly")
+                                  setShowUpgradeOptions(true)
+                                }}
+                                className="mt-6 w-full px-4 py-2.5 border border-indigo-300 text-indigo-600 rounded-lg text-sm font-medium bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center justify-center"
+                              >
                                 Add Credits
                               </button>
                             </div>
@@ -765,14 +771,6 @@ export default function AccountPage() {
                                 )}
                                 .
                               </p>
-                            </div>
-                          )}
-
-                          {!isYearlyPlan() && (
-                            <div className="mt-8 grid gap-4 md:grid-cols-1">
-                              <button className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center justify-center">
-                                Cancel Subscription
-                              </button>
                             </div>
                           )}
                         </div>
