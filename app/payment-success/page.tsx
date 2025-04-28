@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
-import { CheckCircle, Loader2 } from "lucide-react"
+import { CheckCircle, Loader2, AlertCircle } from "lucide-react"
 
 export default function PaymentSuccessPage() {
   const [loading, setLoading] = useState(true)
@@ -26,6 +26,7 @@ export default function PaymentSuccessPage() {
         const currency = searchParams.get("currency") || "USD"
         const subscriptionId = searchParams.get("subscription_id")
         const status = searchParams.get("status")
+        const paymentStatus = searchParams.get("payment_status") // Check for payment status
 
         setDebugInfo(
           `URL params: ${JSON.stringify(
@@ -38,15 +39,33 @@ export default function PaymentSuccessPage() {
               currency,
               subscriptionId,
               status,
+              paymentStatus,
             },
             null,
             2,
           )}`,
         )
 
+        // Check if payment status indicates a failure
+        if (paymentStatus === "failed") {
+          setError("Your payment has failed. Please try again.")
+          setLoading(false)
+
+          // Redirect to payment page after 3 seconds
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
+          return
+        }
+
         if (!userId || !planId || !credits) {
           setError("Missing required payment information. Please contact support.")
           setLoading(false)
+
+          // Redirect to payment page after 3 seconds
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
           return
         }
 
@@ -61,18 +80,33 @@ export default function PaymentSuccessPage() {
         if (authError) {
           setError(`Authentication error: ${authError.message}`)
           setLoading(false)
+
+          // Redirect to payment page after 3 seconds
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
           return
         }
 
         if (!user) {
           setError("You must be logged in to complete this process.")
           setLoading(false)
+
+          // Redirect to payment page after 3 seconds
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
           return
         }
 
         if (user.id !== userId) {
           setError("User ID mismatch. Please contact support.")
           setLoading(false)
+
+          // Redirect to payment page after 3 seconds
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
           return
         }
 
@@ -153,6 +187,18 @@ export default function PaymentSuccessPage() {
           try {
             const responseData = JSON.parse(responseText)
             setDebugInfo((prev) => `${prev}\n\nAPI response parsed: ${JSON.stringify(responseData, null, 2)}`)
+
+            // Check if the API response indicates a dodopayment failure
+            if (responseData.error && responseData.error.includes("dodopayment")) {
+              setError("Your payment has failed. Please try again.")
+              setLoading(false)
+
+              // Redirect to payment page after 3 seconds
+              setTimeout(() => {
+                router.push("/payment")
+              }, 3000)
+              return
+            }
           } catch (e) {
             setDebugInfo((prev) => `${prev}\n\nCouldn't parse API response as JSON`)
           }
@@ -160,6 +206,23 @@ export default function PaymentSuccessPage() {
           setDebugInfo(
             (prev) => `${prev}\n\nAPI error: ${apiError instanceof Error ? apiError.message : String(apiError)}`,
           )
+
+          // Check if the error is related to dodopayment
+          const errorMessage = apiError instanceof Error ? apiError.message : String(apiError)
+          if (
+            errorMessage.toLowerCase().includes("dodopayment") ||
+            errorMessage.toLowerCase().includes("payment failed")
+          ) {
+            setError("Your payment has failed. Please try again.")
+            setLoading(false)
+
+            // Redirect to payment page after 3 seconds
+            setTimeout(() => {
+              router.push("/payment")
+            }, 3000)
+            return
+          }
+
           throw apiError
         }
 
@@ -206,6 +269,22 @@ export default function PaymentSuccessPage() {
 
           if (!paymentRecordResponse.ok) {
             setDebugInfo((prev) => `${prev}\n\nError recording payment success via API route`)
+
+            // Check if this is a dodopayment failure
+            const responseText = await paymentRecordResponse.text()
+            if (
+              responseText.toLowerCase().includes("dodopayment") ||
+              responseText.toLowerCase().includes("payment failed")
+            ) {
+              setError("Your payment has failed. Please try again.")
+              setLoading(false)
+
+              // Redirect to payment page after 3 seconds
+              setTimeout(() => {
+                router.push("/payment")
+              }, 3000)
+              return
+            }
           } else {
             setDebugInfo((prev) => `${prev}\n\nRecorded payment success via API route`)
           }
@@ -215,6 +294,23 @@ export default function PaymentSuccessPage() {
             (prev) =>
               `${prev}\n\nException recording payment: ${paymentRecordError instanceof Error ? paymentRecordError.message : "Unknown error"}`,
           )
+
+          // Check if this is a dodopayment failure
+          const errorMessage =
+            paymentRecordError instanceof Error ? paymentRecordError.message : String(paymentRecordError)
+          if (
+            errorMessage.toLowerCase().includes("dodopayment") ||
+            errorMessage.toLowerCase().includes("payment failed")
+          ) {
+            setError("Your payment has failed. Please try again.")
+            setLoading(false)
+
+            // Redirect to payment page after 3 seconds
+            setTimeout(() => {
+              router.push("/payment")
+            }, 3000)
+            return
+          }
         }
 
         setSuccess(true)
@@ -228,13 +324,32 @@ export default function PaymentSuccessPage() {
         }, 3000)
       } catch (err) {
         console.error("Payment processing error:", err)
-        if (err instanceof Error) {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+
+        // Check if this is a dodopayment failure
+        if (
+          errorMessage.toLowerCase().includes("dodopayment") ||
+          errorMessage.toLowerCase().includes("payment failed")
+        ) {
+          setError("Your payment has failed. Please try again.")
+        } else if (err instanceof Error) {
           setError(`Failed to process payment: ${err.message}`)
         } else {
           setError("An unknown error occurred while processing your payment.")
         }
+
         setDebugInfo((prev) => `${prev}\n\nFinal error: ${err instanceof Error ? err.message : JSON.stringify(err)}`)
         setLoading(false)
+
+        // For payment failures, redirect to payment page after 3 seconds
+        if (
+          errorMessage.toLowerCase().includes("dodopayment") ||
+          errorMessage.toLowerCase().includes("payment failed")
+        ) {
+          setTimeout(() => {
+            router.push("/payment")
+          }, 3000)
+        }
       }
     }
 
@@ -266,33 +381,22 @@ export default function PaymentSuccessPage() {
         ) : (
           <div className="flex flex-col items-center">
             <div className="bg-red-50 ring-2 ring-red-200 p-3 rounded-full mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-12 w-12 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <AlertCircle className="h-12 w-12 text-red-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Error</h1>
             <p className="text-red-600 text-center mb-6">{error}</p>
+            <p className="text-gray-600 text-center mb-4">You will be redirected to the payment page in a moment.</p>
+            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+              <div className="bg-[#294fd6] h-2 animate-progress"></div>
+            </div>
             <button
-              onClick={() => router.push("/upgrade")}
-              className="bg-[#294fd6] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#294fd6]/80 transition-colors shadow-md hover:shadow-lg"
+              onClick={() => router.push("/payment")}
+              className="bg-[#294fd6] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#294fd6]/80 transition-colors shadow-md hover:shadow-lg mt-4"
             >
-              Try Again
+              Return to Payment
             </button>
           </div>
         )}
-
-       
       </div>
     </div>
   )
