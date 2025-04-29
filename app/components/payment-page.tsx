@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
 
 // Use the test mode URL for Dodo Payments
-const DODO_URL = "https://checkout.dodopayments.com/buy"
+const DODO_URL = "https://test.checkout.dodopayments.com/buy"
 
 interface Plan {
   id: string
@@ -42,7 +42,7 @@ const plans: Plan[] = [
     credits: 2,
     dodoProductId: {
       monthly: "pdt_z3XRRMgR6dGV5Z66ElFhm",
-      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5",
+      annually: "pdt_z3XRRMgR6dGV5Z66ElFhm",
     },
     features: ["2 professionally crafted articles", "Basic keyword research", "Standard email support"],
     tier: 1,

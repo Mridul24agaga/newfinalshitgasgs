@@ -15,9 +15,9 @@ export default function ApiKeyManager() {
   const [isCopied, setIsCopied] = useState(false)
   const router = useRouter()
 
-  // Check for authentication on component mount
+  // Check for authentication on component mount and fetch existing API key
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndFetchKey = async () => {
       setIsLoading(true)
       const supabase = createClient()
 
@@ -35,10 +35,22 @@ export default function ApiKeyManager() {
 
         setUser(user)
 
-        // Check if we have an API key in localStorage
-        const storedApiKey = localStorage.getItem("apiKey")
-        if (storedApiKey) {
-          setApiKey(storedApiKey)
+        // Fetch the user's API key from the database
+        const { data: apiKeyData, error: apiKeyError } = await supabase
+          .from("api_keys")
+          .select("api_key")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+
+        if (apiKeyData && !apiKeyError) {
+          setApiKey(apiKeyData.api_key)
+          // Also store in localStorage for convenience
+          localStorage.setItem("apiKey", apiKeyData.api_key)
+        } else if (apiKeyError && apiKeyError.code !== "PGRST116") {
+          // PGRST116 is "no rows returned" which is expected if user has no key yet
+          console.error("Error fetching API key:", apiKeyError)
         }
       } catch (err) {
         console.error("Error checking auth:", err)
@@ -47,7 +59,7 @@ export default function ApiKeyManager() {
       }
     }
 
-    checkAuth()
+    checkAuthAndFetchKey()
   }, [router])
 
   // Function to generate a new API key
@@ -168,6 +180,7 @@ export default function ApiKeyManager() {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">{user.email}</h3>
+                      <p className="text-gray-500 text-sm">User ID: {user.id}</p>
                     </div>
                   </div>
                 </div>
@@ -225,7 +238,7 @@ export default function ApiKeyManager() {
                     <button
                       onClick={generateApiKey}
                       disabled={isGenerating}
-                      className="px-4 py-2 bg-[#294fd6] text-white rounded-md hover:from-indigo-700 hover:to-purple-700 disabled:bg-indigo-300 transition-colors flex items-center"
+                      className="px-4 py-2 bg-[#294fd6] text-white rounded-md hover:bg-[#1e3ca8] disabled:bg-indigo-300 transition-colors flex items-center"
                     >
                       {isGenerating ? (
                         <>
