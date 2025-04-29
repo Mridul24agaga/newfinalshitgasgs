@@ -42,7 +42,7 @@ const plans: Plan[] = [
     credits: 2,
     dodoProductId: {
       monthly: "pdt_z3XRRMgR6dGV5Z66ElFhm",
-      annually: "pdt_z3XRRMgR6dGV5Z66ElFhm",
+      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5",
     },
     features: ["2 professionally crafted articles", "Basic keyword research", "Standard email support"],
     tier: 1,
@@ -81,7 +81,7 @@ const plans: Plan[] = [
     credits: 30,
     dodoProductId: {
       monthly: "pdt_P2vmzA58J1kOlgHBKlGNN",
-      annually: "pdt_u7QVCpYU5X4Ap16Ad2iP5", // Replace with actual annual product ID
+      annually: "pdt_aKk7uYTudrZ8lzrpba34K", // Replace with actual annual product ID
     },
     discount: "SAVE 57% WITH ANNUAL BILLING",
     annualDiscountPercentage: 68,

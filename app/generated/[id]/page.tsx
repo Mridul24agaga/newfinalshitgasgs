@@ -327,7 +327,7 @@ export default function BlogPostPage() {
   const formatBlogContent = (content: string) => {
     if (!content) return ""
 
-    // Step 1: Handle markdown headings (#, ##, ###, etc.)
+    // Step 1: Handle markdown headings (#, ##, ###, etc.) - ENHANCED for bigger, bolder headings
     content = content.replace(/^(#+)\s*(.*?)\s*$/gm, (match, hashes, text) => {
       const level = hashes.length // Number of # determines heading level
       const id = text
@@ -335,12 +335,25 @@ export default function BlogPostPage() {
         .toLowerCase()
         .replace(/[^\w\s-]/g, "")
         .replace(/\s+/g, "-")
-      return `<h${level} id="${id}" class="text-${4 - level + 1}xl font-bold my-6 scroll-mt-16">${text.trim()}</h${level}>`
+
+      // Enhanced heading styles with larger font sizes and more prominent styling
+      const sizeClasses = {
+        1: "text-4xl", // h1 - extra large
+        2: "text-3xl", // h2 - larger
+        3: "text-2xl", // h3 - large
+        4: "text-xl", // h4 - medium-large
+        5: "text-lg", // h5 - medium
+        6: "text-base", // h6 - normal
+      }
+
+      const size = sizeClasses[level as keyof typeof sizeClasses] || "text-2xl"
+
+      return `<h${level} id="${id}" class="${size} font-extrabold my-8 text-gray-900 scroll-mt-16">${text.trim()}</h${level}>`
     })
 
-    // Step 2: Format bold text (**text**)
+    // Step 2: Format bold text (**text**) that should be headings - ENHANCED
     content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
-      // Avoid bolding headings that were already processed
+      // Check if this bold text should be a heading
       if (
         p1.match(/^\d+\./) ||
         p1.startsWith("Conclusion") ||
@@ -353,7 +366,8 @@ export default function BlogPostPage() {
           .toLowerCase()
           .replace(/[^\w\s-]/g, "")
           .replace(/\s+/g, "-")
-        return `<h2 id="${id}" class="text-2xl font-bold my-5 scroll-mt-16">${p1}</h2>`
+        // Make these bold text headings more prominent
+        return `<h2 id="${id}" class="text-3xl font-extrabold my-8 text-gray-900 scroll-mt-16">${p1}</h2>`
       }
       return `<strong>${p1}</strong>`
     })
@@ -361,7 +375,7 @@ export default function BlogPostPage() {
     // Step 3: Format lists
     content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
       return `<div class="my-3">
-        <strong class="block mb-1">${title}:</strong>
+        <strong class="block mb-1 text-lg">${title}:</strong>
         <p>${description.trim()}</p>
       </div>`
     })
@@ -399,10 +413,10 @@ export default function BlogPostPage() {
       }
     }
 
-    // Step 7: Format Q&A in FAQ section
+    // Step 7: Format Q&A in FAQ section - ENHANCED
     formattedContent = formattedContent.replace(
       /\*\*Q\d+: (.*?)\*\*/g,
-      '<h3 class="text-xl font-semibold mt-6 mb-2">$1</h3>',
+      '<h3 class="text-2xl font-bold mt-8 mb-4 text-gray-900">$1</h3>',
     )
 
     return formattedContent
@@ -744,7 +758,7 @@ export default function BlogPostPage() {
                       // Rendered view
                       <div
                         className="prose prose-gray max-w-none mb-8
-                        prose-headings:font-saira prose-headings:text-gray-800
+                        prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
                         prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
                         prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
                         prose-strong:font-bold prose-strong:text-gray-800
@@ -786,7 +800,7 @@ export default function BlogPostPage() {
                       <div className="relative">
                         <div
                           className="prose prose-gray max-w-none blur-md pointer-events-none p-6 opacity-70 select-none
-                          prose-headings:font-saira prose-headings:text-gray-800
+                          prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
                           prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
                           prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700
                           prose-img:w-full prose-img:rounded-lg

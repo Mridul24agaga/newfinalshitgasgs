@@ -835,6 +835,9 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
     - DO NOT end with "I hope this helps" or similar concluding remarks
     - START DIRECTLY with the blog content itself
     - The content should read like a standalone blog post, not a response to a prompt
+    - DO NOT include any technical markers, file paths, or code snippets at the beginning or end
+    - DO NOT include any "Attachment" text or URLs at the beginning or end
+    - REMOVE any references to the generation process in the final output
 
     CRITICAL REQUIREMENTS:
     - The writing must feel like it comes from a SPECIFIC person with their own unique voice
@@ -909,6 +912,19 @@ async function finalHumanization(content: string, faqs: string, imageUrls: strin
   for (const phrase of aiPhrases) {
     finalContent = finalContent.replace(phrase, "")
   }
+
+  // Additional cleanup to remove technical markers and attachments
+  finalContent = finalContent.replace(/^Attachment.*?\.tsx$/gm, "")
+  finalContent = finalContent.replace(/^.*?blob.*?\.tsx$/gm, "")
+  finalContent = finalContent.replace(/^https:\/\/blobs\.vusercontent\.com.*$/gm, "")
+  finalContent = finalContent.replace(/^.*?URL:.*$/gm, "")
+
+  // Remove any remaining technical content at start and end
+  finalContent = finalContent.replace(/^.*?(#|\/\/|import|export|function).*?\n\n/, "")
+  finalContent = finalContent.replace(/\n\n.*?(#|\/\/|import|export|function).*?$/, "")
+
+  // Ensure clean start and end
+  finalContent = finalContent.trim()
 
   // Ensure the content starts directly with a heading or paragraph
   finalContent = finalContent.trim()

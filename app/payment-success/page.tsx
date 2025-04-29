@@ -5,11 +5,18 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/utitls/supabase/client"
 import { CheckCircle, Loader2, AlertCircle } from "lucide-react"
 
+// Define interface for API response
+interface ApiResponse {
+  error?: string
+  [key: string]: any
+}
+
 export default function PaymentSuccessPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -26,7 +33,7 @@ export default function PaymentSuccessPage() {
         const currency = searchParams.get("currency") || "USD"
         const subscriptionId = searchParams.get("subscription_id")
         const status = searchParams.get("status")
-        const paymentStatus = searchParams.get("payment_status") // Check for payment status
+        const paymentStatus = searchParams.get("payment_status")
 
         setDebugInfo(
           `URL params: ${JSON.stringify(
@@ -50,22 +57,14 @@ export default function PaymentSuccessPage() {
         if (paymentStatus === "failed") {
           setError("Your payment has failed. Please try again.")
           setLoading(false)
-
-          // Redirect to payment page after 3 seconds
-          setTimeout(() => {
-            router.push("/payment")
-          }, 3000)
+          setTimeout(() => router.push("/payment"), 3000)
           return
         }
 
         if (!userId || !planId || !credits) {
           setError("Missing required payment information. Please contact support.")
           setLoading(false)
-
-          // Redirect to payment page after 3 seconds
-          setTimeout(() => {
-            router.push("/payment")
-          }, 3000)
+          setTimeout(() => router.push("/payment"), 3000)
           return
         }
 
@@ -80,39 +79,23 @@ export default function PaymentSuccessPage() {
         if (authError) {
           setError(`Authentication error: ${authError.message}`)
           setLoading(false)
-
-          // Redirect to payment page after 3 seconds
-          setTimeout(() => {
-            router.push("/payment")
-          }, 3000)
+          setTimeout(() => router.push("/payment"), 3000)
           return
         }
 
         if (!user) {
           setError("You must be logged in to complete this process.")
           setLoading(false)
-
-          // Redirect to payment page after 3 seconds
-          setTimeout(() => {
-            router.push("/payment")
-          }, 3000)
+          setTimeout(() => router.push("/payment"), 3000)
           return
         }
 
         if (user.id !== userId) {
           setError("User ID mismatch. Please contact support.")
           setLoading(false)
-
-          // Redirect to payment page after 3 seconds
-          setTimeout(() => {
-            router.push("/payment")
-          }, 3000)
+          setTimeout(() => router.push("/payment"), 3000)
           return
         }
-
-        // Debug authentication state
-        console.log("Authenticated user:", user)
-        setDebugInfo((prev) => `${prev}\n\nAuthenticated user: ${JSON.stringify(user, null, 2)}`)
 
         // Define subscription data
         const currentDate = new Date()
@@ -158,7 +141,11 @@ export default function PaymentSuccessPage() {
 
         setDebugInfo((prev) => `${prev}\n\nSubscription data: ${JSON.stringify(subscriptionData, null, 2)}`)
 
-        // Try to create or update the subscription using the API
+        // Try to create or update the subscription using the API with retry logic
+        let apiSuccess = false
+        let apiResponse: ApiResponse | null = null
+        let apiError = null
+
         try {
           const response = await fetch("/api/create-subscription", {
             method: "POST",
@@ -176,8 +163,29 @@ export default function PaymentSuccessPage() {
 
           if (!response.ok) {
             try {
-              const errorData = JSON.parse(responseText)
-              throw new Error(errorData.error || "Failed to create subscription")
+              apiResponse = JSON.parse(responseText)
+              apiError = apiResponse?.error || "Failed to create subscription"
+
+              // Check if this is a dodopayment failure
+              if (apiError.includes("dodopayment") || apiError.includes("payment") || apiError.includes("failed")) {
+                // If we've already retried, show the error
+                if (retryCount >= 2) {
+                  throw new Error(apiError)
+                }
+
+                // Otherwise, increment retry count and try again after a delay
+                setRetryCount((prev) => prev + 1)
+                setDebugInfo((prev) => `${prev}\n\nRetrying API call (${retryCount + 1}/3)...`)
+
+                // Wait 2 seconds before retrying
+                await new Promise((resolve) => setTimeout(resolve, 2000))
+
+                // Retry the API call
+                processPayment()
+                return
+              } else {
+                throw new Error(apiError)
+              }
             } catch (jsonError) {
               throw new Error(`API error: ${responseText}`)
             }
@@ -185,22 +193,13 @@ export default function PaymentSuccessPage() {
 
           // Try to parse the response as JSON
           try {
-            const responseData = JSON.parse(responseText)
-            setDebugInfo((prev) => `${prev}\n\nAPI response parsed: ${JSON.stringify(responseData, null, 2)}`)
-
-            // Check if the API response indicates a dodopayment failure
-            if (responseData.error && responseData.error.includes("dodopayment")) {
-              setError("Your payment has failed. Please try again.")
-              setLoading(false)
-
-              // Redirect to payment page after 3 seconds
-              setTimeout(() => {
-                router.push("/payment")
-              }, 3000)
-              return
-            }
+            apiResponse = JSON.parse(responseText)
+            apiSuccess = true
+            setDebugInfo((prev) => `${prev}\n\nAPI response parsed: ${JSON.stringify(apiResponse, null, 2)}`)
           } catch (e) {
             setDebugInfo((prev) => `${prev}\n\nCouldn't parse API response as JSON`)
+            // Continue anyway since the response was ok
+            apiSuccess = true
           }
         } catch (apiError) {
           setDebugInfo(
@@ -213,22 +212,34 @@ export default function PaymentSuccessPage() {
             errorMessage.toLowerCase().includes("dodopayment") ||
             errorMessage.toLowerCase().includes("payment failed")
           ) {
-            setError("Your payment has failed. Please try again.")
-            setLoading(false)
+            // If we've already retried multiple times, show the error
+            if (retryCount >= 2) {
+              setError("Your payment has failed after multiple attempts. Please try again.")
+              setLoading(false)
+              setTimeout(() => router.push("/payment"), 3000)
+              return
+            }
 
-            // Redirect to payment page after 3 seconds
-            setTimeout(() => {
-              router.push("/payment")
-            }, 3000)
+            // Otherwise, increment retry count and try again after a delay
+            setRetryCount((prev) => prev + 1)
+            setDebugInfo((prev) => `${prev}\n\nRetrying after payment error (${retryCount + 1}/3)...`)
+
+            // Wait 2 seconds before retrying
+            await new Promise((resolve) => setTimeout(resolve, 2000))
+
+            // Retry the entire process
+            processPayment()
             return
           }
 
           throw apiError
         }
 
+        // If we got here, the API call was successful
+        // Continue with updating onboarding status and recording payment
+
         // Also update onboarding_status to mark it as completed
         try {
-          // Use the existing API route for this
           const onboardingResponse = await fetch("/api/update-onboarding", {
             method: "POST",
             headers: {
@@ -248,11 +259,11 @@ export default function PaymentSuccessPage() {
             (prev) =>
               `${prev}\n\nException updating onboarding: ${onboardingError instanceof Error ? onboardingError.message : "Unknown error"}`,
           )
+          // Continue anyway - this is not critical
         }
 
         // Record the payment success
         try {
-          // Use the existing API route for this
           const paymentRecordResponse = await fetch("/api/record-payment", {
             method: "POST",
             headers: {
@@ -269,22 +280,7 @@ export default function PaymentSuccessPage() {
 
           if (!paymentRecordResponse.ok) {
             setDebugInfo((prev) => `${prev}\n\nError recording payment success via API route`)
-
-            // Check if this is a dodopayment failure
-            const responseText = await paymentRecordResponse.text()
-            if (
-              responseText.toLowerCase().includes("dodopayment") ||
-              responseText.toLowerCase().includes("payment failed")
-            ) {
-              setError("Your payment has failed. Please try again.")
-              setLoading(false)
-
-              // Redirect to payment page after 3 seconds
-              setTimeout(() => {
-                router.push("/payment")
-              }, 3000)
-              return
-            }
+            // Continue anyway - this is not critical
           } else {
             setDebugInfo((prev) => `${prev}\n\nRecorded payment success via API route`)
           }
@@ -294,25 +290,10 @@ export default function PaymentSuccessPage() {
             (prev) =>
               `${prev}\n\nException recording payment: ${paymentRecordError instanceof Error ? paymentRecordError.message : "Unknown error"}`,
           )
-
-          // Check if this is a dodopayment failure
-          const errorMessage =
-            paymentRecordError instanceof Error ? paymentRecordError.message : String(paymentRecordError)
-          if (
-            errorMessage.toLowerCase().includes("dodopayment") ||
-            errorMessage.toLowerCase().includes("payment failed")
-          ) {
-            setError("Your payment has failed. Please try again.")
-            setLoading(false)
-
-            // Redirect to payment page after 3 seconds
-            setTimeout(() => {
-              router.push("/payment")
-            }, 3000)
-            return
-          }
+          // Continue anyway - this is not critical
         }
 
+        // Show success and redirect
         setSuccess(true)
         setLoading(false)
 
@@ -331,7 +312,24 @@ export default function PaymentSuccessPage() {
           errorMessage.toLowerCase().includes("dodopayment") ||
           errorMessage.toLowerCase().includes("payment failed")
         ) {
-          setError("Your payment has failed. Please try again.")
+          // If we've already retried multiple times, show the error
+          if (retryCount >= 2) {
+            setError("Your payment has failed after multiple attempts. Please try again.")
+            setLoading(false)
+            setTimeout(() => router.push("/payment"), 3000)
+            return
+          }
+
+          // Otherwise, increment retry count and try again after a delay
+          setRetryCount((prev) => prev + 1)
+          setDebugInfo((prev) => `${prev}\n\nRetrying after general error (${retryCount + 1}/3)...`)
+
+          // Wait 2 seconds before retrying
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+
+          // Retry the entire process
+          processPayment()
+          return
         } else if (err instanceof Error) {
           setError(`Failed to process payment: ${err.message}`)
         } else {
@@ -354,7 +352,7 @@ export default function PaymentSuccessPage() {
     }
 
     processPayment()
-  }, [router, searchParams, supabase])
+  }, [router, searchParams, supabase, retryCount])
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
@@ -362,7 +360,9 @@ export default function PaymentSuccessPage() {
         {loading ? (
           <div className="flex flex-col items-center">
             <Loader2 className="h-12 w-12 text-[#294fd6] animate-spin mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Your Payment</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {retryCount > 0 ? `Processing Your Payment (Attempt ${retryCount + 1}/3)` : "Processing Your Payment"}
+            </h1>
             <p className="text-gray-600 text-center">Please wait while we confirm your subscription details...</p>
           </div>
         ) : success ? (
@@ -398,6 +398,13 @@ export default function PaymentSuccessPage() {
           </div>
         )}
       </div>
+
+      {/* Add a manual retry button for users experiencing issues */}
+      {loading && retryCount > 0 && (
+        <button onClick={() => setRetryCount((prev) => prev + 1)} className="mt-4 text-[#294fd6] underline">
+          Click to retry manually
+        </button>
+      )}
     </div>
   )
 }
