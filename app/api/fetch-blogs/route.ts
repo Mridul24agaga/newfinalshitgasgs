@@ -5,7 +5,6 @@ import { createClient } from "@/utitls/supabase/server"
 interface Blog {
   user_id: string
   blog_post: string
-  title: string
   created_at: string // Added created_at field to the interface
 }
 
@@ -71,10 +70,10 @@ export async function GET(req: NextRequest) {
   const user_id = apiKeyData.user_id.trim()
   console.log("Fetching blogs for user_id:", user_id)
 
-  // Primary query: cast user_id to text - Updated to include created_at
+  // Primary query: cast user_id to text and include created_at
   const { data: blogs, error: blogsError } = await supabase
     .from("blogs")
-    .select("user_id, blog_post, title, created_at")
+    .select("user_id, blog_post, created_at") // Added created_at to the select
     .eq("user_id::text", user_id)
 
   console.log("Primary query result (text cast):", JSON.stringify(blogs, null, 2), "Error:", blogsError?.message)
@@ -84,13 +83,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch blogs", details: blogsError.message }, { status: 500, headers })
   }
 
-  // Fallback query: direct UUID comparison - Updated to include created_at
+  // Fallback query: direct UUID comparison
   let fallbackBlogs: Blog[] = [] // Explicitly type the array
   if (!blogs || blogs.length === 0) {
     console.log("Trying fallback query with direct UUID comparison")
     const { data: fallbackData, error: fallbackError } = await supabase
       .from("blogs")
-      .select("user_id, blog_post, title, created_at")
+      .select("user_id, blog_post, created_at") // Added created_at to the select
       .eq("user_id", user_id)
 
     console.log(
@@ -107,8 +106,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Debug: Fetch sample blogs - Updated to include created_at
-  const { data: sampleBlogs } = await supabase.from("blogs").select("user_id, blog_post, title, created_at").limit(5)
+  // Debug: Fetch sample blogs
+  const { data: sampleBlogs } = await supabase.from("blogs").select("user_id, blog_post, created_at").limit(5) // Added created_at to the select
 
   console.log("Sample blogs table data:", JSON.stringify(sampleBlogs, null, 2))
 
