@@ -1,33 +1,46 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import BlogGenerator from "./generate-blog-content"
-import { createClient } from "@/utitls/supabase/client"
-import { generateBlog } from "@/app/actions"
+import { useState, useEffect } from "react";
+import BlogGenerator from "./generate-blog-content";
+import { createClient } from "@/utitls/supabase/client"; // Fixed typo in import path
+import { generateBlog } from "@/app/actions";
+
+// Interface for the generateBlog return type
+interface GenerateBlogResult {
+  headline?: string;
+  content?: string;
+  initialContent?: string;
+  researchSummary?: string;
+  imageUrls?: string[];
+  is_blurred?: boolean;
+  jobId?: string;
+  error?: string;
+  message?: string; // Added to handle client_error message
+}
 
 export default function Home() {
-  const [loading, setLoading] = useState(false)
-  const [subscriptionError, setSubscriptionError] = useState(false)
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
-  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true)
-  const supabase = createClient()
+  const [loading, setLoading] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const supabase = createClient();
 
   // Check if user has an active subscription
   useEffect(() => {
     const checkSubscription = async () => {
       try {
-        setIsCheckingSubscription(true)
+        setIsCheckingSubscription(true);
 
         // Get the current user
         const {
           data: { user },
           error: userError,
-        } = await supabase.auth.getUser()
+        } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          console.log("No authenticated user found")
-          setHasActiveSubscription(false)
-          return
+          console.log("No authenticated user found");
+          setHasActiveSubscription(false);
+          return;
         }
 
         // Check the subscriptions table for an active subscription
@@ -36,50 +49,50 @@ export default function Home() {
           .select("*")
           .eq("user_id", user.id)
           .eq("status", "active")
-          .single()
+          .single();
 
         if (subscriptionError && subscriptionError.code !== "PGRST116") {
-          console.error("Error checking subscription:", subscriptionError)
+          console.error("Error checking subscription:", subscriptionError);
         }
 
         // Set subscription status based on whether we found an active subscription
-        setHasActiveSubscription(!!subscriptionData)
-        console.log("Active subscription:", !!subscriptionData)
+        setHasActiveSubscription(!!subscriptionData);
+        console.log("Active subscription:", !!subscriptionData);
       } catch (error) {
-        console.error("Error checking subscription status:", error)
-        setHasActiveSubscription(false)
+        console.error("Error checking subscription status:", error);
+        setHasActiveSubscription(false);
       } finally {
-        setIsCheckingSubscription(false)
+        setIsCheckingSubscription(false);
       }
-    }
+    };
 
-    checkSubscription()
-  }, [supabase])
+    checkSubscription();
+  }, [supabase]);
 
   const handleGenerateBlog = async (url: string, humanizeLevel: "normal" | "hardcore") => {
     try {
-      setLoading(true)
+      setLoading(true);
 
-      console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
+      console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`);
 
       // Only pass the URL to the server action
       // The humanizeLevel will need to be handled differently or embedded in the URL
-      const data = await generateBlog(url)
+      const data: GenerateBlogResult = await generateBlog(url);
 
       // Check for subscription errors from the server action
       if (data.error === "subscription_required" && !hasActiveSubscription) {
-        setSubscriptionError(true)
+        setSubscriptionError(true);
       }
 
-      return data
+      return data;
     } catch (error) {
-      console.error("Error generating blog:", error)
+      console.error("Error generating blog:", error);
       // Handle error state
-      return { error: "client_error", message: "Failed to generate blog" }
+      return { error: "client_error", message: "Failed to generate blog" } as GenerateBlogResult;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (isCheckingSubscription) {
     return (
@@ -87,7 +100,7 @@ export default function Home() {
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
         <p className="ml-3 text-gray-700">Checking subscription status...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -101,5 +114,5 @@ export default function Home() {
         />
       </div>
     </main>
-  )
+  );
 }

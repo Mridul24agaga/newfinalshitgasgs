@@ -372,32 +372,60 @@ export default function BlogPostPage() {
       return `<strong>${p1}</strong>`
     })
 
-    // Step 3: Format lists
+    // Step 3: Format special list items with bold titles and descriptions
     content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
-      return `<div class="my-3">
-        <strong class="block mb-1 text-lg">${title}:</strong>
-        <p>${description.trim()}</p>
+      return `<div class="my-4">
+        <p class="font-semibold text-gray-900">${title}:</p>
+        <p class="mt-1">${description.trim()}</p>
       </div>`
     })
 
-    // Step 4: Format bullet points
-    content = content.replace(/- (.*?)(?=(?:\n|$))/g, '<li class="ml-6 list-disc my-2">$1</li>')
-
-    // Step 5: Wrap lists in ul tags
-    content = content.replace(
-      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n<li class="ml-6 list-disc my-2">/g,
-      '<ul class="my-4 list-disc">\n<li class="ml-6 list-disc my-2">$1</li>\n<li class="ml-6 list-disc my-2">',
-    )
-    content = content.replace(
-      /<li class="ml-6 list-disc my-2">(.*?)<\/li>\n(?!<li)/g,
-      '<li class="ml-6 list-disc my-2">$1</li>\n</ul>\n',
-    )
-
-    // Step 6: Format paragraphs
+    // Step 4: Process regular bullet points - COMPLETELY REVISED
+    // First, identify groups of bullet points and wrap them in <ul> tags
+    let inList = false
     const lines = content.split("\n")
-    let formattedContent = ""
+    let processedContent = ""
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
+
+      // Check if this line is a bullet point
+      if (line.startsWith("- ")) {
+        // If we're not already in a list, start a new one
+        if (!inList) {
+          processedContent += '<ul class="list-disc pl-6 my-4 space-y-2">\n'
+          inList = true
+        }
+
+        // Extract the content after the bullet point marker
+        const bulletContent = line.substring(2)
+
+        // Add as a list item
+        processedContent += `<li class="ml-2">${bulletContent}</li>\n`
+      } else {
+        // If this is not a bullet point and we were in a list, close the list
+        if (inList) {
+          processedContent += "</ul>\n"
+          inList = false
+        }
+
+        // Add the line as is
+        processedContent += line + "\n"
+      }
+    }
+
+    // Close any open list at the end
+    if (inList) {
+      processedContent += "</ul>\n"
+    }
+
+    content = processedContent
+
+    // Step 5: Format paragraphs
+    const paragraphLines = content.split("\n")
+    let formattedContent = ""
+    for (let i = 0; i < paragraphLines.length; i++) {
+      const line = paragraphLines[i].trim()
       if (
         line &&
         !line.startsWith("<h") &&
@@ -413,7 +441,7 @@ export default function BlogPostPage() {
       }
     }
 
-    // Step 7: Format Q&A in FAQ section - ENHANCED
+    // Step 6: Format Q&A in FAQ section - ENHANCED
     formattedContent = formattedContent.replace(
       /\*\*Q\d+: (.*?)\*\*/g,
       '<h3 class="text-2xl font-bold mt-8 mb-4 text-gray-900">$1</h3>',
