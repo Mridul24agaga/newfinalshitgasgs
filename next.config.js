@@ -43,6 +43,11 @@ const nextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "im.runware.ai",
+        pathname: "/image/**",
+      },
     ],
   },
   env: {

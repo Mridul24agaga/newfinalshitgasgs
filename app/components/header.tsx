@@ -26,14 +26,7 @@ export function Header() {
 
   return (
     <>
-      {/* Promotion Banner */}
-      <div className="bg-[#294df6] text-white py-3 px-4 flex items-center justify-center text-sm md:text-base">
-        <span className="font-medium text-xs sm:text-sm md:text-base flex items-center">
-          <span className="mr-2">🚀</span>
-          Launch Offer: 57% OFF on All Plans
-        </span>
-        
-      </div>
+      s
 
       {/* Navigation */}
       <header
@@ -78,6 +71,9 @@ export function Header() {
             </div>
             <Link href="/#howitworks" className="text-gray-700 font-medium text-sm">
               How It Works
+            </Link>
+            <Link href="/blogs" className="text-gray-700 font-medium text-sm">
+              Blogs
             </Link>
             <div className="relative group">
               <Link href="/#faq" className="flex items-center text-gray-700 font-medium text-sm">

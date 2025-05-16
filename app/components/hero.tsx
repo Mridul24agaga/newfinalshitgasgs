@@ -79,44 +79,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Enhanced Promotion Banner - PC Only for Countdown and Button */}
-      <div className="bg-gradient-to-r from-[#294df6] to-[#3a5bff] text-white py-3 px-4 lg:px-8">
-        <div className="container mx-auto flex items-center justify-center gap-3 lg:gap-8">
-          <span className="font-medium flex items-center text-sm lg:text-base">
-            <span className="mr-2 lg:mr-3 text-base lg:text-xl">🚀</span>
-            Launch Offer: <span className="font-bold mx-1">57% OFF</span> on All Plans
-          </span>
-
-          <div className="hidden lg:flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-1.5">
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold">{timeLeft.days}</span>
-              <span className="text-xs uppercase tracking-wide">Days</span>
-            </div>
-            <span className="text-xl font-light">:</span>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold">{String(timeLeft.hours).padStart(2, "0")}</span>
-              <span className="text-xs uppercase tracking-wide">Hours</span>
-            </div>
-            <span className="text-xl font-light">:</span>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold">{String(timeLeft.minutes).padStart(2, "0")}</span>
-              <span className="text-xs uppercase tracking-wide">Mins</span>
-            </div>
-            <span className="text-xl font-light">:</span>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold">{String(timeLeft.seconds).padStart(2, "0")}</span>
-              <span className="text-xs uppercase tracking-wide">Secs</span>
-            </div>
-          </div>
-
-          <Link
-            href="/get-started"
-            className="hidden lg:block bg-white text-[#294df6] px-6 py-2 rounded-md font-semibold hover:bg-opacity-90 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-          >
-            Get Started
-          </Link>
-        </div>
-      </div>
 
       {/* Navigation */}
       <header
@@ -162,6 +124,9 @@ export default function Home() {
             <Link href="#howitworks" className="text-gray-700 font-medium text-sm">
               How It Works
             </Link>
+            <Link href="/blogs" className="text-gray-700 font-medium text-sm">
+              Blogs
+            </Link>
             <div className="relative group">
               <Link href="#faq" className="flex items-center text-gray-700 font-medium text-sm">
                 FAQ
@@ -201,6 +166,12 @@ export default function Home() {
                 className="flex items-center justify-between text-gray-700 font-medium px-3 py-2"
               >
                 How It Works
+              </Link>
+               <Link
+                href="/blogs"
+                className="flex items-center justify-between text-gray-700 font-medium px-3 py-2"
+              >
+                Blogs
               </Link>
               <Link href="#faq" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
                 FAQ

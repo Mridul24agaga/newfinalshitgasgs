@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { generateBlog } from "../actions"
-import { Loader2, AlertCircle, Clock, FileText, ImageIcon, CheckCircle2, ArrowLeft, CreditCard } from "lucide-react"
+import { Loader2, AlertCircle, Clock, FileText, ImageIcon, CheckCircle2, CreditCard } from "lucide-react"
 import Image from "next/image"
 
 // Define the props interface for the component
@@ -11,6 +11,13 @@ interface GenerateBlogPageProps {
   loading?: boolean
   subscriptionError?: boolean
   hasActiveSubscription?: boolean
+}
+
+// Define the interface for the blog generation result
+interface BlogContent {
+  headline: string
+  content: string
+  imageUrls?: string[]
 }
 
 export default function GenerateBlogPage({
@@ -22,11 +29,7 @@ export default function GenerateBlogPage({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [blog, setBlog] = useState<{
-    headline: string
-    content: string
-    imageUrls?: string[]
-  } | null>(null)
+  const [blog, setBlog] = useState<BlogContent | null>(null)
   const [error, setError] = useState("")
   const [timer, setTimer] = useState(0)
   const [imagesLoaded, setImagesLoaded] = useState(false)
@@ -147,17 +150,21 @@ export default function GenerateBlogPage({
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
 
       // Use the external onGenerate function if provided, otherwise use the local generateBlog function
-      const result = onGenerate
-        ? await onGenerate(url, humanizeLevel)
-        : ((await generateBlog(url)) as {
-            headline: string
-            content: string
-            imageUrls?: string[]
-          })
+      const result = onGenerate ? await onGenerate(url, humanizeLevel) : await generateBlog(url)
 
-      // Only set blog if we have valid data
-      if (result && result.headline && result.content) {
-        setBlog(result)
+      // Check if result has the expected properties
+      if (result && typeof result === "object") {
+        // Create a properly typed blog object from the result
+        const blogContent: BlogContent = {
+          headline: result.headline || "",
+          content: result.content || "",
+          imageUrls: Array.isArray(result.imageUrls) ? result.imageUrls : undefined,
+        }
+
+        // Only set blog if we have valid data
+        if (blogContent.headline && blogContent.content) {
+          setBlog(blogContent)
+        }
       }
 
       // Check for subscription errors from the server action
@@ -308,16 +315,6 @@ export default function GenerateBlogPage({
   // Use external loading state if provided
   const isLoading = externalLoading !== undefined ? externalLoading : isGenerating
 
-  // If there's an error in the URL, clear it to prevent repeated error messages
-  // useEffect(() => {
-  //   if (error && window.history.replaceState) {
-  //     // Create a new URL without the autostart parameter
-  //     const url = new URL(window.location.href)
-  //     url.searchParams.delete("autostart")
-  //     window.history.replaceState({}, "", url.toString())
-  //   }
-  // }, [error])
-
   // Global error handler to catch unhandled errors
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -371,9 +368,6 @@ export default function GenerateBlogPage({
       {/* Add padding to account for the fixed header */}
       <div className="pt-16">
         <div className="max-w-4xl mx-auto">
-          {/* Back button */}
-          
-
           {/* Main Content - Removed header and shadow */}
           <div className="bg-white overflow-hidden">
             {/* Content */}

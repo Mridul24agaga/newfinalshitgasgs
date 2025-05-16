@@ -29,16 +29,28 @@ interface Schedule {
   next_run: string;
 }
 
-// Interface for the generateBlog return type
+// Define the BlogPost interface
+interface BlogPost {
+  id?: string
+  title?: string
+  content?: string
+  summary?: string
+  imageUrl?: string
+  createdAt?: string
+  status?: string
+}
+
 interface GenerateBlogResult {
-  headline?: string;
-  content?: string;
-  initialContent?: string;
-  researchSummary?: string;
-  imageUrls?: string[];
-  is_blurred?: boolean;
-  jobId?: string;
-  error?: string;
+  blogPosts?: BlogPost[]
+  message?: string
+  headline?: string
+  content?: string
+  initialContent?: string
+  researchSummary?: string
+  imageUrls?: string[]
+  is_blurred?: boolean
+  jobId?: string
+  error?: string
 }
 
 export default function IntegratedScheduler() {

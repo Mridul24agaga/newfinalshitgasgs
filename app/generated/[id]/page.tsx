@@ -475,28 +475,38 @@ export default function BlogPostPage() {
       else if (blogPost.is_blurred && !hasActiveSubscription) {
         console.log("Non-subscriber - showing 20% and blurring the rest")
         const fullContent = blogPost.blog_post || ""
-        const paragraphs = fullContent.match(/<\/p>/g) || []
-        const targetIndex = Math.ceil(paragraphs.length * 0.2)
-        let splitIndex = 0
-        if (targetIndex > 0 && paragraphs.length >= targetIndex) {
-          let count = 0
-          let lastPos = 0
-          while (count < targetIndex) {
-            lastPos = fullContent.indexOf("</p>", lastPos + 1)
-            if (lastPos === -1) break
-            count++
-            splitIndex = lastPos + 4
+
+        // Fix: Instead of using paragraph counting which might truncate content,
+        // use a more reliable character-based approach
+        const splitIndex = Math.floor(fullContent.length * 0.2)
+
+        // Ensure we don't split in the middle of a word or HTML tag
+        let adjustedSplitIndex = splitIndex
+        while (
+          adjustedSplitIndex < fullContent.length &&
+          fullContent[adjustedSplitIndex] !== " " &&
+          fullContent[adjustedSplitIndex] !== "\n" &&
+          fullContent[adjustedSplitIndex] !== "<"
+        ) {
+          adjustedSplitIndex++
+        }
+
+        // If we're in the middle of an HTML tag, find the closing >
+        if (fullContent[adjustedSplitIndex] === "<") {
+          const closingTagIndex = fullContent.indexOf(">", adjustedSplitIndex)
+          if (closingTagIndex !== -1) {
+            adjustedSplitIndex = closingTagIndex + 1
           }
-        } else {
-          splitIndex = Math.floor(fullContent.length * 0.2)
         }
 
         setSplitContentResult({
-          visibleContent: formatBlogContent(fullContent.slice(0, splitIndex)),
-          blurredContent: formatBlogContent(fullContent.slice(splitIndex)),
-          hasBlurredContent: fullContent.length > splitIndex,
+          visibleContent: formatBlogContent(fullContent.slice(0, adjustedSplitIndex)),
+          blurredContent: formatBlogContent(fullContent.slice(adjustedSplitIndex)),
+          hasBlurredContent: fullContent.length > adjustedSplitIndex,
         })
-        console.log(`Content split - Visible: ${splitIndex} chars, Blurred: ${fullContent.length - splitIndex} chars`)
+        console.log(
+          `Content split - Visible: ${adjustedSplitIndex} chars, Blurred: ${fullContent.length - adjustedSplitIndex} chars`,
+        )
       }
       // For premium subscribers, show everything
       else {

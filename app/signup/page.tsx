@@ -8,6 +8,7 @@ import Link from "next/link"
 import { createClient } from "@/utitls/supabase/client"
 import { Eye, EyeOff, AlertCircle, FileText, ArrowRight, Check, Code, Globe } from "lucide-react"
 import { Inter } from "next/font/google"
+import { sendOnboardingEmail, sendAdminNotification } from "../actions/email"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -240,7 +241,7 @@ export default function SignUpPage() {
         return
       }
 
-      // Step 1: Sign up with Supabase Auth - MODIFIED to use a simpler approach
+      // Step 1: Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -290,7 +291,26 @@ export default function SignUpPage() {
         console.error("Error updating user metadata:", updateError)
       }
 
-      // Step 4: Handle redirect based on email confirmation
+      // Step 4: Send onboarding email (which now adds the user to a contact list first)
+      try {
+        console.log("Sending onboarding email to:", email)
+        const emailResult = await sendOnboardingEmail({ email, username })
+        console.log("Onboarding email sent successfully:", emailResult)
+
+        // Step 5: Send admin notification (optional)
+        try {
+          await sendAdminNotification({ email, username })
+        } catch (notifyError) {
+          console.error("Error sending admin notification:", notifyError)
+          // Don't block the process if admin notification fails
+        }
+      } catch (emailError: any) {
+        // Don't block the signup process if email fails
+        console.error("Error sending onboarding email:", emailError)
+        console.error("Email error details:", emailError.message || emailError)
+      }
+
+      // Step 6: Handle redirect based on email confirmation
       if (authData.session === null) {
         router.push(`/verify-email?email=${encodeURIComponent(email)}`)
       } else {

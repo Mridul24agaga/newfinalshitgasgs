@@ -1,158 +1,470 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import type { Metadata } from "next"
 import Link from "next/link"
-import { CalendarIcon, ClockIcon, ArrowRightIcon } from "lucide-react"
-import { format } from "date-fns"
+import Image from "next/image"
+import { ArrowRight, Rss } from "lucide-react"
+import Footer from "@/app/components/footer"
+import { Header } from "@/app/components/header"
 
-type Blog = {
-  id: string
-  title: string
-  content?: string
+// Define interface for API blog data
+interface APIBlog {
   blog_post: string
-  scheduled_date?: string | null
+  user_id: string
+  title: string
+  created_at?: string // Add this optional field
 }
 
-export default function BlogList() {
-  const [blogs, setBlogs] = useState<Blog[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const apiKey = "568feb6f19a409d73c11de7e3ce5cd702aca55a4590f5ccd9c4f89e92ec1c6a9" // Replace with your actual API key or get from env
+// Define interface for blog post (used for both static and dynamic posts)
+export interface BlogPost {
+  id: number
+  title: string
+  excerpt: string
+  date: string
+  slug: string
+  image: string
+  blog_post?: string // Optional for dynamic posts
+  user_id?: string // Optional for dynamic posts
+}
 
-  useEffect(() => {
-    fetch("/api/user-blogs", {
-      headers: { Authorization: `Bearer ${apiKey}` },
+// Mock blog posts data
+const staticBlogPosts: BlogPost[] = []
+
+// Mock categories data - REMOVED EXPORT
+const categories = ["SEO", "Directory Submissions", "Backlinks", "SaaS Growth", "AI Tools", "Marketing", "Automation"]
+
+// Assign categories to blog posts
+function assignCategories(posts: BlogPost[]): Record<number, string> {
+  const postCategories: Record<number, string> = {}
+
+  posts.forEach((post) => {
+    // Assign a category based on post ID or content
+    // This is a simple assignment - in a real app, you'd have proper category assignments
+    const categoryIndex = post.id % categories.length
+    postCategories[post.id] = categories[categoryIndex]
+  })
+
+  return postCategories
+}
+
+// Helper function to extract a title from blog post and remove asterisks
+const extractTitle = (blogPost: string): string => {
+  if (!blogPost) return "Untitled Blog"
+
+  // Remove asterisks from the blog post
+  const cleanBlogPost = blogPost.replace(/\*/g, "")
+
+  // Extract first sentence or first 50 characters as title
+  const firstSentence = cleanBlogPost.split(".")[0]
+  return firstSentence.length > 50 ? firstSentence.substring(0, 50) + "..." : firstSentence
+}
+
+// Helper function to extract an excerpt from blog post
+const extractExcerpt = (blogPost: string): string => {
+  if (!blogPost) return "No content available"
+
+  // Remove asterisks from the blog post
+  const cleanBlogPost = blogPost.replace(/\*/g, "")
+
+  // Get content after the first sentence for the excerpt
+  const sentences = cleanBlogPost.split(".")
+  if (sentences.length > 1) {
+    const excerpt = sentences.slice(1, 3).join(".") // Use 2nd and 3rd sentences for excerpt
+    return excerpt.length > 150 ? excerpt.substring(0, 150) + "..." : excerpt
+  }
+
+  // If there's only one sentence, use part of it
+  return cleanBlogPost.length > 150 ? cleanBlogPost.substring(0, 150) + "..." : cleanBlogPost
+}
+
+// Helper function to create a URL-friendly slug from a title
+const createSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
+    .trim() // Trim whitespace
+}
+
+// Helper function to extract the first URL from a blog post
+const extractImageUrl = (blogPost: string): string | null => {
+  if (!blogPost) return null
+
+  // Regular expression to match URLs
+  const urlRegex = /(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp))/i
+  const match = blogPost.match(urlRegex)
+
+  if (match && match[0]) {
+    return match[0]
+  }
+
+  // If no image URL found, try to find any URL
+  const generalUrlRegex = /(https?:\/\/[^\s]+)/i
+  const generalMatch = blogPost.match(generalUrlRegex)
+
+  if (generalMatch && generalMatch[0]) {
+    return generalMatch[0]
+  }
+
+  return null
+}
+
+// This function fetches blogs from the API
+async function fetchBlogsFromAPI(): Promise<BlogPost[]> {
+  // API key - in production, this should be stored in environment variables
+  const API_KEY = "351f7b8a-f756-47cb-a44d-b37420d54516" // Replace with your actual API key
+
+  try {
+    // Fetch blogs from the API endpoint
+    const response = await fetch("https://www.getmoreseo.org/api/fetch-blogs", {
+      method: "GET",
+      headers: {
+        "x-api-key": API_KEY,
+        Accept: "application/json",
+      },
+      cache: "no-store",
     })
-      .then((res) => res.json())
-      .then((data: Blog[]) => {
-        // Filter to only show published blogs (scheduled date is in the past)
-        const publishedBlogs = data
-          .filter((blog) => {
-            if (!blog.scheduled_date) return false
-            return new Date(blog.scheduled_date) <= new Date()
+
+    if (!response.ok) {
+      console.error("API response not OK:", response.status, response.statusText)
+      return []
+    }
+
+    // Parse the response as text first to inspect it
+    const responseText = await response.text()
+
+    try {
+      // Try to parse the response as JSON
+      const result = JSON.parse(responseText)
+      let fetchedBlogs: APIBlog[] = []
+
+      // Check if the result contains an error about multiple rows
+      if (result.error && typeof result.error === "string" && result.error.includes("multiple (or no) rows returned")) {
+        // If the error contains blogs data, use it
+        if (result.blogs && Array.isArray(result.blogs)) {
+          fetchedBlogs = result.blogs
+        }
+      } else {
+        // Handle different response formats
+        if (Array.isArray(result)) {
+          fetchedBlogs = result
+        } else if (result.blogs && Array.isArray(result.blogs)) {
+          fetchedBlogs = result.blogs
+        } else if (typeof result === "object" && result.blog_post) {
+          fetchedBlogs = [result]
+        }
+      }
+
+      // Convert the fetched blogs to the format expected by the main blogs page
+      return fetchedBlogs.map((blog: APIBlog, index: number): BlogPost => {
+        // Use the title from the API if available, otherwise extract from blog_post
+        const blogTitle = blog.title || extractTitle(blog.blog_post)
+        const excerpt = extractExcerpt(blog.blog_post)
+        const imageUrl = extractImageUrl(blog.blog_post)
+        const slug = createSlug(blogTitle)
+
+        // Format the date based on created_at if available, otherwise use current date
+        let postDate
+        if (blog.created_at) {
+          // If created_at exists, format it
+          const createdDate = new Date(blog.created_at)
+          postDate = createdDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })
-          .map((blog) => ({
-            ...blog,
-            content: blog.blog_post?.substring(0, 150) || "", // Extract a preview from blog_post
-          }))
+        } else {
+          // Fallback to current date
+          postDate = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        }
 
-        setBlogs(publishedBlogs)
-        setIsLoading(false)
+        return {
+          id: 14 + index, // Start IDs after the static blogs (which end at ID 13)
+          title: blogTitle, // Use the API title or extracted title
+          excerpt,
+          date: postDate,
+          slug,
+          image: imageUrl || "/diverse-blog-community.png",
+          blog_post: blog.blog_post, // Keep the original content
+          user_id: blog.user_id, // Keep the original user_id
+        }
       })
-      .catch((error) => {
-        console.error("Error fetching blogs:", error)
-        setIsLoading(false)
-      })
-  }, [])
-
-  // Function to create a slug from the blog title
-  const createSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]+/g, "")
+    } catch (parseError) {
+      console.error("Failed to parse API response:", parseError)
+      return []
+    }
+  } catch (err) {
+    console.error("Error fetching blogs:", err)
+    return []
   }
+}
 
-  // Function to generate a random pastel color for blog cards
-  const getRandomPastelColor = () => {
-    const colors = [
-      "bg-blue-50 border-blue-200 hover:bg-blue-100",
-      "bg-green-50 border-green-200 hover:bg-green-100",
-      "bg-purple-50 border-purple-200 hover:bg-purple-100",
-      "bg-pink-50 border-pink-200 hover:bg-pink-100",
-      "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      "bg-indigo-50 border-indigo-200 hover:bg-indigo-100",
-    ]
-    return colors[Math.floor(Math.random() * colors.length)]
-  }
+export const metadata: Metadata = {
+  title: "GetMoreSEO Blog - Guides and Tips for SEO Growth",
+  description:
+    "Discover guides, tutorials, and actionable tips to grow your online presence. Learn about SEO strategies, content optimization, and more.",
+  openGraph: {
+    title: "GetMoreSEO Blog - SEO Growth Strategies",
+    description:
+      "Explore our blog for in-depth guides on SEO growth, optimization tactics, and search engine ranking strategies.",
+    images: [
+      {
+        url: "https://www.getmoreseo.org/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "GetMoreSEO",
+      },
+    ],
+    url: "https://www.getmoreseo.org/blogs",
+    siteName: "GetMoreSEO",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GetMoreSEO Insights",
+    description: "Get the latest insights on SEO strategies, content optimization, and search rankings.",
+    images: ["https://www.getmoreseo.org/logo.png"],
+    creator: "@GetMoreSEO",
+  },
+  alternates: {
+    canonical: "https://www.getmoreseo.org/blogs",
+    languages: {
+      "en-US": "https://www.getmoreseo.org/blogs",
+    },
+  },
+}
 
-  // Function to generate a random reading time
-  const getRandomReadingTime = () => {
-    return Math.floor(Math.random() * 10) + 3 + " min read"
-  }
+export default async function BlogPage() {
+  // Get dynamic blog posts and combine with static ones
+  const dynamicPosts: BlogPost[] = await fetchBlogsFromAPI()
 
-  // Format datetime for display
-  const formatDateTime = (dateTimeStr: string): string => {
-    const date = new Date(dateTimeStr)
-    return `${format(date, "MMMM d, yyyy")} at ${format(date, "h:mm a")}`
+  // Log for debugging
+  console.log(`Fetched ${dynamicPosts.length} dynamic blog posts`)
+
+  // Use all dynamic posts without filtering
+  const blogPosts: BlogPost[] = [...dynamicPosts]
+
+  // Sort by ID to maintain order
+  blogPosts.sort((a, b) => a.id - b.id)
+
+  // Featured post (first post)
+  const featuredPost = blogPosts[0]
+
+  // Recent posts (next 3 posts)
+  const recentPosts = blogPosts.slice(1, 4)
+
+  // Remaining posts
+  const remainingPosts = blogPosts.slice(4)
+
+  // Assign categories to posts
+  const postCategories = assignCategories(blogPosts)
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "GetMoreSEO Blog",
+    description: "Guides, tutorials, and actionable tips to improve your SEO and online presence",
+    url: "https://www.getmoreseo.org/blogs",
+    inLanguage: "en-US",
+    publisher: {
+      "@type": "Organization",
+      name: "GetMoreSEO",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.getmoreseo.org/logo.png",
+      },
+    },
+    blogPost: blogPosts.map((post: BlogPost) => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.excerpt,
+      datePublished: post.date,
+      url: `https://www.getmoreseo.org/blogs/${post.slug}`,
+      image: post.image.startsWith("http") ? post.image : `https://www.getmoreseo.org${post.image}`,
+    })),
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">Your Blog Collection</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover your thoughts, ideas, and stories all in one place.
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-pulse flex space-x-4">
-              <div className="rounded-full bg-gray-200 h-12 w-12"></div>
-              <div className="flex-1 space-y-4 py-1">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                </div>
-              </div>
+      {/* Use the client component Header */}
+      <Header />
+
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-r from-[#eef5ff] to-[#e6f0ff] py-12 md:py-20 border-b border-[#d1e0ff]">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">GetMoreSEO Blog</h1>
+              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+                Discover guides, tutorials, and actionable tips to improve your SEO and grow your online presence.
+              </p>
             </div>
           </div>
-        ) : blogs.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-xl">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-              />
-            </svg>
-            <h3 className="mt-2 text-xl font-medium text-gray-900">No published blogs found</h3>
-            <p className="mt-1 text-gray-500">Check back later for new content.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogs.map((blog) => {
-              const slug = createSlug(blog.title)
-              const cardColor = getRandomPastelColor()
-              const readingTime = getRandomReadingTime()
-              const publishDate = blog.scheduled_date ? formatDateTime(blog.scheduled_date) : "Published"
+        </section>
 
-              return (
-                <div
-                  key={blog.id}
-                  className={`rounded-xl border ${cardColor} overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md transform hover:-translate-y-1`}
-                >
-                  <div className="p-6 flex flex-col h-full">
-                    <div className="flex items-center text-sm text-gray-500 mb-3">
-                      <CalendarIcon className="h-4 w-4 mr-1" />
-                      <span>{publishDate}</span>
-                      <span className="mx-2">•</span>
-                      <ClockIcon className="h-4 w-4 mr-1" />
-                      <span>{readingTime}</span>
-                    </div>
-
-                    <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{blog.title}</h2>
-
-                    <p className="text-gray-600 mb-6 line-clamp-3">{blog.content}</p>
-
+        {/* Featured Post */}
+        {featuredPost && (
+          <section className="py-12 container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center">
+                <span className="mr-2">Featured Article</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e6f0ff] text-[#294fd6] border border-[#d1e0ff]">
+                  Latest
+                </span>
+              </h2>
+              <div className="bg-white rounded-xl shadow-md overflow-hidden md:flex border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+                <div className="md:w-1/2 relative">
+                  <div className="aspect-[16/9] md:h-full relative">
+                    <Image
+                      src={featuredPost.image || "/placeholder.svg?height=600&width=800&query=featured blog post"}
+                      alt={featuredPost.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
+                </div>
+                <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between">
+                  <div>
+                    <time className="text-sm text-gray-500 mb-2 block" dateTime={featuredPost.date}>
+                      {featuredPost.date}
+                    </time>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-2">{featuredPost.title}</h3>
+                    <p className="text-gray-600 mb-4 line-clamp-3">{featuredPost.excerpt}</p>
+                  </div>
+                  <div>
                     <Link
-                      href={`/blogs/${slug}`}
-                      className="mt-auto inline-flex items-center font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                      href={`/blogs/${featuredPost.slug}`}
+                      className="inline-flex items-center text-[#294fd6] hover:text-[#1e3ed0] font-medium transition-colors"
                     >
-                      Read Full Article
-                      <ArrowRightIcon className="ml-1 h-4 w-4" />
+                      Read Full Article <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            </div>
+          </section>
         )}
-      </div>
+
+        {/* Categories */}
+
+        {/* Recent Posts */}
+        {recentPosts.length > 0 && (
+          <section className="py-12 container mx-auto px-4 border-t border-gray-100">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">Recent Articles</h2>
+              <div className="grid md:grid-cols-3 gap-8">
+                {recentPosts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="bg-white rounded-lg overflow-hidden h-full border border-gray-100 hover:shadow-md transition-shadow duration-300"
+                    data-category={postCategories[post.id]}
+                  >
+                    <div className="aspect-[16/9] relative">
+                      <Image
+                        src={post.image || "/placeholder.svg?height=400&width=600&query=blog post"}
+                        alt={post.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <div className="flex justify-between items-center mb-1">
+                        <time className="text-sm text-gray-500" dateTime={post.date}>
+                          {post.date}
+                        </time>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
+                          {postCategories[post.id]}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 line-clamp-2 hover:text-[#294fd6] transition-colors mb-2">
+                        <Link href={`/blogs/${post.slug}`} className="hover:underline">
+                          {post.title}
+                        </Link>
+                      </h3>
+                      <p className="text-gray-600 line-clamp-3 mb-4">{post.excerpt}</p>
+                      <Link
+                        href={`/blogs/${post.slug}`}
+                        className="inline-flex items-center text-[#294fd6] hover:text-[#1e3ed0] font-medium transition-colors"
+                      >
+                        Read Article <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* All Posts */}
+        <section className="py-12 bg-gray-50 border-t border-gray-100">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900">All Articles</h2>
+                <div className="flex items-center gap-2">
+                  <button className="inline-flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-[#294fd6] transition-colors">
+                    <Rss className="h-4 w-4 mr-1" /> RSS
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {remainingPosts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="bg-white rounded-lg overflow-hidden h-full border border-gray-200 hover:shadow-md transition-shadow duration-300"
+                    data-category={postCategories[post.id]}
+                  >
+                    <Link href={`/blogs/${post.slug}`} className="block">
+                      <div className="aspect-[16/9] relative">
+                        <Image
+                          src={post.image || "/placeholder.svg?height=400&width=600&query=blog post"}
+                          alt={post.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      </div>
+                    </Link>
+                    <div className="p-5">
+                      <div className="flex justify-between items-center mb-1">
+                        <time className="text-sm text-gray-500" dateTime={post.date}>
+                          {post.date}
+                        </time>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
+                          {postCategories[post.id]}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 hover:text-[#294fd6] transition-colors mb-2">
+                        <Link href={`/blogs/${post.slug}`} className="hover:underline">
+                          {post.title}
+                        </Link>
+                      </h3>
+                      <p className="text-gray-600 text-sm line-clamp-2 mb-3">{post.excerpt}</p>
+                      <Link
+                        href={`/blogs/${post.slug}`}
+                        className="inline-flex items-center text-sm text-[#294fd6] hover:text-[#1e3ed0] font-medium transition-colors"
+                      >
+                        Read More <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   )
 }
-
