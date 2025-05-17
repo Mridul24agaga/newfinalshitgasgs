@@ -49,6 +49,8 @@ export default function BlogsPage() {
   const [sourceFilter, setSourceFilter] = useState<string | null>(null)
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"card" | "compact">("card")
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null)
+  const [editingDate, setEditingDate] = useState<string>("")
 
   const router = useRouter()
   const pathname = usePathname()
@@ -162,6 +164,28 @@ export default function BlogsPage() {
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
+    }
+  }
+
+  const updateBlogDate = async (blogId: string, newDate: string, source: string) => {
+    try {
+      const tableName = source === "headline_to_blog" ? "headlinetoblog" : "blogs"
+
+      const { error } = await supabase.from(tableName).update({ created_at: newDate }).eq("id", blogId)
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      // Update local state
+      setBlogs((prevBlogs) => prevBlogs.map((blog) => (blog.id === blogId ? { ...blog, created_at: newDate } : blog)))
+
+      // Reset editing state
+      setEditingBlogId(null)
+      setEditingDate("")
+    } catch (err: any) {
+      console.error("Error updating blog date:", err)
+      setError(err.message || "Failed to update blog date")
     }
   }
 
@@ -677,7 +701,49 @@ export default function BlogsPage() {
                             </span>
                             <div className="flex items-center text-xs text-gray-500">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {formatDate(blog.created_at)}
+                              {editingBlogId === blog.id ? (
+                                <div className="flex items-center">
+                                  <input
+                                    type="datetime-local"
+                                    value={editingDate}
+                                    onChange={(e) => setEditingDate(e.target.value)}
+                                    className="text-xs border border-gray-300 rounded px-1 py-0.5 w-40"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      updateBlogDate(blog.id, editingDate, blog.source || "")
+                                    }}
+                                    className="ml-1 text-green-600 hover:text-green-800"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setEditingBlogId(null)
+                                    }}
+                                    className="ml-1 text-red-600 hover:text-red-800"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <span
+                                  className="cursor-pointer hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingBlogId(blog.id)
+                                    // Format the date for datetime-local input
+                                    const date = new Date(blog.created_at)
+                                    const formattedDate = date.toISOString().slice(0, 16)
+                                    setEditingDate(formattedDate)
+                                  }}
+                                >
+                                  {formatDate(blog.created_at)}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -714,8 +780,7 @@ export default function BlogsPage() {
                             {formatTime(blog.created_at)}
                           </div>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() => {
                               if (blog.source === "headline_to_blog") {
                                 router.push(`/generate/${blog.id}`)
                               } else {
@@ -757,7 +822,48 @@ export default function BlogsPage() {
                             </span>
                             <span className="text-xs text-gray-500 flex items-center">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {formatDate(blog.created_at)}
+                              {editingBlogId === blog.id ? (
+                                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="datetime-local"
+                                    value={editingDate}
+                                    onChange={(e) => setEditingDate(e.target.value)}
+                                    className="text-xs border border-gray-300 rounded px-1 py-0.5 w-40"
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      updateBlogDate(blog.id, editingDate, blog.source || "")
+                                    }}
+                                    className="ml-1 text-green-600 hover:text-green-800"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setEditingBlogId(null)
+                                    }}
+                                    className="ml-1 text-red-600 hover:text-red-800"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <span
+                                  className="cursor-pointer hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingBlogId(blog.id)
+                                    // Format the date for datetime-local input
+                                    const date = new Date(blog.created_at)
+                                    const formattedDate = date.toISOString().slice(0, 16)
+                                    setEditingDate(formattedDate)
+                                  }}
+                                >
+                                  {formatDate(blog.created_at)}
+                                </span>
+                              )}
                             </span>
                           </div>
                           <h3 className="font-medium text-gray-900 truncate">{blog.title}</h3>
@@ -771,8 +877,7 @@ export default function BlogsPage() {
                             </div>
                           )}
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() => {
                               if (blog.source === "headline_to_blog") {
                                 router.push(`/generate/${blog.id}`)
                               } else {
