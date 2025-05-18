@@ -8,7 +8,7 @@ import Link from "next/link"
 import { createClient } from "@/utitls/supabase/client"
 import { Eye, EyeOff, AlertCircle, FileText, ArrowRight, Check, Code, Globe } from "lucide-react"
 import { Inter } from "next/font/google"
-import { sendOnboardingEmail, sendAdminNotification } from "../actions/email"
+import { sendOnboardingEmail } from "../actions/email"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -296,18 +296,31 @@ export default function SignUpPage() {
         console.log("Sending onboarding email to:", email)
         const emailResult = await sendOnboardingEmail({ email, username })
         console.log("Onboarding email sent successfully:", emailResult)
-
-        // Step 5: Send admin notification (optional)
-        try {
-          await sendAdminNotification({ email, username })
-        } catch (notifyError) {
-          console.error("Error sending admin notification:", notifyError)
-          // Don't block the process if admin notification fails
-        }
       } catch (emailError: any) {
         // Don't block the signup process if email fails
         console.error("Error sending onboarding email:", emailError)
         console.error("Email error details:", emailError.message || emailError)
+      }
+
+      // Call the test-email API route
+      try {
+        const testEmailResponse = await fetch("/api/test-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username }),
+        })
+
+        if (!testEmailResponse.ok) {
+          throw new Error(`Test email API returned ${testEmailResponse.status}`)
+        }
+
+        const testEmailResult = await testEmailResponse.json()
+        console.log("Test email API response:", testEmailResult)
+      } catch (testEmailError) {
+        console.error("Error calling test-email API:", testEmailError)
+        // Don't block the signup process if test email API fails
       }
 
       // Step 6: Handle redirect based on email confirmation

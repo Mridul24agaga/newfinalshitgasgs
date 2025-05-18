@@ -1498,169 +1498,172 @@ function blurContent(content: string): string {
 // Update the main generateBlog function to use direct links
 export async function generateBlog(websiteUrl: string): Promise<GenerateBlogResult> {
   try {
-    console.log("Starting blog generation with Tavily web search...")
+    console.log("Starting blog generation with Tavily web search...");
 
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error("Authentication failed:", authError?.message)
-      throw new Error("You need to be authenticated to generate blog posts!")
+      console.error("Authentication failed:", authError?.message);
+      throw new Error("You need to be authenticated to generate blog posts!");
     }
 
-    const userId = user.id
-    const blogPosts: BlogPost[] = []
-    const firstRevealDate = new Date()
-    const existingContent: string[] = []
-    const existingTitles: string[] = []
+    const userId = user.id;
+    const blogPosts: BlogPost[] = [];
+    const firstRevealDate = new Date();
+    const existingContent: string[] = [];
+    const existingTitles: string[] = [];
 
-    console.log(`Fetching existing posts for user ${userId}...`)
+    console.log(`Fetching existing posts for user ${userId}...`);
     const { data: existingPosts, error: postsError } = await supabase
       .from("blogs")
       .select("title, blog_post, created_at")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (postsError) {
-      console.error(`Error fetching existing posts: ${postsError.message}`)
+      console.error(`Error fetching existing posts: ${postsError.message}`);
     }
 
-    const postCount = existingPosts ? existingPosts.length : 0
-    console.log(`User ${userId} has ${postCount} existing posts`)
+    const postCount = existingPosts ? existingPosts.length : 0;
+    console.log(`User ${userId} has ${postCount} existing posts`);
 
     if (existingPosts && existingPosts.length > 0) {
       existingPosts.forEach((post: any) => {
-        existingTitles.push(post.title)
+        existingTitles.push(post.title);
         const textContent = post.blog_post
           .replace(/<[^>]+>/g, " ")
           .replace(/\s+/g, " ")
-          .trim()
-        existingContent.push(textContent)
-      })
+          .trim();
+        existingContent.push(textContent);
+      });
     }
 
-    const postsToGenerate = 1
-    console.log(`Checking subscription for user ${userId}...`)
+    const postsToGenerate = 1;
+    console.log(`Checking subscription for user ${userId}...`);
     const { data: subscriptions, error: subError } = await supabase
       .from("subscriptions")
       .select("plan_id, credits, free_blogs_generated, status")
-      .eq("user_id", userId)
+      .eq("user_id", userId);
 
     if (subError) {
-      console.error(`Error fetching subscription for user ${userId}: ${subError.message}`)
-      throw new Error("Failed to fetch subscription data. Please ensure you are signed up.")
+      console.error(`Error fetching subscription for user ${userId}: ${subError.message}`);
+      throw new Error("Failed to fetch subscription data. Please ensure you are signed up.");
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.error(`No subscription found for user ${userId}`)
-      throw new Error("No subscription found for user. Please sign up again or contact support.")
+      console.error(`No subscription found for user ${userId}`);
+      throw new Error("No subscription found for user. Please sign up again or contact support.");
     }
 
     const activeSubscription = subscriptions.find(
       (sub) =>
         ACTIVE_PLANS.map((plan) => plan.toLowerCase()).includes(sub.plan_id.toLowerCase()) &&
         ["active", "trialing"].includes(sub.status.toLowerCase()),
-    )
+    );
 
     if (subscriptions.length > 1) {
       console.warn(
         `Multiple subscriptions found for user ${userId}. Using the first active one or the first available.`,
-      )
+      );
     }
 
-    const subscription = activeSubscription || subscriptions[0]
+    const subscription = activeSubscription || subscriptions[0];
     const isPlanActive =
       ACTIVE_PLANS.map((plan) => plan.toLowerCase()).includes(subscription.plan_id.toLowerCase()) &&
-      ["active", "trialing"].includes(subscription.status.toLowerCase())
+      ["active", "trialing"].includes(subscription.status.toLowerCase());
 
-    let isFreeBlog = false
+    let isFreeBlog = false;
 
-    if (!isPlanActive && subscription.free_blogs_generated === 0) {
-      isFreeBlog = true
-      console.log("Generating a free blog post - will be blurred until subscription is active.")
-    } else if (!isPlanActive) {
-      console.error(`No active subscription found for user ${userId}. Subscription details:`, {
+    // === START FIX: Adjust free plan logic ===
+    // Allow one free blog post for users on the free plan with no credits if free_blogs_generated is 0
+    if (subscription.plan_id.toLowerCase() === "free" && subscription.free_blogs_generated === 0) {
+      isFreeBlog = true;
+      console.log("Generating a free blog post for free plan user - will be blurred until subscription is upgraded.");
+    } else if (!isPlanActive && subscription.free_blogs_generated > 0) {
+      console.error(`No active subscription and free blog already generated for user ${userId}. Subscription details:`, {
         plan_id: subscription.plan_id,
         status: subscription.status,
         free_blogs_generated: subscription.free_blogs_generated,
-      })
+      });
       throw new Error(
-        "You need an active subscription to generate more blog posts. Subscribe to unlock your free blog and generate more!",
-      )
-    } else if (subscription.credits < postsToGenerate) {
-      console.error(`Insufficient credits: ${subscription.credits} available, ${postsToGenerate} needed.`)
+        "You have already used your free blog post. Subscribe to a paid plan to generate more!",
+      );
+    } else if (isPlanActive && subscription.credits < postsToGenerate) {
+      console.error(`Insufficient credits: ${subscription.credits} available, ${postsToGenerate} needed.`);
       throw new Error(
         `You have ${subscription.credits} credits left, but need ${postsToGenerate} to generate this blog. Upgrade your plan to get more credits!`,
-      )
+      );
     }
+    // === END FIX ===
 
     if (isPlanActive) {
-      console.log(`Unlocking blurred blogs for user ${userId}...`)
+      console.log(`Unlocking blurred blogs for user ${userId}...`);
       const { error: unlockError } = await supabase
         .from("blogs")
         .update({ is_blurred: false })
         .eq("user_id", userId)
-        .eq("is_blurred", true)
+        .eq("is_blurred", true);
 
       if (unlockError) {
-        console.error(`Error unlocking blurred blogs for user ${userId}: ${unlockError.message}`)
+        console.error(`Error unlocking blurred blogs for user ${userId}: ${unlockError.message}`);
       } else {
-        console.log(`Unlocked all blurred blog posts for user ${userId}`)
+        console.log(`Unlocked all blurred blog posts for user ${userId}`);
       }
     }
 
-    let validatedUrl = websiteUrl
+    let validatedUrl = websiteUrl;
     if (!websiteUrl.startsWith("http")) {
-      validatedUrl = `https://${websiteUrl}`
+      validatedUrl = `https://${websiteUrl}`;
     }
 
     try {
-      new URL(validatedUrl)
+      new URL(validatedUrl);
     } catch (urlError) {
-      throw new Error(`Invalid URL format: ${websiteUrl}`)
+      throw new Error(`Invalid URL format: ${websiteUrl}`);
     }
 
-    const websiteInfo = await analyzeWebsite(validatedUrl)
-    console.log("Analyzed website info")
+    const websiteInfo = await analyzeWebsite(validatedUrl);
+    console.log("Analyzed website info");
 
-    const searchResults = await searchWeb(validatedUrl)
+    const searchResults = await searchWeb(validatedUrl);
 
-    let webContent = ""
+    let webContent = "";
 
     if (searchResults.length > 0) {
       searchResults.forEach((result, index) => {
-        const title = result.title || "No title"
-        const content = result.content || "No content"
-        const url = result.url || "No URL"
+        const title = result.title || "No title";
+        const content = result.content || "No content";
+        const url = result.url || "No URL";
 
         webContent += `
 Source ${index + 1}: ${url}
 Title: ${title}
 Content: ${content.substring(0, 500)}...
 
-`
-      })
+`;
+      });
 
-      console.log(`Compiled ${webContent.length} characters from web search`)
+      console.log(`Compiled ${webContent.length} characters from web search`);
     } else {
-      console.log("No search results found, using industry research")
+      console.log("No search results found, using industry research");
 
       try {
-        const domain = new URL(validatedUrl).hostname
+        const domain = new URL(validatedUrl).hostname;
         const industryResponse = await tavilyClient.search(`what industry is ${domain} in`, {
           max_results: 3,
           search_depth: "basic",
-        })
+        });
 
         if (industryResponse.results && industryResponse.results.length > 0) {
-          webContent = industryResponse.results[0].content || "No industry information available"
+          webContent = industryResponse.results[0].content || "No industry information available";
         }
       } catch (industryError) {
-        console.error("Error getting industry information:", industryError)
-        webContent = "No industry information available"
+        console.error("Error getting industry information:", industryError);
+        webContent = "No industry information available";
       }
     }
 
@@ -1670,36 +1673,36 @@ ${websiteInfo}
 
 Web Content:
 ${webContent}
-`
+`;
 
-    console.log(`Generated research summary: ${researchSummary.substring(0, 200)}...`)
+    console.log(`Generated research summary: ${researchSummary.substring(0, 200)}...`);
 
-    let blogTitle = await generateDataDrivenTitle(websiteInfo, researchSummary)
-    console.log(`Generated blog title: ${blogTitle}`)
+    let blogTitle = await generateDataDrivenTitle(websiteInfo, researchSummary);
+    console.log(`Generated blog title: ${blogTitle}`);
 
     if (existingTitles.includes(blogTitle)) {
-      console.warn(`Blog title "${blogTitle}" already exists, generating a new one...`)
-      const newBlogTitle = await generateDataDrivenTitle(websiteInfo, researchSummary)
+      console.warn(`Blog title "${blogTitle}" already exists, generating a new one...`);
+      const newBlogTitle = await generateDataDrivenTitle(websiteInfo, researchSummary);
       if (existingTitles.includes(newBlogTitle)) {
-        console.warn(`New blog title "${newBlogTitle}" also exists, using a timestamped title...`)
-        blogTitle = `${newBlogTitle} - ${Date.now()}`
+        console.warn(`New blog title "${newBlogTitle}" also exists, using a timestamped title...`);
+        blogTitle = `${newBlogTitle} - ${Date.now()}`;
       } else {
-        blogTitle = newBlogTitle
+        blogTitle = newBlogTitle;
       }
-      console.log(`Using new blog title: ${blogTitle}`)
+      console.log(`Using new blog title: ${blogTitle}`);
     }
 
-    const externalLinks = await generateExternalLinks(searchResults, researchSummary, validatedUrl)
-    console.log(`Generated external links: ${JSON.stringify(externalLinks)}`)
+    const externalLinks = await generateExternalLinks(searchResults, researchSummary, validatedUrl);
+    console.log(`Generated external links: ${JSON.stringify(externalLinks)}`);
 
-    const internalLinks = await generateInternalLinks(validatedUrl, searchResults)
-    console.log(`Generated internal links: ${JSON.stringify(internalLinks)}`)
+    const internalLinks = await generateInternalLinks(validatedUrl, searchResults);
+    console.log(`Generated internal links: ${JSON.stringify(internalLinks)}`);
 
-    const faqs = await generateFAQs(websiteInfo, researchSummary)
-    console.log(`Generated FAQs: ${faqs.substring(0, 200)}...`)
+    const faqs = await generateFAQs(websiteInfo, researchSummary);
+    console.log(`Generated FAQs: ${faqs.substring(0, 200)}...`);
 
-    const firstHalf = await generateFirstHalf(blogTitle, researchSummary, validatedUrl, externalLinks, internalLinks)
-    console.log(`Generated first half of blog content: ${firstHalf.substring(0, 200)}...`)
+    const firstHalf = await generateFirstHalf(blogTitle, researchSummary, validatedUrl, externalLinks, internalLinks);
+    console.log(`Generated first half of blog content: ${firstHalf.substring(0, 200)}...`);
 
     const secondHalf = await generateSecondHalf(
       blogTitle,
@@ -1708,110 +1711,113 @@ ${webContent}
       validatedUrl,
       externalLinks,
       internalLinks,
-    )
-    console.log(`Generated second half of blog content: ${secondHalf.substring(0, 200)}...`)
+    );
+    console.log(`Generated second half of blog content: ${secondHalf.substring(0, 200)}...`);
 
-    const imageTopics = await generateImageTopics(blogTitle, researchSummary)
-    console.log(`Generated image topics: ${imageTopics.join(", ")}`)
+    const imageTopics = await generateImageTopics(blogTitle, researchSummary);
+    console.log(`Generated image topics: ${imageTopics.join(", ")}`);
 
     const imageUrls = await Promise.all(imageTopics.map((topic) => fetchStockImages(topic)))
       .then((results) => results.flat())
       .catch((error) => {
-        console.error("Error fetching images:", error)
-        return generatePlaceholderImages(3, "Blog Image")
-      })
+        console.error("Error fetching images:", error);
+        return generatePlaceholderImages(3, "Blog Image");
+      });
 
-    console.log(`Generated image URLs: ${imageUrls.join(", ")}`)
+    console.log(`Generated image URLs: ${imageUrls.join(", ")}`);
 
-    let content = await finalHumanization(firstHalf + secondHalf, faqs, imageUrls, blogTitle)
-    console.log("Performed final humanization of content")
+    let content = await finalHumanization(firstHalf + secondHalf, faqs, imageUrls, blogTitle);
+    console.log("Performed final humanization of content");
 
     if (isFreeBlog) {
-      content = blurContent(content)
-      console.log("Blurred content for free blog post")
+      content = blurContent(content);
+      console.log("Blurred content for free blog post");
     }
 
-    const is_blurred = isFreeBlog
+    const is_blurred = isFreeBlog;
 
     const newBlogPost: BlogPost = {
       title: blogTitle,
       content: content,
       is_blurred: is_blurred,
-    }
+    };
 
-    blogPosts.push(newBlogPost)
+    blogPosts.push(newBlogPost);
 
-    let creditsToDeduct = postsToGenerate
+    // === START FIX: Adjust credit deduction logic ===
+    let creditsToDeduct = postsToGenerate;
     if (isFreeBlog) {
-      creditsToDeduct = 0
+      creditsToDeduct = 0; // No credits deducted for free blog
     }
 
-    console.log(`Deducting ${creditsToDeduct} credits from user ${userId}...`)
+    console.log(`Deducting ${creditsToDeduct} credits from user ${userId}...`);
+    const updateData: any = {
+      free_blogs_generated: isFreeBlog ? subscription.free_blogs_generated + 1 : subscription.free_blogs_generated,
+    };
+
+    // Only update credits if creditsToDeduct is greater than 0
+    if (creditsToDeduct > 0) {
+      updateData.credits = subscription.credits - creditsToDeduct;
+    }
+
     const { error: updateError } = await supabase
       .from("subscriptions")
-      .update({
-        credits: subscription.credits - creditsToDeduct,
-        free_blogs_generated: isFreeBlog ? 1 : subscription.free_blogs_generated,
-      })
-      .eq("user_id", userId)
+      .update(updateData)
+      .eq("user_id", userId);
 
     if (updateError) {
-      console.error(`Error updating credits for user ${userId}: ${updateError.message}`)
-      throw new Error("Failed to update credits. Please contact support.")
+      console.error(`Error updating subscription for user ${userId}: ${updateError.message}`);
+      throw new Error("Failed to update subscription. Please contact support.");
     }
+    // === END FIX ===
 
-    console.log(`Creating blog post in database for user ${userId}...`)
+    console.log(`Creating blog post in database for user ${userId}...`);
     // Ensure we have a valid URL to insert
     if (!validatedUrl) {
-      console.error("URL is missing or invalid, generating a fallback URL")
-      // Create a fallback URL using the blog title if the original URL is missing
-      validatedUrl = `https://blog-${Date.now()}.example.com/${encodeURIComponent(blogTitle.toLowerCase().replace(/\s+/g, "-"))}`
+      console.error("URL is missing or invalid, generating a fallback URL");
+      validatedUrl = `https://blog-${Date.now()}.example.com/${encodeURIComponent(blogTitle.toLowerCase().replace(/\s+/g, "-"))}`;
     }
 
-    console.log(`Using URL for database insertion: ${validatedUrl}`)
+    console.log(`Using URL for database insertion: ${validatedUrl}`);
 
-    // Create the blog post object with explicit URL field
     const blogPostData = {
       user_id: userId,
       title: blogTitle,
       blog_post: content,
       is_blurred: is_blurred,
       created_at: firstRevealDate.toISOString(),
-      url: validatedUrl, // Explicitly set the URL field
-    }
+      url: validatedUrl,
+    };
 
-    // Log the object we're about to insert
     console.log(
       `Blog post data to insert:`,
       JSON.stringify({
         ...blogPostData,
-        blog_post: blogPostData.blog_post.substring(0, 100) + "...", // Truncate content for logging
+        blog_post: blogPostData.blog_post.substring(0, 100) + "...",
       }),
-    )
+    );
 
-    const { data: insertedData, error: insertError } = await supabase.from("blogs").insert([blogPostData])
+    const { data: insertedData, error: insertError } = await supabase.from("blogs").insert([blogPostData]);
 
     if (insertError) {
-      console.error(`Error inserting blog post: ${insertError.message}`)
-      // Log more details about the error
-      console.error(`Error details:`, insertError)
-      throw new Error("Failed to save blog post. Please try again.")
+      console.error(`Error inserting blog post: ${insertError.message}`);
+      console.error(`Error details:`, insertError);
+      throw new Error("Failed to save blog post. Please try again.");
     }
 
-    // FIX: Add null check for insertedData
     console.log(
       `Blog post created successfully with ID: ${insertedData && insertedData[0] ? insertedData[0] : "unknown"}`,
-    )
+    );
 
     return {
       blogPosts,
       message: `Generated ${postsToGenerate} blog post(s) successfully!`,
-    } as GenerateBlogResult
+    } as GenerateBlogResult;
   } catch (error: any) {
-    console.error("Error generating blog:", error)
+    console.error("Error generating blog:", error);
     return {
       blogPosts: [],
       message: error.message || "Failed to generate blog post. Please try again.",
-    } as GenerateBlogResult
+    } as GenerateBlogResult;
   }
 }

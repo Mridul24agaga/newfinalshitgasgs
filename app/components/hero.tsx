@@ -3,6 +3,8 @@ import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
 import { Menu, X } from "lucide-react"
 import Image from "next/image"
+import { motion, AnimatePresence } from "framer-motion"
+import { Header } from "./header"
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -58,150 +60,72 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.6 } },
+  }
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+  }
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3,
+      },
+    },
+  }
+
+  const navVariants = {
+    hidden: { y: -20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
+  }
+
+  const videoContainerVariants = {
+    hidden: { scale: 0.95, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {
+        duration: 0.8,
+        delay: 0.6,
+        ease: "easeOut",
+      },
+    },
+  }
+
   return (
     <div className="min-h-screen flex flex-col font-poppins">
-      {isLoading && (
-        <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="w-24 h-24 border-t-4 border-[#294df6] rounded-full animate-spin"></div>
-            <div className="absolute top-0 left-0 w-24 h-24 border-t-4 border-[#7733ee] rounded-full animate-spin-slow"></div>
-          </div>
-          <div className="mt-8 flex flex-col items-center">
-            <Image
-              src="/logoblack.png"
-              alt="GetMoreSEO Logo"
-              width={150}
-              height={150}
-              className="object-contain animate-pulse"
-            />
-            <p className="text-gray-600 mt-4 font-medium">Loading amazing content...</p>
-          </div>
-        </div>
-      )}
-
-
-      {/* Navigation */}
-      <header
-        className={`bg-white py-4 md:py-5 px-4 md:px-6 sticky top-0 z-50 transition-all duration-200 ${
-          isScrolled ? "shadow-md" : "border-b border-gray-200"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <Image
-                src="/logoblack.png" // Replace this with the path to your logo image
-                alt="GetMoreSEO Logo"
-                width={120} // Adjust size as needed
-                height={120}
-                className="object-contain"
-              />
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden focus:outline-none"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="h-6 w-6 text-gray-700" /> : <Menu className="h-6 w-6 text-gray-700" />}
-          </button>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <div className="relative group">
-              <Link href="/" className="flex items-center text-gray-700 font-medium text-sm">
-                Home
-              </Link>
-            </div>
-
-            <div className="relative group">
-              <Link href="#examples" className="flex items-center text-gray-700 font-medium text-sm">
-                Examples
-              </Link>
-            </div>
-            <Link href="#howitworks" className="text-gray-700 font-medium text-sm">
-              How It Works
-            </Link>
-            <Link href="/blogs" className="text-gray-700 font-medium text-sm">
-              Blogs
-            </Link>
-            <div className="relative group">
-              <Link href="#faq" className="flex items-center text-gray-700 font-medium text-sm">
-                FAQ
-              </Link>
-            </div>
-          </nav>
-
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login" className="text-[#294df6] hover:text-[#1e3ed0] font-medium text-sm">
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="bg-[#294df6] hover:bg-[#1e3ed0] text-white px-5 py-2.5 rounded-md font-medium text-sm whitespace-nowrap transition-colors duration-200"
-            >
-              Get Started Today
-            </Link>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b shadow-lg p-4 z-50 animate-fadeIn">
-            <nav className="flex flex-col space-y-3">
-              <Link href="/" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
-                Home
-              </Link>
-
-              <Link href="#features" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
-                Features
-              </Link>
-              <Link href="/#examples" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
-                Examples
-              </Link>
-              <Link
-                href="/#howitworks"
-                className="flex items-center justify-between text-gray-700 font-medium px-3 py-2"
-              >
-                How It Works
-              </Link>
-               <Link
-                href="/blogs"
-                className="flex items-center justify-between text-gray-700 font-medium px-3 py-2"
-              >
-                Blogs
-              </Link>
-              <Link href="#faq" className="flex items-center justify-between text-gray-700 font-medium px-3 py-2">
-                FAQ
-              </Link>
-              <div className="border-t pt-3 mt-2 flex flex-col space-y-3">
-                <Link
-                  href="/login"
-                  className="px-3 py-2 text-[#294df6] font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="bg-[#294df6] text-white px-4 py-2 rounded-md font-medium text-center"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Get Started Today
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
-      </header>
+      <Header/>
 
       {/* Hero Section */}
       <main className="flex-grow">
         <div className="relative overflow-hidden bg-white">
           {/* Grid Background */}
-          <div
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5 }}
             className="absolute inset-0 bg-[#f8f8f8]"
             style={{
               backgroundImage: `linear-gradient(to right, #c0c0c0 1px, transparent 1px), 
@@ -209,82 +133,121 @@ export default function Home() {
               backgroundSize: "40px 40px",
               backgroundPosition: "0 0",
             }}
-          ></div>
+          ></motion.div>
 
           {/* Background Elements */}
-          <div className="absolute top-20 right-0 w-64 h-64 bg-[#294df6]/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-0 w-96 h-96 bg-[#f92d6]/5 rounded-full blur-3xl"></div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 0.3 }}
+            className="absolute top-20 right-0 w-64 h-64 bg-[#294df6]/5 rounded-full blur-3xl"
+          ></motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 0.5 }}
+            className="absolute bottom-20 left-0 w-96 h-96 bg-[#f92d6]/5 rounded-full blur-3xl"
+          ></motion.div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-28 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
+          <motion.div
+            className="text-center max-w-4xl mx-auto"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+          >
             {/* Badge with #1 */}
-            <div className="flex justify-center mb-4">
-              <div className="bg-amber-100 text-amber-800 rounded-full px-4 py-1 inline-flex items-center font-bold">
+            <motion.div className="flex justify-center mb-4" variants={fadeInUp}>
+              <motion.div
+                className="bg-amber-100 text-amber-800 rounded-full px-4 py-1 inline-flex items-center font-bold"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
                 #1 Ranked Most Affordable Automated Blogging AI Agent
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Main Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-6">
+            <motion.h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-6" variants={fadeInUp}>
               <span className="text-gray-900">SEO Blogging on Autopilot</span>
-            </h1>
+            </motion.h1>
 
             {/* Subtitle */}
-            <p className="text-gray-700 text-lg mb-10 max-w-3xl mx-auto">
+            <motion.p className="text-gray-700 text-lg mb-10 max-w-3xl mx-auto" variants={fadeInUp}>
               Fully automated blog creation that ranks on Google and grows your business—without lifting a finger.
-            </p>
+            </motion.p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link
-                href="#examples"
-                className="flex items-center justify-center bg-white border border-gray-300 rounded-full py-3 px-6 text-gray-800 font-medium hover:shadow-md transition-all"
+            <motion.div className="flex flex-col sm:flex-row gap-4 justify-center mb-12" variants={fadeInUp}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <Link
+                  href="#examples"
+                  className="flex items-center justify-center bg-white border border-gray-300 rounded-full py-3 px-6 text-gray-800 font-medium hover:shadow-md transition-all"
                 >
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-                Check Demo Articles
-              </Link>
-              <Link
-                href="/signup"
-                className="bg-[#294fd6] hover:bg-[#7733ee] text-white rounded-full py-3 px-6 font-medium transition-all flex items-center justify-center"
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  Check Demo Articles
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                Get Started for Free
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 ml-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                <Link
+                  href="/signup"
+                  className="bg-[#294fd6] hover:bg-[#7733ee] text-white rounded-full py-3 px-6 font-medium transition-all flex items-center justify-center"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
-            </div>
-          </div>
+                  Get Started for Free
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 ml-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Link>
+              </motion.div>
+            </motion.div>
+          </motion.div>
 
           {/* YouTube Video Section - Perfectly Centered */}
-          <div className="flex justify-center items-center w-full mt-24 mb-24">
-            <div
+          <motion.div
+            className="flex justify-center items-center w-full mt-24 mb-24"
+            initial="hidden"
+            animate="visible"
+            variants={videoContainerVariants}
+          >
+            <motion.div
               className="w-full max-w-[1000px] aspect-[16/9] h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] relative flex items-center justify-center rounded-xl overflow-hidden shadow-2xl border-8 border-gray-800 transform transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(41,77,246,0.5)] z-20"
               onMouseEnter={() => setIsVideoHovered(true)}
               onMouseLeave={() => setIsVideoHovered(false)}
               ref={videoContainerRef}
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
               <style jsx>{`
                 @keyframes float {
@@ -330,9 +293,14 @@ export default function Home() {
               `}</style>
 
               {/* Animated "WATCH NOW" Badge - Positioned to not interfere with video controls */}
-              <div className="absolute top-4 right-4 bg-[#294df6] text-white px-4 py-2 rounded-full font-bold z-30 video-badge pointer-events-none">
+              <motion.div
+                className="absolute top-4 right-4 bg-[#294df6] text-white px-4 py-2 rounded-full font-bold z-30 video-badge pointer-events-none"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1, duration: 0.5 }}
+              >
                 WATCH NOW
-              </div>
+              </motion.div>
 
               {/* YouTube Embed */}
               <iframe
@@ -344,13 +312,15 @@ export default function Home() {
               ></iframe>
 
               {/* Animated Glow Effect - Only on the border, not covering the video */}
-              <div
+              <motion.div
                 className={`absolute inset-0 pointer-events-none border-4 border-[#294df6]/0 ${
                   isVideoHovered ? "border-[#294df6]/30" : ""
                 } transition-all duration-500 z-10`}
-              ></div>
-            </div>
-          </div>
+                animate={isVideoHovered ? { borderColor: "rgba(41,77,246,0.3)" } : { borderColor: "rgba(41,77,246,0)" }}
+                transition={{ duration: 0.5 }}
+              ></motion.div>
+            </motion.div>
+          </motion.div>
         </div>
       </main>
     </div>

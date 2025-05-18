@@ -4,19 +4,7 @@ import { useState, useEffect } from "react";
 import BlogGenerator from "./generate-blog-content";
 import { createClient } from "@/utitls/supabase/client"; // Fixed typo in import path
 import { generateBlog } from "@/app/actions";
-
-// Interface for the generateBlog return type
-interface GenerateBlogResult {
-  headline?: string;
-  content?: string;
-  initialContent?: string;
-  researchSummary?: string;
-  imageUrls?: string[];
-  is_blurred?: boolean;
-  jobId?: string;
-  error?: string;
-  message?: string; // Added to handle client_error message
-}
+import { GenerateBlogResult } from "@/app/actions";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -72,23 +60,36 @@ export default function Home() {
   const handleGenerateBlog = async (url: string, humanizeLevel: "normal" | "hardcore") => {
     try {
       setLoading(true);
+      setSubscriptionError(false);
 
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`);
 
-      // Only pass the URL to the server action
-      // The humanizeLevel will need to be handled differently or embedded in the URL
+      // Call the backend generateBlog function
+      // Note: humanizeLevel is not used by the backend, so we ignore it here
       const data: GenerateBlogResult = await generateBlog(url);
 
-      // Check for subscription errors from the server action
-      if (data.error === "subscription_required" && !hasActiveSubscription) {
+      // Check for subscription-related errors
+      if (
+        data.message &&
+        (data.message.includes("subscription") ||
+          data.message.includes("credits") ||
+          data.message.includes("free blog post"))
+      ) {
         setSubscriptionError(true);
       }
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating blog:", error);
-      // Handle error state
-      return { error: "client_error", message: "Failed to generate blog" } as GenerateBlogResult;
+      const errorMessage = error.message || "Failed to generate blog";
+      if (
+        errorMessage.includes("subscription") ||
+        errorMessage.includes("credits") ||
+        errorMessage.includes("free blog post")
+      ) {
+        setSubscriptionError(true);
+      }
+      return { blogPosts: [], message: errorMessage } as GenerateBlogResult;
     } finally {
       setLoading(false);
     }

@@ -405,7 +405,7 @@ function getOnboardingEmailTemplate({
         
         <div class="email-body">
           <div class="welcome-section">
-            <h1 class="welcome-message">Hey ${username},</h1>
+            <h1 class="welcome-message">Hey</h1>
             <p>Welcome to GetMoreSEO. We're here to help you scale your SEO efforts efficiently.</p>
           </div>
           
@@ -484,9 +484,8 @@ function getOnboardingEmailTemplate({
         
         <div class="email-footer">
           <div class="footer-links">
-            <a href="#" class="footer-link">Help Center</a>
-            <a href="#" class="footer-link">Privacy Policy</a>
-            <a href="#" class="footer-link">Terms of Service</a>
+            <a href="https://www.getmoreseo.org/privacy-policy" class="footer-link">Privacy Policy</a>
+            <a href="https://www.getmoreseo.org/terms" class="footer-link">Terms of Service</a>
           </div>
           
           <div class="company-info">
@@ -508,7 +507,7 @@ export async function testSendEmail(email: string) {
     console.log("Testing email sending to:", email)
     const result = await sendOnboardingEmail({
       email,
-      username: "TestUser",
+      username: "",
     })
     console.log("Test email result:", result)
     return { success: true, message: "Test email sent successfully" }

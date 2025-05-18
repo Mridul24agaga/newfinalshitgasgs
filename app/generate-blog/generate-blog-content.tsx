@@ -5,19 +5,27 @@ import { generateBlog } from "../actions"
 import { Loader2, AlertCircle, Clock, FileText, ImageIcon, CheckCircle2, CreditCard } from "lucide-react"
 import Image from "next/image"
 
+// Define the BlogPost type to match backend
+interface BlogPost {
+  title: string
+  content: string
+  is_blurred: boolean
+  created_at?: string
+  url?: string
+}
+
+// Define the GenerateBlogResult type to match backend
+interface GenerateBlogResult {
+  blogPosts: BlogPost[]
+  message: string
+}
+
 // Define the props interface for the component
 interface GenerateBlogPageProps {
-  onGenerate?: (url: string, humanizeLevel: "normal" | "hardcore") => Promise<any>
+  onGenerate?: (url: string, humanizeLevel: "normal" | "hardcore") => Promise<GenerateBlogResult>
   loading?: boolean
   subscriptionError?: boolean
   hasActiveSubscription?: boolean
-}
-
-// Define the interface for the blog generation result
-interface BlogContent {
-  headline: string
-  content: string
-  imageUrls?: string[]
 }
 
 export default function GenerateBlogPage({
@@ -29,10 +37,13 @@ export default function GenerateBlogPage({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [blog, setBlog] = useState<BlogContent | null>(null)
+  const [blog, setBlog] = useState<{
+    headline: string
+    content: string
+    isBlurred: boolean
+  } | null>(null)
   const [error, setError] = useState("")
   const [timer, setTimer] = useState(0)
-  const [imagesLoaded, setImagesLoaded] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
@@ -42,19 +53,12 @@ export default function GenerateBlogPage({
   // Auto-start blog generation when redirected from website-analysis page
   useEffect(() => {
     const autoStartGeneration = async () => {
-      // Get URL from query params (from website analysis page)
       const urlFromParams = searchParams.get("url")
       const autostart = searchParams.get("autostart") === "true"
 
-      // Only attempt generation if:
-      // 1. We have a URL and autostart is true
-      // 2. We're not already generating
-      // 3. We haven't already attempted generation (using the ref)
       if (urlFromParams && autostart && !isGenerating && !generationAttemptedRef.current) {
         try {
-          // Mark that we've attempted generation to prevent multiple attempts
           generationAttemptedRef.current = true
-
           console.log(`Auto-starting blog generation for ${urlFromParams}`)
           await handleGenerateBlog(urlFromParams, "normal")
         } catch (err) {
@@ -65,18 +69,18 @@ export default function GenerateBlogPage({
     }
 
     autoStartGeneration()
-  }, [searchParams, isGenerating]) // Only depend on searchParams and isGenerating, not blog
+  }, [searchParams, isGenerating])
 
-  // Add this effect to clear the autostart parameter from URL after generation
+  // Clear autostart parameter from URL after generation
   useEffect(() => {
     if ((blog || error) && window.history.replaceState) {
-      // Create a new URL without the autostart parameter
       const url = new URL(window.location.href)
       url.searchParams.delete("autostart")
       window.history.replaceState({}, "", url.toString())
     }
   }, [blog, error])
 
+  // Timer for generation progress
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (isGenerating) {
@@ -88,36 +92,6 @@ export default function GenerateBlogPage({
     }
     return () => clearInterval(interval)
   }, [isGenerating])
-
-  // Effect to preload images once blog is generated
-  useEffect(() => {
-    if (blog?.imageUrls && blog.imageUrls.length > 0) {
-      setImagesLoaded(false)
-
-      const preloadImages = async () => {
-        try {
-          const imagePromises = blog.imageUrls!.map((url) => {
-            return new Promise((resolve, reject) => {
-              const img = new globalThis.Image()
-              img.crossOrigin = "anonymous" // Fix CORS issues
-              img.src = url
-              img.onload = () => resolve(url)
-              img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
-            })
-          })
-
-          await Promise.all(imagePromises)
-          setImagesLoaded(true)
-        } catch (err) {
-          console.warn("Some images failed to preload:", err)
-          // Still mark as loaded even if some fail
-          setImagesLoaded(true)
-        }
-      }
-
-      preloadImages()
-    }
-  }, [blog?.imageUrls])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -134,68 +108,48 @@ export default function GenerateBlogPage({
       "Insufficient credits",
       "Upgrade your plan",
       "subscription",
-      "Failed to generate blog content: Insufficient credits",
+      "You have already used your free blog post",
     ]
-
-    return subscriptionErrorPatterns.some((pattern) => errorMsg.includes(pattern))
+    return subscriptionErrorPatterns.some((pattern) => errorMsg.toLowerCase().includes(pattern.toLowerCase()))
   }
 
   const handleGenerateBlog = async (url: string, humanizeLevel: "normal" | "hardcore") => {
     try {
       setIsGenerating(true)
       setError("")
-      // Make sure to reset blog to null when starting generation
       setBlog(null)
 
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
 
-      // Use the external onGenerate function if provided, otherwise use the local generateBlog function
-      const result = onGenerate ? await onGenerate(url, humanizeLevel) : await generateBlog(url)
+      const result = onGenerate
+        ? await onGenerate(url, humanizeLevel)
+        : await generateBlog(url)
 
-      // Check if result has the expected properties
-      if (result && typeof result === "object") {
-        // Create a properly typed blog object from the result
-        const blogContent: BlogContent = {
-          headline: result.headline || "",
-          content: result.content || "",
-          imageUrls: Array.isArray(result.imageUrls) ? result.imageUrls : undefined,
-        }
-
-        // Only set blog if we have valid data
-        if (blogContent.headline && blogContent.content) {
-          setBlog(blogContent)
-        }
-      }
-
-      // Check for subscription errors from the server action
-      if (result?.error === "subscription_required" && !hasActiveSubscription) {
-        setShowSubscriptionModal(true)
+      if (result.blogPosts && result.blogPosts.length > 0) {
+        const firstPost = result.blogPosts[0]
+        setBlog({
+          headline: firstPost.title,
+          content: firstPost.content,
+          isBlurred: firstPost.is_blurred,
+        })
+      } else {
+        throw new Error(result.message || "No blog posts generated")
       }
 
       return result
     } catch (err: any) {
       console.error("Error generating blog:", err)
-
-      // Make sure blog is null to prevent rendering issues
       setBlog(null)
-
       const errorMessage = err?.message || "An unknown error occurred"
 
-      // Check if the error is related to subscription or credits
       if (isSubscriptionError(errorMessage)) {
-        // For any subscription or credit related error, show the subscription modal
         setShowSubscriptionModal(true)
-        setError("You need an active subscription with sufficient credits to generate blog content.")
+        setError(errorMessage)
       } else {
         setError(`Failed to generate blog: ${errorMessage}`)
       }
 
-      // Immediately show subscription modal for specific errors
-      if (errorMessage.includes("Insufficient credits for blog generation")) {
-        setShowSubscriptionModal(true)
-      }
-
-      return { error: "client_error", message: "Failed to generate blog" }
+      return { blogPosts: [], message: "Failed to generate blog" }
     } finally {
       setIsGenerating(false)
     }
@@ -205,91 +159,71 @@ export default function GenerateBlogPage({
   const renderMarkdown = (markdown: string) => {
     if (!markdown) return ""
 
-    // Remove the first heading (title) as we display it separately
-    const contentWithoutTitle = markdown.replace(/^#\s+.+$/m, "").trim()
-
-    // Remove any "---" separator lines and meta-commentary
-    const cleanedContent = contentWithoutTitle
-      .replace(/^---+$/gm, "") // Remove separator lines
-      .replace(/^There you have it!.*$/gm, "") // Remove common meta-commentary
+    // Remove meta-commentary and separators
+    const cleanedContent = markdown
+      .replace(/^---+$/gm, "")
+      .replace(/^There you have it!.*$/gm, "")
       .replace(/^The content flows naturally.*$/gm, "")
       .replace(/^Let me know if.*$/gm, "")
       .replace(/^Let's dive in!.*$/gm, "")
       .replace(/^Here's the final.*$/gm, "")
       .replace(/^I've also included.*$/gm, "")
 
-    // Process other markdown elements
+    // Process markdown elements
     let processedContent = cleanedContent
 
-    // Process image blocks first to prevent interference with other markdown processing
-    const imageBlockRegex = /<!-- IMAGE_BLOCK_START -->([\s\S]*?)<!-- IMAGE_BLOCK_END -->/g
-    processedContent = processedContent.replace(imageBlockRegex, (match, imageContent) => {
-      // Extract the image URL and alt text
-      const imgMatch = imageContent.match(/<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/i)
-      if (imgMatch) {
-        const [_, src, alt] = imgMatch
-        return `<div class="blog-image-container">
-          <div class="relative w-full" style="height: 400px;">
-            <Image 
-              src="${src}" 
-              alt="${alt || "Blog image"}" 
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-contain"
-              loading="lazy"
-            />
-          </div>
-        </div>`
-      }
-      return match // Return original if no match
+    // Process image blocks
+    const imageBlockRegex = /<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/gi
+    processedContent = processedContent.replace(imageBlockRegex, (match, src, alt) => {
+      return `<div class="blog-image-container">
+        <div class="relative w-full" style="height: 400px;">
+          <Image 
+            src="${src}" 
+            alt="${alt || "Blog image"}" 
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-contain"
+            loading="lazy"
+          />
+        </div>
+      </div>`
     })
 
-    // Process other markdown elements
+    // Process headings (using ** for bold headings as per backend)
     processedContent = processedContent
-      // Process headings
-      .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mt-10 mb-4">$1</h1>')
-
-      // Process lists
-      .replace(/^\s*\*\s(.*)/gm, '<li class="ml-6 list-disc my-1">$1</li>')
-      .replace(/^\s*\d\.\s(.*)/gm, '<li class="ml-6 list-decimal my-1</li>')
-
-      // Process emphasis and bold
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      // Convert bold headings to proper HTML headings
+      .replace(/<strong>(FAQ Section|Q\d+: .*?)<\/strong>/g, (match, text) => {
+        if (text === "FAQ Section") return '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>'
+        return '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>'
+      })
 
-      // Process links - fixed the regex pattern
-      .replace(
-        /\[(.*?)\]$(.*?)$/g,
-        '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>',
-      )
+    // Process lists
+    processedContent = processedContent
+      .replace(/^\s*-\s(.*)$/gm, '<li class="ml-6 list-disc my-1">$1</li>')
+      .replace(/^\s*\d\.\s(.*)$/gm, '<li class="ml-6 list-decimal my-1">$1</li>')
 
-    // Process paragraphs (must come last)
+    // Process paragraphs and preserve HTML links
     return processedContent
       .split("\n\n")
       .map((para) => {
-        // Skip if it's already a heading, list, image container, or HTML block
         if (
-          para.startsWith("<h1") ||
           para.startsWith("<h2") ||
           para.startsWith("<h3") ||
           para.startsWith("<li") ||
           para.startsWith("<div class=") ||
-          para.startsWith("<!-- IMAGE_BLOCK")
+          para.includes('<a href="')
         ) {
           return para
         }
 
-        // Handle lists (wrap in ul/ol)
         if (para.includes('<li class="ml-6 list-disc')) {
           return `<ul class="my-4">${para}</ul>`
         }
         if (para.includes('<li class="ml-6 list-decimal')) {
-          return `<ol class="my-4">${para}</ul>`
+          return `<ol class="my-4">${para}</ol>`
         }
 
-        // Regular paragraph
         return `<p class="my-4">${para}</p>`
       })
       .join("")
@@ -312,42 +246,31 @@ export default function GenerateBlogPage({
     }
   }
 
-  // Use external loading state if provided
   const isLoading = externalLoading !== undefined ? externalLoading : isGenerating
 
-  // Global error handler to catch unhandled errors
+  // Global error handler
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
       console.error("Global error caught:", event.error)
-
-      // Check if the error is related to subscription
       if (event.error && event.error.message && isSubscriptionError(event.error.message)) {
         setShowSubscriptionModal(true)
       }
     }
 
     window.addEventListener("error", handleGlobalError)
-
-    return () => {
-      window.removeEventListener("error", handleGlobalError)
-    }
+    return () => window.removeEventListener("error", handleGlobalError)
   }, [])
 
-  // Listen for specific server errors in the console
+  // Console error override for subscription errors
   useEffect(() => {
     const originalConsoleError = console.error
-
     console.error = (...args) => {
-      // Call the original console.error
       originalConsoleError.apply(console, args)
-
-      // Check if any of the arguments contain our target error message
       const errorString = args.join(" ")
-      if (errorString.includes("Insufficient credits for blog generation")) {
+      if (isSubscriptionError(errorString)) {
         setShowSubscriptionModal(true)
       }
     }
-
     return () => {
       console.error = originalConsoleError
     }
@@ -355,22 +278,17 @@ export default function GenerateBlogPage({
 
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6">
-      {/* Add header with logo */}
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 p-4 sm:p-6 z-20 flex justify-between items-center bg-white shadow-sm">
         <div className="flex items-center gap-4">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Image src="/logoblack.png" alt="Company Logo" width={120} height={40} className="h-10 w-auto" />
-          </div>
+          <Image src="/logoblack.png" alt="Company Logo" width={120} height={40} className="h-10 w-auto" />
         </div>
       </header>
 
-      {/* Add padding to account for the fixed header */}
+      {/* Main content */}
       <div className="pt-16">
         <div className="max-w-4xl mx-auto">
-          {/* Main Content - Removed header and shadow */}
           <div className="bg-white overflow-hidden">
-            {/* Content */}
             <div className="p-6 sm:p-10">
               {isLoading && (
                 <div className="py-10">
@@ -467,7 +385,7 @@ export default function GenerateBlogPage({
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Generating Blog</h2>
                     <p className="text-red-500 mb-6 text-center max-w-md">{error}</p>
 
-                    {error.includes("subscription") || error.includes("credits") ? (
+                    {isSubscriptionError(error) ? (
                       <button
                         onClick={() => setShowSubscriptionModal(true)}
                         className="px-6 py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] transition-colors mb-3"
@@ -502,22 +420,6 @@ export default function GenerateBlogPage({
                         <Clock className="h-4 w-4 mr-1.5" />
                         <span>{calculateReadingTime(blog.content)} min read</span>
                       </div>
-
-                      {blog.imageUrls && blog.imageUrls.length > 0 && (
-                        <div className="flex items-center">
-                          <ImageIcon className="h-4 w-4 mr-1.5" />
-                          <span>
-                            {imagesLoaded ? (
-                              `${blog.imageUrls.length} image${blog.imageUrls.length > 1 ? "s" : ""}`
-                            ) : (
-                              <span className="flex items-center">
-                                <Loader2 className="animate-spin h-3 w-3 mr-1.5" />
-                                Loading images...
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -607,25 +509,26 @@ export default function GenerateBlogPage({
 
                   <div className="relative">
                     <div
-                      className="blog-content prose max-w-none text-gray-700 blur-sm"
-                      style={{ filter: "blur(4px)" }}
+                      className={`blog-content prose max-w-none text-gray-700 ${blog.isBlurred ? "blur-sm" : ""}`}
                       dangerouslySetInnerHTML={{ __html: blog.content ? renderMarkdown(blog.content) : "" }}
                     />
 
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50">
-                      <div className="text-center p-8 bg-white rounded-xl border border-gray-200 max-w-md">
-                        <h3 className="text-2xl font-bold gradient-text mb-4">Subscribe to View Full Content</h3>
-                        <p className="text-gray-600 mb-6">
-                          Get unlimited access to all our AI-generated blog posts and more.
-                        </p>
-                        <button
-                          onClick={() => router.push("/payment")}
-                          className="px-6 py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] transition-colors"
-                        >
-                          Subscribe Now
-                        </button>
+                    {blog.isBlurred && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50">
+                        <div className="text-center p-8 bg-white rounded-xl border border-gray-200 max-w-md">
+                          <h3 className="text-2xl font-bold gradient-text mb-4">Subscribe to View Full Content</h3>
+                          <p className="text-gray-600 mb-6">
+                            Get unlimited access to all our AI-generated blog posts and more.
+                          </p>
+                          <button
+                            onClick={() => router.push("/payment")}
+                            className="px-6 py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] transition-colors"
+                          >
+                            Subscribe Now
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -641,7 +544,7 @@ export default function GenerateBlogPage({
                     </div>
 
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Blog Generation Ready</h2>
-                    <p className="text-gray-500 mb-6 text-center max-w-md">
+                    <p className="text-gray-600 mb-6 text-center max-w-md">
                       Your blog generation is being prepared based on the website analysis.
                     </p>
 
@@ -673,7 +576,7 @@ export default function GenerateBlogPage({
         </div>
       </div>
 
-      {/* Subscription Required Modal - No close button */}
+      {/* Subscription Modal */}
       {showSubscriptionModal && (
         <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-gray-200 max-w-md w-full p-6 relative">
@@ -683,7 +586,9 @@ export default function GenerateBlogPage({
               </div>
               <h3 className="text-xl font-bold text-gray-800">Subscription Required</h3>
               <p className="text-gray-600 mt-2">
-                You need an active subscription with sufficient credits to generate blog content.
+                {error.includes("free blog post")
+                  ? "You've used your free blog post. Subscribe to generate more!"
+                  : "You need an active subscription with sufficient credits to generate blog content."}
               </p>
             </div>
 

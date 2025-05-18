@@ -41,7 +41,7 @@ export default function Home() {
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src="/keyword1.jpeg"
+                src="/124.png"
                 alt="AI-powered keyword research and analysis"
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
@@ -62,7 +62,7 @@ export default function Home() {
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src="/unlock2.jpeg"
+                src="/125.png"
                 alt="SEO-optimized content creation process"
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
@@ -83,7 +83,7 @@ export default function Home() {
           <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
             <div className="h-48 mb-6 relative rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src="/seo3.jpeg"
+                src="/126.png"
                 alt="Automatic blog publishing system"
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"

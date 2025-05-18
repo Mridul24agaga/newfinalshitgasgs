@@ -62,16 +62,19 @@ export default function Footer() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="email"
-                    placeholder="your@email.com"
-                    className="flex-grow px-6 py-4 rounded-lg text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/50"
+                    placeholder="Enter your email address"
+                    className="flex-grow px-6 py-4 rounded-lg text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/50 shadow-sm"
                   />
                   <Link
                     href="/signup"
-                    className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200"
+                    className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 transform"
                   >
-                    Get Started Today
+                    Start Free Trial →
                   </Link>
                 </div>
+                <p className="text-center text-sm text-gray-500 mt-3">
+                  No credit card required. Start creating in minutes.
+                </p>
               </div>
 
               {/* Features */}
@@ -141,29 +144,49 @@ export default function Footer() {
             </div>
 
             {/* Sign Up CTA Side Banner */}
-            <div className="lg:w-1/3 bg-gradient-to-r from-[#4f46e5]/10 to-[#7c3aed]/10 rounded-xl p-8 flex flex-col justify-center">
-              <div className="mb-8">
-                <h3 className="text-white text-xl font-bold mb-3">Ready to transform your content strategy?</h3>
-                <p className="text-gray-400">Join thousands of businesses already using GetMoreSEO.</p>
+            <div className="lg:w-1/3 bg-gradient-to-br from-[#4f46e5]/20 via-[#7c3aed]/15 to-[#ec4899]/10 rounded-xl p-8 border border-[#7c3aed]/20 shadow-lg relative overflow-hidden">
+              {/* Animated background elements */}
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#4f46e5]/10 rounded-full blur-2xl animate-pulse"></div>
+              <div
+                className="absolute -bottom-8 -left-8 w-32 h-32 bg-[#ec4899]/10 rounded-full blur-2xl animate-pulse"
+                style={{ animationDelay: "1s" }}
+              ></div>
+
+              <div className="relative z-10">
+                <div className="mb-8">
+                  <span className="inline-block px-3 py-1 bg-[#4f46e5]/10 text-[#4f46e5] text-xs font-semibold rounded-full mb-3">
+                    LIMITED TIME OFFER
+                  </span>
+                  <h3 className="text-white text-xl font-bold mb-3">Skyrocket Your SEO Rankings Today!</h3>
+                  <p className="text-gray-300">
+                    Join 10,000+ businesses already dominating search results with GetMoreSEO.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <Link
+                    href="/signup"
+                    className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-6 py-3 rounded-lg font-medium text-base w-full whitespace-nowrap transition-all duration-200 flex items-center justify-center group"
+                  >
+                    Get 50% Off Today
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </Link>
+                  <div className="flex items-center justify-center text-xs text-gray-400">
+                    <ShieldCheck className="h-4 w-4 text-[#4ade80] mr-1" />
+                    <span>30-day money-back guarantee</span>
+                  </div>
+                </div>
               </div>
-              <Link
-                href="/signup"
-                className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-6 py-3 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center"
-              >
-                Sign Up Today
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 ml-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
             </div>
           </div>
 
