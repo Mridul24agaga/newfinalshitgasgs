@@ -103,6 +103,11 @@ export async function sendEmail({ subject, htmlContent, sender, to, params = {} 
   try {
     console.log("Sending email to:", to[0].email)
 
+    to = to.map((recipient) => ({
+      ...recipient,
+      name: recipient.name || "User", // Ensure name is never empty
+    }))
+
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -507,7 +512,7 @@ export async function testSendEmail(email: string) {
     console.log("Testing email sending to:", email)
     const result = await sendOnboardingEmail({
       email,
-      username: "",
+      username: "User", // Default name when none is provided
     })
     console.log("Test email result:", result)
     return { success: true, message: "Test email sent successfully" }
