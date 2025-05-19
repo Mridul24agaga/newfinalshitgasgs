@@ -30,7 +30,7 @@ export default function Howthisisworking() {
               href="/signup"
               className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
             >
-              <span>Start for Free</span>
+              <span>Get one Article for Free Today</span>
               <svg
                 className="ml-2 h-4 w-4"
                 fill="none"
@@ -129,10 +129,10 @@ export default function Howthisisworking() {
               Unlike competitors, start building your content without any upfront costs or payment barriers.
             </p>
             <Link
-              href="/try-free"
+              href="/signup"
               className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
             >
-              <span>Get Started Today</span>
+              <span>Get one Article For free</span>
               <svg
                 className="ml-2 h-4 w-4"
                 fill="none"

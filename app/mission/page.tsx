@@ -642,7 +642,7 @@ export default function MissionPage() {
                   href="/start"
                   className="px-6 py-3 bg-[#FF9626] text-white rounded-lg font-medium flex items-center justify-center hover:bg-[#e88620] transition-colors"
                 >
-                  Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  Get one Article for Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
                 <Link
                   href="/pricing"

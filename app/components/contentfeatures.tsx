@@ -363,10 +363,10 @@ article.addLinks({
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/get-started"
+              href="/signup"
               className="bg-white hover:bg-gray-100 text-[#294df6] px-8 py-4 rounded-lg font-medium inline-flex items-center justify-center transition-colors duration-200 shadow-md text-lg"
             >
-             Get Started Today
+             Get one Article for Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
 

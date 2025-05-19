@@ -52,7 +52,7 @@ export function Header() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <NavbarButton variant="blue" href="/signup">
-            Get Started Today
+            Get one Article for Free
           </NavbarButton>
         </NavBody>
 
@@ -76,7 +76,7 @@ export function Header() {
             ))}
             <div className="flex w-full flex-col gap-4 mt-4">
               <NavbarButton href="/signup" onClick={() => setIsMobileMenuOpen(false)} variant="blue" className="w-full">
-                Get Started Today
+                Get one Article For free
               </NavbarButton>
             </div>
           </MobileNavMenu>

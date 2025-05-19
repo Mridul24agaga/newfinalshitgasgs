@@ -1,8 +1,8 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { generateBlog } from "../actions"
-import { Loader2, AlertCircle, Clock, FileText, ImageIcon, CheckCircle2, CreditCard } from "lucide-react"
+import { AlertCircle, Clock, FileText, CheckCircle2, CreditCard, ThumbsUp } from "lucide-react"
 import Image from "next/image"
 
 // Define the BlogPost type to match backend
@@ -28,6 +28,101 @@ interface GenerateBlogPageProps {
   hasActiveSubscription?: boolean
 }
 
+// Add these constants after the existing interfaces
+const STORAGE_KEY = "savedBlogPost"
+
+// Add this after the imports
+const TableOfContents = ({ blogContent }: { blogContent: string }) => {
+  // Extract headings from the blog content
+  const extractHeadings = (content: string) => {
+    const headings: { level: number; text: string; id: string }[] = []
+
+    // First pass: Extract markdown headings (#, ##, ###)
+    const headingRegex = /^(#+)\s*(.*?)\s*$/gm
+    let match
+
+    while ((match = headingRegex.exec(content)) !== null) {
+      const level = match[1].length
+      const text = match[2].trim()
+      const id = text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+      headings.push({ level, text, id })
+    }
+
+    // Second pass: Extract bold text that might be headings
+    const boldHeadingRegex = /\*\*(.*?)\*\*/g
+    const contentCopy = content
+    while ((match = boldHeadingRegex.exec(contentCopy)) !== null) {
+      const text = match[1].trim()
+      // Only include if it looks like a heading (starts with numbers or specific words)
+      if (
+        text.match(/^\d+\./) ||
+        text.startsWith("Conclusion") ||
+        text.startsWith("FAQ") ||
+        text.startsWith("Introduction") ||
+        text.startsWith("Summary") ||
+        text.startsWith("Overview")
+      ) {
+        const id = text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+
+        // Check if this heading is already in our list (to avoid duplicates)
+        if (!headings.some((h) => h.id === id)) {
+          headings.push({ level: 2, text, id })
+        }
+      }
+    }
+
+    // Sort headings by their position in the document
+    headings.sort((a, b) => {
+      const posA = content.indexOf(a.text)
+      const posB = content.indexOf(b.text)
+      return posA - posB
+    })
+
+    return headings
+  }
+
+  const headings = extractHeadings(blogContent || "")
+
+  if (headings.length === 0) {
+    return <p className="text-gray-500 italic">No sections found</p>
+  }
+
+  return (
+    <nav className="toc">
+      <ul className="space-y-2 text-sm">
+        {headings.map((heading, index) => (
+          <li
+            key={index}
+            className={`${heading.level === 1 ? "font-bold" : heading.level === 2 ? "pl-2" : heading.level === 3 ? "pl-4" : "pl-6"}`}
+          >
+            <a
+              href={`#${heading.id}`}
+              className="text-gray-700 hover:text-[#294fd6] transition-colors duration-200 block py-1"
+              onClick={(e) => {
+                e.preventDefault()
+                const element = document.getElementById(heading.id)
+                if (element) {
+                  element.scrollIntoView({ behavior: "smooth" })
+                  // Update URL without refreshing the page
+                  window.history.pushState(null, "", `#${heading.id}`)
+                }
+              }}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
 export default function GenerateBlogPage({
   onGenerate,
   loading: externalLoading,
@@ -37,15 +132,33 @@ export default function GenerateBlogPage({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isGenerating, setIsGenerating] = useState(false)
+  // Replace the existing useState for blog with this implementation
   const [blog, setBlog] = useState<{
     headline: string
     content: string
     isBlurred: boolean
-  } | null>(null)
+  } | null>(() => {
+    // Try to load saved blog from localStorage on initial render
+    if (typeof window !== "undefined") {
+      const savedBlog = localStorage.getItem(STORAGE_KEY)
+      if (savedBlog) {
+        try {
+          return JSON.parse(savedBlog)
+        } catch (e) {
+          console.error("Failed to parse saved blog:", e)
+          return null
+        }
+      }
+    }
+    return null
+  })
   const [error, setError] = useState("")
   const [timer, setTimer] = useState(0)
   const [copied, setCopied] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showScrollPopup, setShowScrollPopup] = useState(false)
+  const [showEndCta, setShowEndCta] = useState(false)
+  const endCtaRef = useRef<HTMLDivElement>(null)
 
   // Add a ref to track if generation has been attempted
   const generationAttemptedRef = useRef(false)
@@ -113,25 +226,41 @@ export default function GenerateBlogPage({
     return subscriptionErrorPatterns.some((pattern) => errorMsg.toLowerCase().includes(pattern.toLowerCase()))
   }
 
+  // Add this function after the existing functions but before the useEffects
+  const saveBlogToStorage = useCallback(
+    (blogData: { headline: string; content: string; isBlurred: boolean } | null) => {
+      if (blogData) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(blogData))
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    },
+    [],
+  )
+
+  // Modify the handleGenerateBlog function to clear localStorage when starting a new generation
   const handleGenerateBlog = async (url: string, humanizeLevel: "normal" | "hardcore") => {
     try {
       setIsGenerating(true)
       setError("")
       setBlog(null)
+      // Clear any previously saved blog when starting a new generation
+      saveBlogToStorage(null)
 
       console.log(`Generating blog for ${url} with humanize level: ${humanizeLevel}`)
 
-      const result = onGenerate
-        ? await onGenerate(url, humanizeLevel)
-        : await generateBlog(url)
+      const result = onGenerate ? await onGenerate(url, humanizeLevel) : await generateBlog(url)
 
       if (result.blogPosts && result.blogPosts.length > 0) {
         const firstPost = result.blogPosts[0]
-        setBlog({
+        const newBlog = {
           headline: firstPost.title,
           content: firstPost.content,
-          isBlurred: firstPost.is_blurred,
-        })
+          isBlurred: false, // Always set to false to remove blur functionality
+        }
+        setBlog(newBlog)
+        // Save the new blog to localStorage
+        saveBlogToStorage(newBlog)
       } else {
         throw new Error(result.message || "No blog posts generated")
       }
@@ -140,6 +269,8 @@ export default function GenerateBlogPage({
     } catch (err: any) {
       console.error("Error generating blog:", err)
       setBlog(null)
+      // Clear saved blog on error
+      saveBlogToStorage(null)
       const errorMessage = err?.message || "An unknown error occurred"
 
       if (isSubscriptionError(errorMessage)) {
@@ -155,7 +286,6 @@ export default function GenerateBlogPage({
     }
   }
 
-  // Function to convert markdown to HTML
   const renderMarkdown = (markdown: string) => {
     if (!markdown) return ""
 
@@ -169,64 +299,127 @@ export default function GenerateBlogPage({
       .replace(/^Here's the final.*$/gm, "")
       .replace(/^I've also included.*$/gm, "")
 
-    // Process markdown elements
-    let processedContent = cleanedContent
+    // Step 1: Handle markdown headings (#, ##, ###, etc.) - ENHANCED for bigger, bolder headings
+    let content = cleanedContent.replace(/^(#+)\s*(.*?)\s*$/gm, (match, hashes, text) => {
+      const level = hashes.length // Number of # determines heading level
+      const id = text
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
 
-    // Process image blocks
-    const imageBlockRegex = /<img src="([^"]+)" alt="([^"]*)" class="blog-image" \/>/gi
-    processedContent = processedContent.replace(imageBlockRegex, (match, src, alt) => {
-      return `<div class="blog-image-container">
-        <div class="relative w-full" style="height: 400px;">
-          <Image 
-            src="${src}" 
-            alt="${alt || "Blog image"}" 
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-contain"
-            loading="lazy"
-          />
-        </div>
-      </div>`
+      // Enhanced heading styles with larger font sizes and more prominent styling
+      const sizeClasses = {
+        1: "text-4xl", // h1 - extra large
+        2: "text-3xl", // h2 - larger
+        3: "text-2xl", // h3 - large
+        4: "text-xl", // h4 - medium-large
+        5: "text-lg", // h5 - medium
+        6: "text-base", // h6 - normal
+      }
+
+      const size = sizeClasses[level as keyof typeof sizeClasses] || "text-2xl"
+
+      return `<h${level} id="${id}" class="${size} font-extrabold my-8 text-gray-900 scroll-mt-16">${text.trim()}</h${level}>`
     })
 
-    // Process headings (using ** for bold headings as per backend)
-    processedContent = processedContent
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      // Convert bold headings to proper HTML headings
-      .replace(/<strong>(FAQ Section|Q\d+: .*?)<\/strong>/g, (match, text) => {
-        if (text === "FAQ Section") return '<h2 class="text-2xl font-bold mt-8 mb-3">$1</h2>'
-        return '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>'
-      })
+    // Step 2: Format bold text (**text**) that should be headings - ENHANCED
+    content = content.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
+      // Check if this bold text should be a heading
+      if (
+        p1.match(/^\d+\./) ||
+        p1.startsWith("Conclusion") ||
+        p1.startsWith("FAQ") ||
+        p1.startsWith("Introduction") ||
+        p1.startsWith("Summary") ||
+        p1.startsWith("Overview")
+      ) {
+        const id = p1
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+        // Make these bold text headings more prominent
+        return `<h2 id="${id}" class="text-3xl font-extrabold my-8 text-gray-900 scroll-mt-16">${p1}</h2>`
+      }
+      return `<strong>${p1}</strong>`
+    })
 
-    // Process lists
-    processedContent = processedContent
-      .replace(/^\s*-\s(.*)$/gm, '<li class="ml-6 list-disc my-1">$1</li>')
-      .replace(/^\s*\d\.\s(.*)$/gm, '<li class="ml-6 list-decimal my-1">$1</li>')
+    // Step 3: Format special list items with bold titles and descriptions
+    content = content.replace(/- \*\*(.*?)\*\*: ([\s\S]*?)(?=(?:- \*\*|$))/g, (match, title, description) => {
+      return `<div class="my-4">
+      <p class="font-semibold text-gray-900">${title}:</p>
+      <p class="mt-1">${description.trim()}</p>
+    </div>`
+    })
 
-    // Process paragraphs and preserve HTML links
-    return processedContent
-      .split("\n\n")
-      .map((para) => {
-        if (
-          para.startsWith("<h2") ||
-          para.startsWith("<h3") ||
-          para.startsWith("<li") ||
-          para.startsWith("<div class=") ||
-          para.includes('<a href="')
-        ) {
-          return para
+    // Step 4: Process regular bullet points - COMPLETELY REVISED
+    // First, identify groups of bullet points and wrap them in <ul> tags
+    let inList = false
+    const lines = content.split("\n")
+    let processedContent = ""
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+
+      // Check if this line is a bullet point
+      if (line.startsWith("- ")) {
+        // If we're not already in a list, start a new one
+        if (!inList) {
+          processedContent += '<ul class="list-disc pl-6 my-4 space-y-2">\n'
+          inList = true
         }
 
-        if (para.includes('<li class="ml-6 list-disc')) {
-          return `<ul class="my-4">${para}</ul>`
-        }
-        if (para.includes('<li class="ml-6 list-decimal')) {
-          return `<ol class="my-4">${para}</ol>`
+        // Extract the content after the bullet point marker
+        const bulletContent = line.substring(2)
+
+        // Add as a list item
+        processedContent += `<li class="ml-2">${bulletContent}</li>\n`
+      } else {
+        // If this is not a bullet point and we were in a list, close the list
+        if (inList) {
+          processedContent += "</ul>\n"
+          inList = false
         }
 
-        return `<p class="my-4">${para}</p>`
-      })
-      .join("")
+        // Add the line as is
+        processedContent += line + "\n"
+      }
+    }
+
+    // Close any open list at the end
+    if (inList) {
+      processedContent += "</ul>\n"
+    }
+
+    content = processedContent
+
+    // Step 5: Format paragraphs
+    const paragraphLines = content.split("\n")
+    let formattedContent = ""
+    for (let i = 0; i < paragraphLines.length; i++) {
+      const line = paragraphLines[i].trim()
+      if (
+        line &&
+        !line.startsWith("<h") &&
+        !line.startsWith("<ul") &&
+        !line.startsWith("<li") &&
+        !line.startsWith("<div") &&
+        !line.startsWith("<p") &&
+        !line.startsWith("</")
+      ) {
+        formattedContent += `<p class="my-4">${line}</p>\n`
+      } else {
+        formattedContent += line + "\n"
+      }
+    }
+
+    // Step 6: Format Q&A in FAQ section - ENHANCED
+    formattedContent = formattedContent.replace(
+      /\*\*Q\d+: (.*?)\*\*/g,
+      '<h3 class="text-2xl font-bold mt-8 mb-4 text-gray-900">$1</h3>',
+    )
+
+    return formattedContent
   }
 
   // Calculate estimated reading time
@@ -276,6 +469,44 @@ export default function GenerateBlogPage({
     }
   }, [])
 
+  // Add this useEffect after the other useEffects
+  useEffect(() => {
+    // Save blog to localStorage whenever it changes
+    if (blog) {
+      saveBlogToStorage(blog)
+    }
+  }, [blog, saveBlogToStorage])
+
+  // Add scroll event listener to show popup
+  useEffect(() => {
+    if (!blog || !hasActiveSubscription) return
+
+    const handleScroll = () => {
+      // Show popup when user has scrolled down 40% of the viewport height
+      const scrollThreshold = window.innerHeight * 0.4
+      if (window.scrollY > scrollThreshold && !showScrollPopup && !showEndCta) {
+        setShowScrollPopup(true)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [blog, showScrollPopup, hasActiveSubscription, showEndCta])
+
+  // Scroll to end CTA when it becomes visible
+  useEffect(() => {
+    if (showEndCta && endCtaRef.current) {
+      // Remove the scrolling behavior
+      // We don't want to scroll down when showing the CTA
+    }
+  }, [showEndCta])
+
+  // Handle continue reading click
+  const handleContinueReading = () => {
+    setShowScrollPopup(false)
+    setShowEndCta(true)
+  }
+
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6">
       {/* Header */}
@@ -287,7 +518,7 @@ export default function GenerateBlogPage({
 
       {/* Main content */}
       <div className="pt-16">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="bg-white overflow-hidden">
             <div className="p-6 sm:p-10">
               {isLoading && (
@@ -405,127 +636,78 @@ export default function GenerateBlogPage({
               )}
 
               {blog && !isLoading && (
-                <div>
-                  {/* Blog Header */}
-                  <div className="border-b border-gray-200 pb-6 mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">{blog.headline}</h1>
-
-                    <div className="flex flex-wrap items-center text-sm text-gray-500 gap-3 sm:gap-4">
-                      <div className="flex items-center">
-                        <FileText className="h-4 w-4 mr-1.5" />
-                        <span>{blog.content ? blog.content.split(/\s+/).length : 0} words</span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1.5" />
-                        <span>{calculateReadingTime(blog.content)} min read</span>
-                      </div>
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Table of Contents Sidebar */}
+                  <div className="md:w-1/4 md:sticky md:top-8 md:self-start">
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">Table of Contents</h3>
+                      <TableOfContents blogContent={blog.content} />
                     </div>
                   </div>
 
-                  {/* Blog Content */}
-                  <style jsx global>{`
-                    .blog-image-container {
-                      margin: 2rem 0;
-                      padding: 1.5rem 0;
-                      position: relative;
-                      clear: both;
-                      display: block;
-                      width: 100%;
-                      overflow: hidden;
-                      border-top: 1px solid #f0f0f0;
-                      border-bottom: 1px solid #f0f0f0;
-                      background-color: #f9fafb;
-                      border-radius: 0.5rem;
-                    }
-                    
-                    .blog-content h2 {
-                      color: #294df6;
-                      margin-top: 2rem;
-                      margin-bottom: 1rem;
-                      font-weight: 700;
-                    }
-                    
-                    .blog-content h3 {
-                      color: #374151;
-                      margin-top: 1.5rem;
-                      margin-bottom: 0.75rem;
-                      font-weight: 600;
-                    }
-                    
-                    .blog-content p {
-                      margin-bottom: 1rem;
-                      line-height: 1.7;
-                    }
-                    
-                    .blog-content ul, .blog-content ol {
-                      margin-bottom: 1.5rem;
-                      padding-left: 1rem;
-                    }
-                    
-                    .blog-content li {
-                      margin-bottom: 0.5rem;
-                    }
-                    
-                    .blog-content a {
-                      color: #294df6;
-                      text-decoration: underline;
-                      text-decoration-color: #93c5fd;
-                      text-underline-offset: 2px;
-                    }
-                    
-                    .blog-content a:hover {
-                      text-decoration-color: #294df6;
-                    }
+                  {/* Main Content */}
+                  <div className="md:w-3/4 p-6 sm:p-10">
+                    <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800 font-saira">{blog.headline}</h1>
 
-                    .blur-sm {
-                      filter: blur(4px);
-                      user-select: none;
-                    }
-                    
-                    @keyframes gradient {
-                      0% { background-position: 0% 50%; }
-                      50% { background-position: 100% 50%; }
-                      100% { background-position: 0% 50%; }
-                    }
-                    
-                    .gradient-text {
-                      background: linear-gradient(90deg, #294df6, #7733ee);
-                      -webkit-background-clip: text;
-                      -webkit-text-fill-color: transparent;
-                      background-size: 200% auto;
-                      animation: gradient 3s ease infinite;
-                    }
-                    
-                    @keyframes pulse {
-                      0%, 100% { transform: scale(1); }
-                      50% { transform: scale(1.05); }
-                    }
-                    
-                    .pulse-slow {
-                      animation: pulse 3s ease-in-out infinite;
-                    }
-                  `}</style>
+                    <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <FileText className="h-4 w-4 mr-2" />
+                        <span>{blog.content ? blog.content.split(/\s+/).length : 0} words</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span>{calculateReadingTime(blog.content)} min read</span>
+                      </div>
+                    </div>
 
-                  <div className="relative">
+                    <hr className="my-6 border-gray-200" />
+
                     <div
-                      className={`blog-content prose max-w-none text-gray-700 ${blog.isBlurred ? "blur-sm" : ""}`}
+                      className="prose prose-gray max-w-none mb-8
+        prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
+        prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
+        prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
+        prose-strong:font-bold prose-strong:text-gray-800
+        prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
+        prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
+        prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
+        prose-iframe:w-full prose-iframe:rounded-lg
+        prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
+        prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
+        prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
+        prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
+        prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
                       dangerouslySetInnerHTML={{ __html: blog.content ? renderMarkdown(blog.content) : "" }}
                     />
 
-                    {blog.isBlurred && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-50">
-                        <div className="text-center p-8 bg-white rounded-xl border border-gray-200 max-w-md">
-                          <h3 className="text-2xl font-bold gradient-text mb-4">Subscribe to View Full Content</h3>
-                          <p className="text-gray-600 mb-6">
-                            Get unlimited access to all our AI-generated blog posts and more.
-                          </p>
-                          <button
-                            onClick={() => router.push("/payment")}
-                            className="px-6 py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] transition-colors"
-                          >
-                            Subscribe Now
-                          </button>
+                    {/* End of Blog CTA */}
+                    {showEndCta && (
+                      <div
+                        ref={endCtaRef}
+                        className="mt-12 mb-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/10 rounded-xl p-6 border border-blue-200 shadow-md animate-fade-in"
+                      >
+                        <div className="flex flex-col sm:flex-row items-center gap-5">
+                          <div className="bg-blue-100 rounded-full p-3 flex-shrink-0">
+                            <ThumbsUp className="h-6 w-6 text-[#294fd6]" />
+                          </div>
+                          <div className="flex-1 text-center sm:text-left">
+                            <h3 className="text-xl font-bold text-gray-800">Don't miss out on unlimited content!</h3>
+                            <p className="text-gray-600 mt-1">
+                              <span className="font-semibold">Only 3 spots left today</span> at our current pricing.
+                              Join 1,200+ marketers already saving hours on content creation.
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 mt-4 sm:mt-0">
+                            <button
+                              onClick={() => router.push("/payment")}
+                              className="px-5 py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] transition-colors font-medium whitespace-nowrap shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                            >
+                              Unlock Premium Now
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-4 text-center sm:text-left text-sm text-gray-500">
+                          <p>🔒 Secure checkout • 30-day money-back guarantee • Cancel anytime</p>
                         </div>
                       </div>
                     )}
@@ -613,10 +795,59 @@ export default function GenerateBlogPage({
 
               <div className="flex flex-col">
                 <button
-                  onClick={() => router.push("/pricing")}
+                  onClick={() => router.push("/payment")}
                   className="w-full py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294df6] transition-colors"
                 >
-                  View Subscription Plans
+                  Unlock Premium Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Scroll Popup */}
+      {blog && showScrollPopup && !showSubscriptionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#294df6] to-[#4e6af3] p-1"></div>
+            <div className="p-6">
+              <div className="text-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-800">Enjoying this content?</h3>
+                <p className="text-gray-600 mt-2">
+                  This is just a sample of what our AI can generate for you. Unlock unlimited high-quality blog posts
+                  with our premium plans!
+                </p>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4 mb-5">
+                <ul className="space-y-2">
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-[#294df6] mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Generate unlimited blog posts</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-[#294df6] mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Advanced customization options</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-[#294df6] mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Priority support and content optimization</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => router.push("/payment")}
+                  className="w-full py-3 bg-[#294df6] text-white rounded-lg hover:bg-[#1e3ed0] transition-colors font-medium"
+                >
+                  Unlock Premium Now
+                </button>
+                <button
+                  onClick={handleContinueReading}
+                  className="w-full py-2.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Continue Reading
                 </button>
               </div>
             </div>

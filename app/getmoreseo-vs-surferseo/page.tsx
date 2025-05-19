@@ -32,10 +32,10 @@ export default function ComparisonPage() {
               </p>
               <div className="mt-8">
                 <Link
-                  href="#"
+                  href="/signu"
                   className="inline-block bg-[#294fd6] hover:bg-[#294fd6]/90 text-white px-4 py-2 rounded-md font-medium transition-colors"
                 >
-                  Get Started Today
+                  Get one Article For free
                 </Link>
               </div>
             </div>

@@ -216,7 +216,7 @@ export default function Home() {
                   href="/signup"
                   className="bg-[#294fd6] hover:bg-[#7733ee] text-white rounded-full py-3 px-6 font-medium transition-all flex items-center justify-center"
                 >
-                  Get Started for Free
+                 Get one Article For free
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5 ml-2"

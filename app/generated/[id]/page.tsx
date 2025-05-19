@@ -24,9 +24,7 @@ type BlogPost = {
 }
 
 type BlogContent = {
-  visibleContent: string
-  blurredContent: string
-  hasBlurredContent: boolean
+  content: string
 }
 
 type UserSignedUp = {
@@ -165,11 +163,7 @@ export default function BlogPostPage() {
   const [showLoginForm, setShowLoginForm] = useState(false)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null)
-  const [splitContentResult, setSplitContentResult] = useState<BlogContent>({
-    visibleContent: "",
-    blurredContent: "",
-    hasBlurredContent: false,
-  })
+  const [formattedContent, setFormattedContent] = useState<string>("")
   // Add state for showing raw content
   const [showRawContent, setShowRawContent] = useState(false)
 
@@ -458,72 +452,13 @@ export default function BlogPostPage() {
 
     try {
       console.log(
-        `Processing content split - is_blurred: ${blogPost.is_blurred}, hasActiveSubscription: ${hasActiveSubscription}, subscriptionPlan: ${subscriptionPlan}`,
+        `Processing content - hasActiveSubscription: ${hasActiveSubscription}, subscriptionPlan: ${subscriptionPlan}`,
       )
-
-      // For free plan users, blur the entire content
-      if (subscriptionPlan === "free") {
-        console.log("Free plan detected - blurring entire content")
-        const fullContent = blogPost.blog_post || ""
-        setSplitContentResult({
-          visibleContent: "", // No visible content for free plan
-          blurredContent: formatBlogContent(fullContent),
-          hasBlurredContent: true,
-        })
-      }
-      // For non-subscribers (but not free plan), show 20% and blur the rest
-      else if (blogPost.is_blurred && !hasActiveSubscription) {
-        console.log("Non-subscriber - showing 20% and blurring the rest")
-        const fullContent = blogPost.blog_post || ""
-
-        // Fix: Instead of using paragraph counting which might truncate content,
-        // use a more reliable character-based approach
-        const splitIndex = Math.floor(fullContent.length * 0.2)
-
-        // Ensure we don't split in the middle of a word or HTML tag
-        let adjustedSplitIndex = splitIndex
-        while (
-          adjustedSplitIndex < fullContent.length &&
-          fullContent[adjustedSplitIndex] !== " " &&
-          fullContent[adjustedSplitIndex] !== "\n" &&
-          fullContent[adjustedSplitIndex] !== "<"
-        ) {
-          adjustedSplitIndex++
-        }
-
-        // If we're in the middle of an HTML tag, find the closing >
-        if (fullContent[adjustedSplitIndex] === "<") {
-          const closingTagIndex = fullContent.indexOf(">", adjustedSplitIndex)
-          if (closingTagIndex !== -1) {
-            adjustedSplitIndex = closingTagIndex + 1
-          }
-        }
-
-        setSplitContentResult({
-          visibleContent: formatBlogContent(fullContent.slice(0, adjustedSplitIndex)),
-          blurredContent: formatBlogContent(fullContent.slice(adjustedSplitIndex)),
-          hasBlurredContent: fullContent.length > adjustedSplitIndex,
-        })
-        console.log(
-          `Content split - Visible: ${adjustedSplitIndex} chars, Blurred: ${fullContent.length - adjustedSplitIndex} chars`,
-        )
-      }
-      // For premium subscribers, show everything
-      else {
-        console.log("Premium subscriber - showing all content")
-        setSplitContentResult({
-          visibleContent: formatBlogContent(blogPost.blog_post),
-          blurredContent: "",
-          hasBlurredContent: false,
-        })
-      }
+      // Format the full content regardless of subscription status
+      setFormattedContent(formatBlogContent(blogPost.blog_post || ""))
     } catch (err) {
-      console.log(`Content split error: ${err instanceof Error ? err.message : String(err)}`)
-      setSplitContentResult({
-        visibleContent: formatBlogContent(blogPost.blog_post || ""),
-        blurredContent: "",
-        hasBlurredContent: false,
-      })
+      console.log(`Content processing error: ${err instanceof Error ? err.message : String(err)}`)
+      setFormattedContent(formatBlogContent(blogPost.blog_post || ""))
     }
   }, [blogPost, hasActiveSubscription, subscriptionPlan])
 
@@ -628,7 +563,7 @@ export default function BlogPostPage() {
     return `${DODO_URL}/${plan.dodoProductId}?quantity=1&redirect_url=${redirectUrl}`
   }
 
-  const { visibleContent, blurredContent, hasBlurredContent } = splitContentResult
+  const hasSubscription = hasActiveSubscription || subscriptionPlan !== "free"
 
   if (loading) {
     return (
@@ -701,16 +636,8 @@ export default function BlogPostPage() {
 
               {/* Main Content */}
               <div className="md:w-3/4 p-6 sm:p-10">
-                {subscriptionPlan === "free" && (
-                  <div className="mb-6 bg-blue-50 rounded-lg p-4 flex items-center">
-                    <Lock className="h-5 w-5 text-blue-600 mr-3" />
-                    <div>
-                      <p className="text-blue-800 font-medium">Free Plan</p>
-                      <p className="text-blue-600 text-sm">Upgrade to a premium plan to unlock all content</p>
-                    </div>
-                  </div>
-                )}
-
+                
+         
                 <motion.h1
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -776,83 +703,49 @@ export default function BlogPostPage() {
                 />
 
                 {/* Blog Content - Raw or Rendered */}
-                {visibleContent && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                  >
-                    {showRawContent ? (
-                      // Raw HTML/Markdown view
-                      <div className="relative">
-                        <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 whitespace-pre-wrap">
-                          {blogPost.blog_post || "No content available"}
-                        </pre>
-                        <div className="absolute top-2 right-2 bg-gray-200 px-2 py-1 rounded text-xs font-medium">
-                          HTML/Markdown
-                        </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                >
+                  {showRawContent ? (
+                    // Raw HTML/Markdown view
+                    <div className="relative">
+                      <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 whitespace-pre-wrap">
+                        {blogPost.blog_post || "No content available"}
+                      </pre>
+                      <div className="absolute top-2 right-2 bg-gray-200 px-2 py-1 rounded text-xs font-medium">
+                        HTML/Markdown
                       </div>
-                    ) : (
-                      // Rendered view
-                      <div
-                        className="prose prose-gray max-w-none mb-8
-                        prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
-                        prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
-                        prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
-                        prose-strong:font-bold prose-strong:text-gray-800
-                        prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
-                        prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
-                        prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
-                        prose-iframe:w-full prose-iframe:rounded-lg
-                        prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
-                        prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
-                        prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
-                        prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
-                        prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
-                        dangerouslySetInnerHTML={{ __html: visibleContent }}
-                      />
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Blurred Content Section */}
-                {hasBlurredContent && (
+                    </div>
+                  ) : (
+                    // Rendered view
+                    <div
+                      className="prose prose-gray max-w-none
+                      prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
+                      prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
+                      prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700 prose-a:transition-colors prose-a:duration-200
+                      prose-strong:font-bold prose-strong:text-gray-800
+                      prose-img:w-full prose-img:rounded-lg prose-img:max-w-full
+                      prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
+                      prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
+                      prose-iframe:w-full prose-iframe:rounded-lg
+                      prose-ul:pl-6 prose-ul:my-6 prose-ul:space-y-1
+                      prose-li:flex prose-li:items-start prose-li:mb-4 prose-li:text-gray-700 prose-li:leading-relaxed prose-li:font-saira
+                      prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800
+                      prose-th:border prose-th:border-gray-200 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-th:font-semibold prose-th:bg-gray-100
+                      prose-td:border prose-td:border-gray-200 prose-td:px-4 prose-td:py-2"
+                      dangerouslySetInnerHTML={{ __html: formattedContent }}
+                    />
+                  )}
+                </motion.div>
+                {hasSubscription ? null : (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6, duration: 0.5 }}
                     className="relative mt-8 rounded-xl overflow-hidden"
                   >
-                    {showRawContent ? (
-                      // Raw blurred content
-                      <div className="relative">
-                        <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 whitespace-pre-wrap blur-md pointer-events-none opacity-70 select-none">
-                          {blogPost.blog_post.slice(blogPost.blog_post.length * 0.2) || "No content available"}
-                        </pre>
-                        <div className="absolute top-2 right-2 bg-gray-200 px-2 py-1 rounded text-xs font-medium">
-                          PREMIUM CONTENT
-                        </div>
-                      </div>
-                    ) : (
-                      // Rendered blurred content
-                      <div className="relative">
-                        <div
-                          className="prose prose-gray max-w-none blur-md pointer-events-none p-6 opacity-70 select-none
-                          prose-headings:font-saira prose-headings:text-gray-900 prose-headings:text-3xl prose-headings:font-extrabold prose-headings:my-8
-                          prose-p:text-gray-700 prose-p:leading-relaxed prose-p:font-saira
-                          prose-a:text-orange-600 prose-a:underline prose-a:hover:text-orange-700
-                          prose-img:w-full prose-img:rounded-lg
-                          prose-figure:my-6 prose-figure:mx-auto prose-figure:max-w-full
-                          prose-figcaption:text-sm prose-figcaption:text-center prose-figcaption:text-gray-500 prose-figcaption:mt-2 prose-figcaption:font-saira
-                          prose-iframe:w-full prose-iframe:rounded-lg
-                          prose-table:table prose-table:w-full prose-table:border-collapse prose-table:bg-white prose-table:text-gray-800"
-                          dangerouslySetInnerHTML={{ __html: blurredContent }}
-                        />
-                        <div className="absolute top-0 right-0 bg-[#294fd6] text-white text-xs font-bold px-2 py-1 rounded-bl-md">
-                          PREMIUM
-                        </div>
-                      </div>
-                    )}
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/70 to-white flex flex-col items-center justify-center p-8">
                       <motion.div
                         whileHover={{ scale: 1.03 }}

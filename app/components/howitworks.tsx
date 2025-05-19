@@ -28,7 +28,7 @@ export default function Home() {
 
             <Link href="/signup">
               <Button className="bg-[#294fd6] hover:bg-blue-700 rounded-full px-6">
-                <span className="text-white">Start for Free</span>
+                <span className="text-white">Get on Article for Free</span>
                 <ArrowRight className="ml-2 h-4 w-4 text-white" />
               </Button>
             </Link>

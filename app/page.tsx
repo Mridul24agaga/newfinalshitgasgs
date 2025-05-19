@@ -79,6 +79,7 @@ export default function Page() {
       <WhyBloggingSection />
       <FeaturesSection/>
       <HowItWorks />
+      <PricingSection/>
       <TrustedBySection />
       <BlogArticles />
 

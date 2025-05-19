@@ -1578,27 +1578,30 @@ export async function generateBlog(websiteUrl: string): Promise<GenerateBlogResu
 
     let isFreeBlog = false;
 
-    // === START FIX: Adjust free plan logic ===
-    // Allow one free blog post for users on the free plan with no credits if free_blogs_generated is 0
+    // Credit check and free blog logic
     if (subscription.plan_id.toLowerCase() === "free" && subscription.free_blogs_generated === 0) {
       isFreeBlog = true;
-      console.log("Generating a free blog post for free plan user - will be blurred until subscription is upgraded.");
+      console.log("Generating a free blog post for free plan user - no credits required.");
     } else if (!isPlanActive && subscription.free_blogs_generated > 0) {
-      console.error(`No active subscription and free blog already generated for user ${userId}. Subscription details:`, {
-        plan_id: subscription.plan_id,
-        status: subscription.status,
-        free_blogs_generated: subscription.free_blogs_generated,
-      });
+      console.error(
+        `No active subscription and free blog already generated for user ${userId}. Subscription details:`,
+        {
+          plan_id: subscription.plan_id,
+          status: subscription.status,
+          free_blogs_generated: subscription.free_blogs_generated,
+        },
+      );
       throw new Error(
-        "You have already used your free blog post. Subscribe to a paid plan to generate more!",
+        "You have already used your free blog post. Subscribe to a paid plan to generate more!"
       );
     } else if (isPlanActive && subscription.credits < postsToGenerate) {
-      console.error(`Insufficient credits: ${subscription.credits} available, ${postsToGenerate} needed.`);
+      console.error(
+        `Insufficient credits: ${subscription.credits} available, ${postsToGenerate} needed for user ${userId}.`
+      );
       throw new Error(
-        `You have ${subscription.credits} credits left, but need ${postsToGenerate} to generate this blog. Upgrade your plan to get more credits!`,
+        `You have only ${subscription.credits} credits left, but need ${postsToGenerate} to generate this blog. Please upgrade your plan at https://x.ai/grok to get more credits!`
       );
     }
-    // === END FIX ===
 
     if (isPlanActive) {
       console.log(`Unlocking blurred blogs for user ${userId}...`);
@@ -1726,15 +1729,10 @@ ${webContent}
 
     console.log(`Generated image URLs: ${imageUrls.join(", ")}`);
 
-    let content = await finalHumanization(firstHalf + secondHalf, faqs, imageUrls, blogTitle);
+    const content = await finalHumanization(firstHalf + secondHalf, faqs, imageUrls, blogTitle);
     console.log("Performed final humanization of content");
 
-    if (isFreeBlog) {
-      content = blurContent(content);
-      console.log("Blurred content for free blog post");
-    }
-
-    const is_blurred = isFreeBlog;
+    const is_blurred = false; // No blurring as per your existing logic
 
     const newBlogPost: BlogPost = {
       title: blogTitle,
@@ -1744,35 +1742,42 @@ ${webContent}
 
     blogPosts.push(newBlogPost);
 
-    // === START FIX: Adjust credit deduction logic ===
+    // Deduct credits and update subscription before database insertion
     let creditsToDeduct = postsToGenerate;
     if (isFreeBlog) {
       creditsToDeduct = 0; // No credits deducted for free blog
+      console.log(`No credits deducted for free blog post for user ${userId}`);
     }
 
-    console.log(`Deducting ${creditsToDeduct} credits from user ${userId}...`);
+    console.log(`Preparing to deduct ${creditsToDeduct} credits from user ${userId}...`);
     const updateData: any = {
       free_blogs_generated: isFreeBlog ? subscription.free_blogs_generated + 1 : subscription.free_blogs_generated,
     };
 
     // Only update credits if creditsToDeduct is greater than 0
     if (creditsToDeduct > 0) {
+      if (subscription.credits < creditsToDeduct) {
+        console.error(
+          `Credit check failed after generation: ${subscription.credits} available, ${creditsToDeduct} needed for user ${userId}.`
+        );
+        throw new Error(
+          `Insufficient credits after generation. You have ${subscription.credits} credits left. Please upgrade your plan at https://x.ai/grok.`
+        );
+      }
       updateData.credits = subscription.credits - creditsToDeduct;
     }
 
-    const { error: updateError } = await supabase
-      .from("subscriptions")
-      .update(updateData)
-      .eq("user_id", userId);
+    const { error: updateError } = await supabase.from("subscriptions").update(updateData).eq("user_id", userId);
 
     if (updateError) {
       console.error(`Error updating subscription for user ${userId}: ${updateError.message}`);
       throw new Error("Failed to update subscription. Please contact support.");
     }
-    // === END FIX ===
 
+    console.log(`Successfully updated subscription for user ${userId}`);
+
+    // Insert blog post into database
     console.log(`Creating blog post in database for user ${userId}...`);
-    // Ensure we have a valid URL to insert
     if (!validatedUrl) {
       console.error("URL is missing or invalid, generating a fallback URL");
       validatedUrl = `https://blog-${Date.now()}.example.com/${encodeURIComponent(blogTitle.toLowerCase().replace(/\s+/g, "-"))}`;
@@ -1800,9 +1805,9 @@ ${webContent}
     const { data: insertedData, error: insertError } = await supabase.from("blogs").insert([blogPostData]);
 
     if (insertError) {
-      console.error(`Error inserting blog post: ${insertError.message}`);
+      console.error(`Error inserting blog post for user ${userId}: ${insertError.message}`);
       console.error(`Error details:`, insertError);
-      throw new Error("Failed to save blog post. Please try again.");
+      throw new Error("Failed to save blog post due to a database error. Please try again or contact support.");
     }
 
     console.log(
@@ -1814,10 +1819,17 @@ ${webContent}
       message: `Generated ${postsToGenerate} blog post(s) successfully!`,
     } as GenerateBlogResult;
   } catch (error: any) {
-    console.error("Error generating blog:", error);
+    console.error("Error generating blog for user:", error);
+    let errorMessage = error.message || "Failed to generate blog post. Please try again.";
+    
+    // Customize error message for insufficient credits
+    if (errorMessage.includes("Insufficient credits")) {
+      errorMessage = `${errorMessage} Visit https://x.ai/grok to upgrade your plan.`;
+    }
+
     return {
       blogPosts: [],
-      message: error.message || "Failed to generate blog post. Please try again.",
+      message: errorMessage,
     } as GenerateBlogResult;
   }
 }

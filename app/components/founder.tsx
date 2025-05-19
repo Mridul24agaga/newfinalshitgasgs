@@ -283,12 +283,12 @@ export default function FounderSupportSection() {
               <h2 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
                 Ready for founder-level support that drives results?
               </h2>
-              <Link href="#" className="inline-block mt-2">
+              <Link href="/signup" className="inline-block mt-2">
                 <Button
                   size="lg"
                   className="bg-[#294fd6] hover:bg-[#294fd6]/90 text-white border border-[#294fd6]/20 transition-all hover:translate-y-[-2px]"
                 >
-                  Get Started
+                  Get one Article for Free
                 </Button>
               </Link>
             </div>

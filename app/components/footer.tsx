@@ -69,7 +69,7 @@ export default function Footer() {
                     href="/signup"
                     className="bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:from-[#4338ca] hover:to-[#6d28d9] text-white px-8 py-4 rounded-lg font-medium text-base whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 transform"
                   >
-                    Start Free Trial →
+                    Get one Article for Free →
                   </Link>
                 </div>
                 <p className="text-center text-sm text-gray-500 mt-3">

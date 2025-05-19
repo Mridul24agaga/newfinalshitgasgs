@@ -525,10 +525,10 @@ export default function AboutClient() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="/start"
+                href="/signup"
                 className="px-6 py-3 bg-white text-[#FF9626] rounded-lg font-medium flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
-                Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                Get one Article for Free <ArrowRight className="ml-2 h-4 w-4" />
               </a>
               <a
                 href="/demo"

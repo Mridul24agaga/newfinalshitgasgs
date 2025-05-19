@@ -25,7 +25,7 @@ export default function BlogCTA() {
                 href="/signup"
                 className="bg-white text-[#294fd6] hover:bg-white/90 px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 flex items-center justify-center border border-white/50 hover:scale-105 transform"
               >
-                Get Started Today
+                Get one Article for Free 
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link href='#howitworks' className="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-medium text-base whitespace-nowrap transition-all duration-200 hover:scale-105 transform">
