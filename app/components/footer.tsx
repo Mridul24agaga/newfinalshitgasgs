@@ -183,7 +183,6 @@ export default function Footer() {
                   </Link>
                   <div className="flex items-center justify-center text-xs text-gray-400">
                     <ShieldCheck className="h-4 w-4 text-[#4ade80] mr-1" />
-                    <span>30-day money-back guarantee</span>
                   </div>
                 </div>
               </div>

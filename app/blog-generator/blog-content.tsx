@@ -1,422 +1,625 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/utitls/supabase/client"; // Fixed typo in import path
-import { generateBlog } from "@/app/actions";
-import { Button } from "@/app/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/app/components/ui/card";
-import { Input } from "@/app/components/ui/input";
-import { Label } from "@/app/components/ui/label";
-import { Switch } from "@/app/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
-import { Calendar, Clock, Trash2, Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import { toast } from "@/app/components/ui/use-toast";
-import { Alert, AlertDescription } from "@/app/components/ui/alert";
-import { AppSidebar } from "../components/sidebar";
+import { useState, useEffect } from "react"
+import { createClient } from "@/utitls/supabase/client"
+import { generateBlog } from "@/app/actions"
+import { Badge } from "@/app/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 
-// Interface for the schedule object from the blog_schedules table
+// Enhanced interfaces
 interface Schedule {
-  id: string;
-  user_id: string;
-  website_url: string;
-  frequency: "daily" | "weekly" | "monthly";
-  day_of_week?: number | null;
-  day_of_month?: number | null;
-  time_of_day: string;
-  is_active: boolean;
-  created_at: string;
-  last_run?: string | null;
-  next_run: string;
+  id: string
+  user_id: string
+  website_url: string
+  frequency: "daily" | "weekly" | "monthly"
+  day_of_week?: number | null
+  day_of_month?: number | null
+  time_of_day: string
+  is_active: boolean
+  created_at: string
+  last_run?: string | null
+  next_run: string
+  qstash_message_id?: string | null
+  schedule_type?: "one-time" | "recurring"
 }
 
-// Define the BlogPost interface
-interface BlogPost {
-  id?: string
-  title?: string
-  content?: string
-  summary?: string
-  imageUrl?: string
-  createdAt?: string
-  status?: string
+interface ScheduleLog {
+  id: string
+  schedule_id: string
+  status: "success" | "failed"
+  message?: string
+  blog_id?: string
+  created_at: string
 }
 
 interface GenerateBlogResult {
-  blogPosts?: BlogPost[]
+  blogPosts?: any[]
   message?: string
-  headline?: string
-  content?: string
-  initialContent?: string
-  researchSummary?: string
-  imageUrls?: string[]
-  is_blurred?: boolean
   jobId?: string
   error?: string
 }
 
-export default function IntegratedScheduler() {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("daily");
-  const [dayOfWeek, setDayOfWeek] = useState<number>(1); // Monday
-  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
-  const [timeOfDay, setTimeOfDay] = useState("09:00");
-  const [isCreating, setIsCreating] = useState(false);
-  const [userCredits, setUserCredits] = useState(0);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
+export default function QStashScheduler() {
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [scheduleLogs, setScheduleLogs] = useState<ScheduleLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [websiteUrl, setWebsiteUrl] = useState("")
+  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("daily")
+  const [dayOfWeek, setDayOfWeek] = useState<number>(1)
+  const [dayOfMonth, setDayOfMonth] = useState<number>(1)
+  const [timeOfDay, setTimeOfDay] = useState("09:00")
+  const [isCreating, setIsCreating] = useState(false)
+  const [userCredits, setUserCredits] = useState(0)
+  const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  const [runningSchedules, setRunningSchedules] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState("schedules")
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
+  const [toastType, setToastType] = useState<"success" | "error">("success")
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toISOString().split("T")[0]
+  })
+  const [qstashStatus, setQstashStatus] = useState<"unknown" | "working" | "failed">("unknown")
+  const [useRecurringSchedule, setUseRecurringSchedule] = useState(false)
 
-  // Fetch user's schedules and website URL on component mount
+  // Update current time every second
   useEffect(() => {
-    fetchSchedules();
-    fetchUserWebsite();
-    fetchUserCredits();
-  }, []);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
 
-  // Fetch user's website URL
+    return () => clearInterval(timer)
+  }, [])
+
+  // Test QStash connection on load
+  useEffect(() => {
+    testQStashConnection()
+  }, [])
+
+  // Test QStash connection
+  const testQStashConnection = async () => {
+    try {
+      console.log("🧪 Testing QStash connection...")
+      const response = await fetch("/api/qstash/test")
+      const data = await response.json()
+
+      if (response.ok && data.status === "success") {
+        setQstashStatus("working")
+        toast("QStash connection successful! 🚀", "success")
+      } else {
+        setQstashStatus("failed")
+        toast("QStash connection failed. Check your configuration.", "error")
+      }
+    } catch (error) {
+      setQstashStatus("failed")
+      toast("QStash connection failed. Check your configuration.", "error")
+    }
+  }
+
+  // Toast function
+  const toast = (message: string, type: "success" | "error" = "success") => {
+    setToastMessage(message)
+    setToastType(type)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 5000)
+  }
+
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (activeTab === "schedules") {
+        fetchSchedules()
+        fetchUserCredits()
+      } else if (activeTab === "history") {
+        fetchScheduleLogs()
+      }
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [activeTab])
+
+  useEffect(() => {
+    fetchSchedules()
+    fetchUserWebsite()
+    fetchUserCredits()
+  }, [])
+
   const fetchUserWebsite = async () => {
     try {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
 
       if (userData?.user) {
-        // Try to get the website from the database
         const { data, error } = await supabase
           .from("user_websites")
           .select("website_url")
           .eq("user_id", userData.user.id)
-          .single();
+          .single()
 
         if (data && data.website_url) {
-          setWebsiteUrl(data.website_url);
+          setWebsiteUrl(data.website_url)
         } else if (error) {
-          // Fallback to localStorage if database fetch fails
-          const savedUrl = localStorage.getItem("websiteUrl");
+          const savedUrl = localStorage.getItem("websiteUrl")
           if (savedUrl) {
-            setWebsiteUrl(savedUrl);
+            setWebsiteUrl(savedUrl)
           }
         }
       }
     } catch (error) {
-      console.error("Error fetching user website:", error);
+      console.error("Error fetching user website:", error)
     }
-  };
+  }
 
-  // Fetch user's scheduled blog generations
   const fetchSchedules = async () => {
     try {
-      setLoading(true);
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
+      setLoading(true)
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
 
       if (userData?.user) {
         const { data, error } = await supabase
           .from("blog_schedules")
           .select("*")
           .eq("user_id", userData.user.id)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
 
         if (error) {
-          console.error("Error fetching schedules:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch your scheduled blog generations.",
-            variant: "destructive",
-          });
-          return;
+          console.error("Error fetching schedules:", error)
+          toast("Failed to fetch your scheduled blog generations.", "error")
+          return
         }
 
-        setSchedules(data || []);
+        setSchedules(data || [])
       }
     } catch (error) {
-      console.error("Error in fetchSchedules:", error);
+      console.error("Error in fetchSchedules:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // Fetch user's available credits
-  const fetchUserCredits = async () => {
+  const fetchScheduleLogs = async () => {
     try {
-      setIsLoadingCredits(true);
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
+      setLogsLoading(true)
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
 
       if (userData?.user) {
-        // Get user subscription to check credits
+        const { data, error } = await supabase
+          .from("schedule_logs")
+          .select("*")
+          .eq("user_id", userData.user.id)
+          .order("created_at", { ascending: false })
+          .limit(50)
+
+        if (error && error.code !== "42P01") {
+          console.error("Error fetching schedule logs:", error)
+        } else {
+          setScheduleLogs(data || [])
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchScheduleLogs:", error)
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+
+  const fetchUserCredits = async () => {
+    try {
+      setIsLoadingCredits(true)
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
+
+      if (userData?.user) {
         const { data: subscriptionData, error: subscriptionError } = await supabase
           .from("subscriptions")
           .select("*")
           .eq("user_id", userData.user.id)
-          .single();
+          .single()
 
         if (subscriptionError && subscriptionError.code !== "PGRST116") {
-          console.error("Error fetching subscription:", subscriptionError);
-          return;
+          console.error("Error fetching subscription:", subscriptionError)
+          return
         }
 
         if (subscriptionData) {
-          // Try multiple possible field names for credits
-          let credits = 0;
+          let credits = 0
           if (typeof subscriptionData.credits_available !== "undefined") {
-            credits = Number(subscriptionData.credits_available);
+            credits = Number(subscriptionData.credits_available)
           } else if (typeof subscriptionData.credits !== "undefined") {
-            credits = Number(subscriptionData.credits);
+            credits = Number(subscriptionData.credits)
           } else if (typeof subscriptionData.available_credits !== "undefined") {
-            credits = Number(subscriptionData.available_credits);
+            credits = Number(subscriptionData.available_credits)
           }
 
-          // Ensure it's a valid number
-          credits = isNaN(credits) ? 0 : credits;
-          setUserCredits(credits);
+          credits = isNaN(credits) ? 0 : credits
+          setUserCredits(credits)
         } else {
-          setUserCredits(0);
+          setUserCredits(0)
         }
       }
     } catch (error) {
-      console.error("Error fetching user credits:", error);
+      console.error("Error fetching user credits:", error)
     } finally {
-      setIsLoadingCredits(false);
+      setIsLoadingCredits(false)
     }
-  };
+  }
 
-  // Create a new scheduled blog generation
   const createSchedule = async () => {
     try {
       if (!websiteUrl) {
-        toast({
-          title: "Missing Website URL",
-          description: "Please enter a website URL for blog generation.",
-          variant: "destructive",
-        });
-        return;
+        toast("Please enter a website URL for blog generation.", "error")
+        return
       }
 
-      setIsCreating(true);
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
+      if (qstashStatus === "failed") {
+        toast("QStash is not available. Please check your configuration.", "error")
+        return
+      }
+
+      setIsCreating(true)
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
 
       if (!userData?.user) {
-        toast({
-          title: "Authentication Error",
-          description: "Please log in to schedule blog generations.",
-          variant: "destructive",
-        });
-        return;
+        toast("Please log in to schedule blog generations.", "error")
+        return
       }
 
-      // Calculate the next run time
-      const nextRun = calculateNextRunTime(frequency, dayOfWeek, dayOfMonth, timeOfDay);
+      // Calculate next run time
+      const nextRun = calculateNextRunTime(frequency, dayOfWeek, dayOfMonth, timeOfDay, selectedDate, currentTime)
 
-      // Create the schedule
-      const { error } = await supabase.from("blog_schedules").insert({
-        user_id: userData.user.id,
-        website_url: websiteUrl,
-        frequency,
-        day_of_week: frequency === "weekly" ? dayOfWeek : null,
-        day_of_month: frequency === "monthly" ? dayOfMonth : null,
-        time_of_day: timeOfDay,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        next_run: nextRun.toISOString(),
-      });
+      console.log("🚀 Creating new schedule...")
+      console.log("📅 Next run:", nextRun.toISOString())
+
+      // Create schedule in database first
+      const { data: newSchedule, error } = await supabase
+        .from("blog_schedules")
+        .insert({
+          user_id: userData.user.id,
+          website_url: websiteUrl,
+          frequency,
+          day_of_week: frequency === "weekly" ? dayOfWeek : null,
+          day_of_month: frequency === "monthly" ? dayOfMonth : null,
+          time_of_day: timeOfDay,
+          is_active: true,
+          created_at: currentTime.toISOString(),
+          next_run: nextRun.toISOString(),
+          schedule_type: useRecurringSchedule ? "recurring" : "one-time",
+        })
+        .select()
+        .single()
 
       if (error) {
-        console.error("Error creating schedule:", error);
-        toast({
-          title: "Error",
-          description: "Failed to create scheduled blog generation.",
-          variant: "destructive",
-        });
-        return;
+        console.error("❌ Error creating schedule:", error)
+        toast("Failed to create scheduled blog generation.", "error")
+        return
       }
 
-      toast({
-        title: "Schedule Created",
-        description: "Your scheduled blog generation has been created successfully.",
-      });
+      console.log("✅ Schedule created in database:", newSchedule.id)
 
-      // Refresh the schedules
-      fetchSchedules();
+      // Create QStash schedule
+      try {
+        const response = await fetch("/api/qstash/create-schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scheduleId: newSchedule.id,
+            nextRun: nextRun.toISOString(),
+            websiteUrl,
+            frequency,
+            timeOfDay,
+            dayOfWeek,
+            dayOfMonth,
+            useRecurring: useRecurringSchedule,
+          }),
+        })
+
+        if (response.ok) {
+          const { messageId, type, message } = await response.json()
+          if (messageId) {
+            await supabase
+              .from("blog_schedules")
+              .update({
+                qstash_message_id: messageId,
+                schedule_type: type,
+              })
+              .eq("id", newSchedule.id)
+
+            console.log("🚀 QStash schedule created:", messageId)
+          }
+          toast(
+            message ||
+              `Schedule created successfully with QStash ${type === "recurring" ? "(Recurring)" : "(One-time)"}! 🚀`,
+          )
+        } else {
+          const errorData = await response.json()
+          console.error("❌ QStash setup failed:", errorData)
+          toast("Schedule created but QStash setup failed. It may not execute automatically.", "error")
+        }
+      } catch (qstashError) {
+        console.error("❌ Error creating QStash schedule:", qstashError)
+        toast("Schedule created but QStash setup failed. It may not execute automatically.", "error")
+      }
+
+      fetchSchedules()
     } catch (error) {
-      console.error("Error in createSchedule:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      console.error("❌ Error in createSchedule:", error)
+      toast("An unexpected error occurred. Please try again.", "error")
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
-  // Toggle a schedule's active status
   const toggleScheduleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from("blog_schedules").update({ is_active: !currentStatus }).eq("id", id);
+      const supabase = createClient()
+      const schedule = schedules.find((s) => s.id === id)
 
-      if (error) {
-        console.error("Error toggling schedule status:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update schedule status.",
-          variant: "destructive",
-        });
-        return;
+      if (!schedule) return
+
+      console.log(`🔄 Toggling schedule ${id}: ${currentStatus ? "deactivating" : "activating"}`)
+
+      // If deactivating, cancel QStash schedule
+      if (currentStatus && schedule.qstash_message_id) {
+        try {
+          await fetch("/api/qstash/cancel-schedule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
+          })
+          console.log("🗑️ QStash schedule cancelled")
+        } catch (error) {
+          console.error("❌ Error cancelling QStash schedule:", error)
+        }
       }
 
-      // Update local state
+      // If activating, create new QStash schedule
+      let newMessageId = null
+      if (!currentStatus) {
+        try {
+          const response = await fetch("/api/qstash/create-schedule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scheduleId: id,
+              nextRun: schedule.next_run,
+              websiteUrl: schedule.website_url,
+              frequency: schedule.frequency,
+              timeOfDay: schedule.time_of_day,
+              dayOfWeek: schedule.day_of_week,
+              dayOfMonth: schedule.day_of_month,
+              useRecurring: schedule.schedule_type === "recurring",
+            }),
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            newMessageId = data.messageId
+            console.log("🚀 New QStash schedule created:", newMessageId)
+          }
+        } catch (error) {
+          console.error("❌ Error creating QStash schedule:", error)
+        }
+      }
+
+      const { error } = await supabase
+        .from("blog_schedules")
+        .update({
+          is_active: !currentStatus,
+          qstash_message_id: newMessageId,
+        })
+        .eq("id", id)
+
+      if (error) {
+        console.error("❌ Error toggling schedule status:", error)
+        toast("Failed to update schedule status.", "error")
+        return
+      }
+
       setSchedules(
-        schedules.map((schedule) => (schedule.id === id ? { ...schedule, is_active: !currentStatus } : schedule)),
-      );
+        schedules.map((schedule) =>
+          schedule.id === id ? { ...schedule, is_active: !currentStatus, qstash_message_id: newMessageId } : schedule,
+        ),
+      )
 
-      toast({
-        title: "Status Updated",
-        description: `Schedule ${!currentStatus ? "activated" : "paused"} successfully.`,
-      });
+      toast(`Schedule ${!currentStatus ? "activated" : "paused"} successfully.`)
     } catch (error) {
-      console.error("Error in toggleScheduleStatus:", error);
+      console.error("❌ Error in toggleScheduleStatus:", error)
     }
-  };
+  }
 
-  // Delete a schedule
   const deleteSchedule = async (id: string) => {
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from("blog_schedules").delete().eq("id", id);
+      const supabase = createClient()
+      const schedule = schedules.find((s) => s.id === id)
 
-      if (error) {
-        console.error("Error deleting schedule:", error);
-        toast({
-          title: "Error",
-          description: "Failed to delete schedule.",
-          variant: "destructive",
-        });
-        return;
+      console.log(`🗑️ Deleting schedule ${id}`)
+
+      // Cancel QStash schedule if exists
+      if (schedule?.qstash_message_id) {
+        try {
+          await fetch("/api/qstash/cancel-schedule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
+          })
+          console.log("🗑️ QStash schedule cancelled")
+        } catch (error) {
+          console.error("❌ Error cancelling QStash schedule:", error)
+        }
       }
 
-      // Update local state
-      setSchedules(schedules.filter((schedule) => schedule.id !== id));
-      toast({
-        title: "Schedule Deleted",
-        description: "Your scheduled blog generation has been deleted.",
-      });
-    } catch (error) {
-      console.error("Error in deleteSchedule:", error);
-    }
-  };
+      const { error } = await supabase.from("blog_schedules").delete().eq("id", id)
 
-  // Run a scheduled blog generation manually
+      if (error) {
+        console.error("❌ Error deleting schedule:", error)
+        toast("Failed to delete schedule.", "error")
+        return
+      }
+
+      setSchedules(schedules.filter((schedule) => schedule.id !== id))
+      toast("Schedule deleted successfully.")
+    } catch (error) {
+      console.error("❌ Error in deleteSchedule:", error)
+    }
+  }
+
   const runScheduleManually = async (schedule: Schedule) => {
     try {
       if (userCredits < 1) {
-        toast({
-          title: "Insufficient Credits",
-          description: "You don't have enough credits to generate a blog.",
-          variant: "destructive",
-        });
-        return;
+        toast("You don't have enough credits to generate a blog.", "error")
+        return
       }
 
-      // Call the same generateBlog function used in the BlogGenerator component
-      const result: GenerateBlogResult = await generateBlog(schedule.website_url);
+      console.log(`🚀 Running schedule ${schedule.id} manually`)
+      setRunningSchedules((prev) => new Set(prev).add(schedule.id))
+
+      const result: GenerateBlogResult = await generateBlog(schedule.website_url)
 
       if (result.error) {
-        toast({
-          title: "Error",
-          description: `Failed to generate blog: ${result.error}`,
-          variant: "destructive",
-        });
-        return;
+        toast(`Failed to generate blog: ${result.error}`, "error")
+        return
       }
 
-      // Update the schedule with last run time and calculate next run
-      const now = new Date();
-      const lastRun = now.toISOString();
+      const now = currentTime
+      const lastRun = now.toISOString()
       const nextRun = calculateNextRunTime(
         schedule.frequency,
         schedule.day_of_week || 1,
         schedule.day_of_month || 1,
         schedule.time_of_day,
-      );
+        currentTime.toISOString().split("T")[0],
+        now,
+      )
 
-      const supabase = createClient();
+      const supabase = createClient()
       await supabase
         .from("blog_schedules")
         .update({
           last_run: lastRun,
           next_run: nextRun.toISOString(),
         })
-        .eq("id", schedule.id);
+        .eq("id", schedule.id)
 
-      // Refresh data
-      fetchSchedules();
-      fetchUserCredits();
+      // Update QStash schedule for next run (only for one-time schedules)
+      if (schedule.qstash_message_id && schedule.schedule_type !== "recurring") {
+        try {
+          // Cancel old schedule
+          await fetch("/api/qstash/cancel-schedule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
+          })
 
-      toast({
-        title: "Blog Generation Started",
-        description: "Your blog is being generated. You can view it in your content library once it's complete.",
-      });
+          // Create new schedule
+          const response = await fetch("/api/qstash/create-schedule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scheduleId: schedule.id,
+              nextRun: nextRun.toISOString(),
+              websiteUrl: schedule.website_url,
+              useRecurring: false,
+            }),
+          })
+
+          if (response.ok) {
+            const { messageId } = await response.json()
+            await supabase.from("blog_schedules").update({ qstash_message_id: messageId }).eq("id", schedule.id)
+            console.log("🚀 Next QStash schedule created:", messageId)
+          }
+        } catch (error) {
+          console.error("❌ Error updating QStash schedule:", error)
+        }
+      }
+
+      fetchSchedules()
+      fetchUserCredits()
+
+      toast("Blog generation started! 🚀 Check your content library for the result.")
     } catch (error) {
-      console.error("Error running schedule manually:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate blog. Please try again.",
-        variant: "destructive",
-      });
+      console.error("❌ Error running schedule manually:", error)
+      toast("Failed to generate blog. Please try again.", "error")
+    } finally {
+      setRunningSchedules((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(schedule.id)
+        return newSet
+      })
     }
-  };
+  }
 
-  // Calculate the next run time based on frequency and time settings
+  // Updated function to use current time properly
   const calculateNextRunTime = (
     frequency: "daily" | "weekly" | "monthly",
     dayOfWeek: number,
     dayOfMonth: number,
     timeOfDay: string,
+    startDate: string,
+    fromTime?: Date,
   ): Date => {
-    const now = new Date();
-    const [hours, minutes] = timeOfDay.split(":").map(Number);
+    const now = fromTime || currentTime
+    const [hours, minutes] = timeOfDay.split(":").map(Number)
 
-    const nextRun = new Date(now);
-    nextRun.setHours(hours, minutes, 0, 0);
+    // Create the initial run time from the selected date and time
+    const selectedDateTime = new Date(startDate + "T" + timeOfDay + ":00")
 
-    // If the time is in the past today, move to tomorrow
-    if (nextRun <= now) {
-      nextRun.setDate(nextRun.getDate() + 1);
+    // If the selected date/time is in the future, use it as the first run
+    if (selectedDateTime > now) {
+      return selectedDateTime
     }
 
-    if (frequency === "weekly") {
-      // Set to the next occurrence of the specified day of week (0 = Sunday, 6 = Saturday)
-      const currentDay = nextRun.getDay();
-      const daysUntilTarget = (dayOfWeek - currentDay + 7) % 7;
+    // Otherwise, calculate the next occurrence based on frequency from NOW
+    const nextRun = new Date(now)
+    nextRun.setHours(hours, minutes, 0, 0)
 
-      if (daysUntilTarget > 0 || (daysUntilTarget === 0 && nextRun <= now)) {
-        nextRun.setDate(nextRun.getDate() + daysUntilTarget);
-      }
-    } else if (frequency === "monthly") {
-      // Set to the specified day of the month
-      nextRun.setDate(dayOfMonth);
-
-      // If that day has already passed this month, move to next month
+    if (frequency === "daily") {
+      // If today's time has passed, schedule for tomorrow
       if (nextRun <= now) {
-        nextRun.setMonth(nextRun.getMonth() + 1);
+        nextRun.setDate(nextRun.getDate() + 1)
+      }
+    } else if (frequency === "weekly") {
+      // Find the next weekly occurrence
+      const currentDay = now.getDay()
+      let daysUntilTarget = (dayOfWeek - currentDay + 7) % 7
+
+      // If it's the same day but time has passed, schedule for next week
+      if (daysUntilTarget === 0 && nextRun <= now) {
+        daysUntilTarget = 7
+      }
+
+      nextRun.setDate(now.getDate() + daysUntilTarget)
+    } else if (frequency === "monthly") {
+      // Set to the specified day of current month
+      nextRun.setDate(dayOfMonth)
+
+      // If this month's date has passed, move to next month
+      if (nextRun <= now) {
+        nextRun.setMonth(nextRun.getMonth() + 1)
+        nextRun.setDate(dayOfMonth)
       }
 
       // Handle months with fewer days
-      const daysInMonth = new Date(nextRun.getFullYear(), nextRun.getMonth() + 1, 0).getDate();
-      if (dayOfMonth > daysInMonth) {
-        nextRun.setDate(daysInMonth);
+      const targetMonth = nextRun.getMonth()
+      const daysInTargetMonth = new Date(nextRun.getFullYear(), targetMonth + 1, 0).getDate()
+      if (dayOfMonth > daysInTargetMonth) {
+        nextRun.setDate(daysInTargetMonth)
       }
     }
 
-    return nextRun;
-  };
+    return nextRun
+  }
 
-  // Format date for display
   const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return "Not scheduled";
+    if (!dateString) return "Not scheduled"
 
-    const date = new Date(dateString);
+    const date = new Date(dateString)
     return date.toLocaleString("en-US", {
       weekday: "short",
       month: "short",
@@ -425,278 +628,999 @@ export default function IntegratedScheduler() {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    });
-  };
+    })
+  }
+
+  const getTimeUntilNext = (nextRun: string): string => {
+    const now = currentTime
+    const next = new Date(nextRun)
+    const diff = next.getTime() - now.getTime()
+
+    if (diff <= 0) return "Overdue"
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
+
+  const getScheduleStats = () => {
+    const total = schedules.length
+    const active = schedules.filter((s) => s.is_active).length
+    const qstashEnabled = schedules.filter((s) => s.qstash_message_id).length
+    const successful = scheduleLogs.filter((log) => log.status === "success").length
+    const failed = scheduleLogs.filter((log) => log.status === "failed").length
+
+    return { total, active, qstashEnabled, successful, failed }
+  }
+
+  const stats = getScheduleStats()
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen w-full bg-white">
-      <AppSidebar />
-      <div className="flex-1 w-full overflow-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
-        {/* Font import */}
-        <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-          body {
-            font-family: 'Inter', sans-serif;
-          }
-        `}</style>
-
-        {/* Header */}
-        <header className="h-16 border-b border-gray-200 flex items-center px-4 sm:px-6 bg-white sticky top-0 z-10 w-full">
-          <h1 className="text-xl font-semibold text-gray-800">Blog Scheduler</h1>
-          <div className="ml-auto flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 bg-blue-50 px-2 sm:px-3 py-1.5 rounded">
-              {isLoadingCredits ? (
-                <span className="text-xs sm:text-sm font-medium text-blue-600 flex items-center">
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  Loading...
-                </span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in">
+          <div
+            className={`px-6 py-4 rounded-lg shadow-lg ${
+              toastType === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {toastType === "success" ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               ) : (
-                <span className="text-xs sm:text-sm font-medium text-blue-600">
-                  {userCredits} Credit{userCredits !== 1 ? "s" : ""} Available
-                </span>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               )}
+              <span className="font-medium">{toastMessage}</span>
             </div>
           </div>
-        </header>
+        </div>
+      )}
 
-        <div className="p-4 sm:p-6 w-full max-w-7xl mx-auto">
-          <Alert className="mb-6 bg-blue-50 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-700">
-              Schedule automatic blog generation at your preferred frequency. Each scheduled generation will use 1
-              credit from your account.
-            </AlertDescription>
-          </Alert>
-
-          {/* Create Schedule Card */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Create New Schedule</CardTitle>
-              <CardDescription>Set up automatic blog generation on a recurring schedule</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="website-url%EC2">Website URL</Label>
-                  <Input
-                    id="website-url"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                    placeholder="https://example.com"
-                    disabled={true}
-                    className="bg-gray-50"
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
-                  <p className="text-xs text-gray-500">URL set during onboarding</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
-                  <Select
-                    value={frequency}
-                    onValueChange={(value: "daily" | "weekly" | "monthly") => setFrequency(value)}
-                  >
-                    <SelectTrigger id="frequency">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {frequency === "weekly" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="day-of-week">Day of Week</Label>
-                    <Select
-                      value={dayOfWeek.toString()}
-                      onValueChange={(value) => setDayOfWeek(Number.parseInt(value))}
-                    >
-                      <SelectTrigger id="day-of-week">
-                        <SelectValue placeholder="Select day of week" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Sunday</SelectItem>
-                        <SelectItem value="1">Monday</SelectItem>
-                        <SelectItem value="2">Tuesday</SelectItem>
-                        <SelectItem value="3">Wednesday</SelectItem>
-                        <SelectItem value="4">Thursday</SelectItem>
-                        <SelectItem value="5">Friday</SelectItem>
-                        <SelectItem value="6">Saturday</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {frequency === "monthly" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="day-of-month">Day of Month</Label>
-                    <Select
-                      value={dayOfMonth.toString()}
-                      onValueChange={(value) => setDayOfMonth(Number.parseInt(value))}
-                    >
-                      <SelectTrigger id="day-of-month">
-                        <SelectValue placeholder="Select day of month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 31 }, (_, i) => (
-                          <SelectItem key={i + 1} value={(i + 1).toString()}>
-                            {i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="time-of-day">Time of Day</Label>
-                  <Input
-                    id="time-of-day"
-                    type="time"
-                    value={timeOfDay}
-                    onChange={(e) => setTimeOfDay(e.target.value)}
-                  />
-                </div>
+                </svg>
               </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">QStash Blog Scheduler</h1>
+                <p className="text-sm text-gray-600">
+                  Powered by QStash • Current time: {currentTime.toLocaleString()}
+                </p>
+              </div>
+            </div>
 
-              {userCredits === 0 && (
-                <Alert className="mt-4 bg-amber-50 border-amber-200">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-700">
-                    You need at least 1 credit to schedule blog generation. Please purchase credits to continue.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="flex justify-between items-center pt-4">
-                <div className="text-sm text-gray-500 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  Next run:{" "}
-                  {formatDate(calculateNextRunTime(frequency, dayOfWeek, dayOfMonth, timeOfDay).toISOString())}
-                </div>
-                <Button
-                  onClick={createSchedule}
-                  disabled={isCreating || userCredits === 0}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1a4 4 0 118 0v1a2 2 0 01-2 2H10a2 2 0 01-2-2zM12 14a2 2 0 100-4 2 2 0 000 4z" />
+                  </svg>
+                  {isLoadingCredits ? (
+                    <span className="text-sm font-medium text-blue-600">Loading...</span>
                   ) : (
-                    "Create Schedule"
+                    <span className="text-sm font-medium text-blue-600">
+                      {userCredits} Credit{userCredits !== 1 ? "s" : ""} Available
+                    </span>
                   )}
-                </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Existing Schedules */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Your Scheduled Generations</h2>
-
-            {loading ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span className="ml-2 text-gray-600">Loading your schedules...</span>
+              {/* QStash Status */}
+              <div
+                className={`px-3 py-2 rounded-lg border text-sm font-medium ${
+                  qstashStatus === "working"
+                    ? "bg-green-50 border-green-200 text-green-700"
+                    : qstashStatus === "failed"
+                      ? "bg-red-50 border-red-200 text-red-700"
+                      : "bg-gray-50 border-gray-200 text-gray-700"
+                }`}
+              >
+                QStash:{" "}
+                {qstashStatus === "working" ? "🚀 Active" : qstashStatus === "failed" ? "❌ Failed" : "❓ Unknown"}
               </div>
-            ) : schedules.length > 0 ? (
-              <div className="space-y-4">
-                {schedules.map((schedule) => (
-                  <Card
-                    key={schedule.id}
-                    className={`border-l-4 ${schedule.is_active ? "border-l-green-500" : "border-l-gray-300"}`}
+
+              <button
+                onClick={testQStashConnection}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Test QStash
+              </button>
+
+              <button
+                onClick={() => {
+                  fetchSchedules()
+                  fetchUserCredits()
+                  if (activeTab === "history") fetchScheduleLogs()
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* QStash Status Alert */}
+        {qstashStatus === "working" ? (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <h3 className="text-sm font-medium text-green-800">🚀 QStash Connected Successfully!</h3>
+                <p className="text-sm text-green-700 mt-1">
+                  Your blog schedules are powered by Upstash QStash for 99.9% reliability[^1]. Each schedule will
+                  execute precisely at the scheduled time with automatic retries and error handling.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : qstashStatus === "failed" ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <h3 className="text-sm font-medium text-red-800">❌ QStash Connection Failed</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Unable to connect to QStash. Please check your QSTASH_TOKEN environment variable and try again.
+                  Schedules may not execute automatically without QStash.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600">Total Schedules</p>
+                <p className="text-3xl font-bold text-blue-700">{stats.total}</p>
+              </div>
+              <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-600">Active</p>
+                <p className="text-3xl font-bold text-green-700">{stats.active}</p>
+              </div>
+              <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-600">QStash Enabled</p>
+                <p className="text-3xl font-bold text-purple-700">{stats.qstashEnabled}</p>
+              </div>
+              <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-600">Successful</p>
+                <p className="text-3xl font-bold text-emerald-700">{stats.successful}</p>
+              </div>
+              <svg className="w-8 h-8 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-red-600">Failed</p>
+                <p className="text-3xl font-bold text-red-700">{stats.failed}</p>
+              </div>
+              <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="schedules" className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Manage Schedules
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Execution History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="schedules" className="space-y-8 mt-6">
+            {/* Create Schedule Form */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create New QStash Schedule
+                </h2>
+                <p className="text-blue-100 text-sm mt-1">Set up automatic blog generation with 99.9% reliability</p>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                    <div className="relative">
+                      <svg
+                        className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"
+                        />
+                      </svg>
+                      <input
+                        type="text"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        disabled={true}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">URL configured during onboarding</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                    <select
+                      value={frequency}
+                      onChange={(e) => setFrequency(e.target.value as "daily" | "weekly" | "monthly")}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="daily">📅 Daily</option>
+                      <option value="weekly">📆 Weekly</option>
+                      <option value="monthly">🗓️ Monthly</option>
+                    </select>
+                  </div>
+
+                  {frequency === "weekly" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Day of Week</label>
+                      <select
+                        value={dayOfWeek}
+                        onChange={(e) => setDayOfWeek(Number(e.target.value))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value={0}>🌅 Sunday</option>
+                        <option value={1}>💼 Monday</option>
+                        <option value={2}>🔥 Tuesday</option>
+                        <option value={3}>⚡ Wednesday</option>
+                        <option value={4}>🚀 Thursday</option>
+                        <option value={5}>🎉 Friday</option>
+                        <option value={6}>🌟 Saturday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {frequency === "monthly" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                      <select
+                        value={dayOfMonth}
+                        onChange={(e) => setDayOfMonth(Number(e.target.value))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            {i + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time of Day</label>
+                    <div className="relative">
+                      <svg
+                        className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <input
+                        type="time"
+                        value={timeOfDay}
+                        onChange={(e) => setTimeOfDay(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <div className="relative">
+                      <svg
+                        className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        min={currentTime.toISOString().split("T")[0]}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Choose when to start the schedule</p>
+                  </div>
+                </div>
+
+                {/* Schedule Type Toggle */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-800">🚀 QStash Schedule Type</h3>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {useRecurringSchedule
+                          ? "Recurring schedules use QStash cron for automatic repetition"
+                          : "One-time schedules create individual QStash messages for each execution"}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useRecurringSchedule}
+                        onChange={(e) => setUseRecurringSchedule(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-blue-700">
+                        {useRecurringSchedule ? "🔄 Recurring" : "⚡ One-time"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {userCredits === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <p className="text-amber-700 text-sm">
+                        You need at least 1 credit to schedule blog generation. Please purchase credits to continue.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="font-medium">Next run:</span>
+                      <span className="text-blue-600 font-semibold">
+                        {formatDate(
+                          calculateNextRunTime(
+                            frequency,
+                            dayOfWeek,
+                            dayOfMonth,
+                            timeOfDay,
+                            selectedDate,
+                            currentTime,
+                          ).toISOString(),
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={createSchedule}
+                    disabled={isCreating || userCredits === 0 || qstashStatus === "failed"}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-2">
-                          <h3 className="font-medium">{schedule.website_url}</h3>
+                    {isCreating ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Creating QStash Schedule...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                        Create QStash Schedule
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {schedule.frequency === "daily" && "Daily"}
-                                {schedule.frequency === "weekly" &&
-                                  `Weekly on ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][schedule.day_of_week || 0]}`}
-                                {schedule.frequency === "monthly" && `Monthly on day ${schedule.day_of_month}`}
-                              </span>
+            {/* Schedules List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Your QStash Schedules</h2>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {schedules.filter((s) => s.is_active).length} Active
+                  </Badge>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                    {stats.qstashEnabled} QStash Enabled
+                  </Badge>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="flex justify-center items-center h-40">
+                  <svg className="animate-spin w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span className="ml-2 text-gray-600">Loading your QStash schedules...</span>
+                </div>
+              ) : schedules.length > 0 ? (
+                <div className="space-y-4">
+                  {schedules.map((schedule) => (
+                    <div
+                      key={schedule.id}
+                      className={`bg-white rounded-xl shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${
+                        schedule.is_active
+                          ? "border-l-green-500 bg-gradient-to-r from-green-50 to-white"
+                          : "border-l-gray-300 bg-gradient-to-r from-gray-50 to-white"
+                      }`}
+                    >
+                      <div className="p-6">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                          <div className="space-y-3 flex-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"
+                                  />
+                                </svg>
+                                {schedule.website_url}
+                              </h3>
+                              <Badge
+                                variant={schedule.is_active ? "default" : "secondary"}
+                                className={
+                                  schedule.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                                }
+                              >
+                                {schedule.is_active ? "Active" : "Paused"}
+                              </Badge>
+                              {schedule.qstash_message_id && (
+                                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                  🚀 QStash {schedule.schedule_type === "recurring" ? "Cron" : "Scheduled"}
+                                </Badge>
+                              )}
                             </div>
 
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {new Date(`2000-01-01T${schedule.time_of_day}`).toLocaleTimeString([], {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })}
-                              </span>
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                                <svg
+                                  className="w-4 h-4 text-blue-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
+                                </svg>
+                                <span className="font-medium text-blue-700">
+                                  {schedule.frequency === "daily" && "Daily"}
+                                  {schedule.frequency === "weekly" &&
+                                    `Weekly on ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][schedule.day_of_week || 0]}`}
+                                  {schedule.frequency === "monthly" && `Monthly on day ${schedule.day_of_month}`}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-full">
+                                <svg
+                                  className="w-4 h-4 text-purple-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span className="font-medium text-purple-700">
+                                  {new Date(`2000-01-01T${schedule.time_of_day}`).toLocaleTimeString([], {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })}
+                                </span>
+                              </div>
+
+                              {schedule.is_active && (
+                                <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
+                                  <svg
+                                    className="w-4 h-4 text-orange-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                    />
+                                  </svg>
+                                  <span className="font-medium text-orange-700">
+                                    Next in {getTimeUntilNext(schedule.next_run)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                              {schedule.last_run && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Last run: {formatDate(schedule.last_run)}
+                                </div>
+                              )}
+                              {schedule.next_run && schedule.is_active && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  Next run: {formatDate(schedule.next_run)}
+                                </div>
+                              )}
+                              {schedule.qstash_message_id && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    />
+                                  </svg>
+                                  QStash ID: {schedule.qstash_message_id.substring(0, 8)}...
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                            {schedule.last_run && <div>Last run: {formatDate(schedule.last_run)}</div>}
-                            {schedule.next_run && schedule.is_active && (
-                              <div>Next run: {formatDate(schedule.next_run)}</div>
-                            )}
+                          <div className="flex items-center gap-3 lg:flex-col lg:items-end">
+                            <button
+                              onClick={() => runScheduleManually(schedule)}
+                              disabled={userCredits < 1 || runningSchedules.has(schedule.id)}
+                              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {runningSchedules.has(schedule.id) ? (
+                                <>
+                                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                  </svg>
+                                  Running...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Run Now
+                                </>
+                              )}
+                            </button>
+
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={schedule.is_active}
+                                    onChange={() => toggleScheduleStatus(schedule.id, schedule.is_active)}
+                                    disabled={!schedule.is_active && userCredits === 0}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                                <span className="text-sm font-medium">
+                                  {schedule.is_active ? (
+                                    <span className="text-green-600">Active</span>
+                                  ) : (
+                                    <span className="text-gray-500">Paused</span>
+                                  )}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => deleteSchedule(schedule.id)}
+                                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-end md:self-auto">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => runScheduleManually(schedule)}
-                            disabled={userCredits < 1}
-                            className="text-blue-600 border-blue-200"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Run Now
-                          </Button>
-
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={schedule.is_active}
-                              onCheckedChange={() => toggleScheduleStatus(schedule.id, schedule.is_active)}
-                              disabled={!schedule.is_active && userCredits === 0}
-                            />
-                            <span className="text-sm">{schedule.is_active ? "Active" : "Paused"}</span>
-                          </div>
-
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => deleteSchedule(schedule.id)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">No QStash Schedules Yet</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    You haven't created any QStash-powered scheduled blog generations yet. Create your first schedule
+                    above to automate your content creation with 99.9% reliability.
+                  </p>
+                  <button
+                    onClick={() => (document.querySelector('input[type="text"]') as HTMLInputElement)?.focus()}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    Create Your First QStash Schedule
+                  </button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6 mt-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-800">QStash Execution History</h2>
+              <button
+                onClick={fetchScheduleLogs}
+                disabled={logsLoading}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                {logsLoading ? (
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                )}
+                Refresh History
+              </button>
+            </div>
+
+            {logsLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <svg className="animate-spin w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="ml-2 text-gray-600">Loading QStash execution history...</span>
+              </div>
+            ) : scheduleLogs.length > 0 ? (
+              <div className="space-y-3">
+                {scheduleLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {log.status === "success" ? (
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-800">
+                            QStash execution {log.status === "success" ? "completed successfully" : "failed"}
+                          </p>
+                          <p className="text-sm text-gray-500">{formatDate(log.created_at)}</p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={log.status === "success" ? "default" : "destructive"}
+                        className={log.status === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}
+                      >
+                        {log.status === "success" ? "✅ Success" : "❌ Failed"}
+                      </Badge>
+                    </div>
+                    {log.message && (
+                      <p className="text-sm text-gray-600 mt-2 ml-11 bg-gray-50 p-2 rounded">{log.message}</p>
+                    )}
+                    {log.blog_id && (
+                      <p className="text-xs text-blue-600 mt-1 ml-11 font-mono">Blog ID: {log.blog_id}</p>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Schedules Yet</h3>
-                  <p className="text-gray-600 mb-4">
-                    You haven't created any scheduled blog generations yet. Create your first schedule above.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-800 mb-2">No Execution History Yet</h3>
+                <p className="text-gray-600">
+                  QStash execution history will appear here once your scheduled blogs start running. Create a schedule
+                  to get started!
+                </p>
+              </div>
             )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
-  );
+  )
 }

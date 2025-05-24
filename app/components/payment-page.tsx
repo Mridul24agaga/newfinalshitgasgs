@@ -716,11 +716,7 @@ export default function PaymentPage() {
               {loading && selectedPlan === currentPlan.id ? "Processing..." : `Get started with ${currentPlan.name}`}
             </button>
 
-            {/* Money-back guarantee */}
-            <div className="mt-4 text-center text-sm text-gray-500 flex justify-center items-center">
-              <Shield className="h-4 w-4 mr-1 text-gray-400" />
-              30-day money-back guarantee
-            </div>
+     
           </div>
 
           {/* Right side - Features */}
