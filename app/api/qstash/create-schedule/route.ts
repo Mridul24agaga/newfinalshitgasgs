@@ -37,7 +37,9 @@ export async function POST(request: Request) {
         error: "Invalid nextRun date",
         message: "A valid nextRun date is required for one-time schedules."
       }, { status: 400 });
-    }    console.log(`🚀 Creating QStash schedule for ${scheduleId}`)
+    }
+    
+    console.log(`🚀 Creating QStash schedule for ${scheduleId}`)
     console.log(`📅 Next run: ${nextRun}`)
     console.log(`🔄 Type: ${useRecurring ? "recurring" : "one-time"}`)
     
@@ -87,7 +89,8 @@ export async function POST(request: Request) {
         scheduleId,
         websiteUrl
       }, { status: 500 })
-    }  } catch (error) {
+    }
+  } catch (error) {
     console.error("❌ Error creating QStash schedule:", error);
     console.error("❌ Stack trace:", (error as Error).stack);
     

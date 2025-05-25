@@ -86,6 +86,7 @@ async function handler(request: Request) {
               user_id: otherSchedules[0].user_id,
               status: "failed",
               message: `Original schedule ${scheduleId} not found, but found another schedule for the same website.`,
+              blog_id: null, // Explicitly set blog_id to null to avoid UUID issues
             });
             
             return NextResponse.json({ 
@@ -105,6 +106,7 @@ async function handler(request: Request) {
             user_id: "system", // Use "system" which will be handled in the logScheduleExecution function
             status: "failed",
             message: `Schedule not found: ${scheduleId}`,
+            blog_id: null, // Explicitly set blog_id to null to avoid UUID issues
           });
         } catch (logError) {
           console.error("❌ Error logging missing schedule:", logError);
@@ -330,15 +332,15 @@ async function handler(request: Request) {
     }
     
     // Get job ID from result
-    const jobId = (result as any)?.jobId || (result as any)?.blogPosts?.[0]?.id || "unknown";
-    console.log(`📝 Blog job ID: ${jobId}`);
+    const jobId = (result as any)?.jobId || (result as any)?.blogPosts?.[0]?.id || null;
+    console.log(`📝 Blog job ID: ${jobId || 'not available'}`);
     
     // Log successful execution
     await logScheduleExecution(supabase, {
       schedule_id: scheduleId,
       user_id: schedule.user_id,
       status: "success",
-      blog_id: jobId,
+      blog_id: jobId, // This will be validated in logScheduleExecution
       message: `Blog generated successfully in ${endTime - startTime}ms`,
     });
     
@@ -421,6 +423,7 @@ async function handler(request: Request) {
           schedule_id: scheduleId,
           user_id: schedule.user_id,
           status: "failed",
+          blog_id: null, // Explicitly set blog_id to null to avoid UUID issues
           message: `Execution failed: ${String(error)}`,
         });
         
@@ -459,7 +462,7 @@ async function logScheduleExecution(
     user_id: string;
     status: "success" | "failed";
     message?: string;
-    blog_id?: string;
+    blog_id?: string | null;
   }
 ) {
   try {
@@ -468,8 +471,9 @@ async function logScheduleExecution(
     const isValidUserId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.user_id) 
       || data.user_id === "system";
     
-    // Validate blog_id if provided
-    const isValidBlogId = !data.blog_id || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.blog_id);
+    // Validate blog_id if provided - must be either null, undefined, or a valid UUID
+    const isValidBlogId = !data.blog_id || data.blog_id === null || 
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.blog_id);
     
     if (!isValidScheduleId) {
       console.warn(`⚠️ Not logging execution: Invalid schedule_id format: ${data.schedule_id}`);
@@ -483,15 +487,24 @@ async function logScheduleExecution(
     
     if (!isValidBlogId && data.blog_id) {
       console.warn(`⚠️ Removing invalid blog_id from log: ${data.blog_id}`);
-      data.blog_id = undefined;
+      data.blog_id = null; // Set to null instead of undefined to ensure it's properly handled
     }
+
+    // Debug log before inserting
+    console.log(`📝 Logging execution with data:`, {
+      schedule_id: data.schedule_id,
+      user_id: data.user_id,
+      status: data.status,
+      message: data.message,
+      blog_id: data.blog_id,
+    });
 
     const { error } = await supabase.from("schedule_logs").insert({
       schedule_id: data.schedule_id,
       user_id: data.user_id,
       status: data.status,
       message: data.message,
-      blog_id: data.blog_id,
+      blog_id: data.blog_id, // Will be null if invalid
       created_at: new Date().toISOString(),
     });
 
