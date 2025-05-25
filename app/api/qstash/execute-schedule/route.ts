@@ -5,7 +5,8 @@ import { generateBlog } from "@/app/actions";
 import { createQStashSchedule } from "@/lib/qstash";
 
 // QStash webhook to execute scheduled blog generation
-async function handler(request: Request) {  try {
+async function handler(request: Request) {
+  try {
     console.log("🚀 QStash webhook triggered!");
     console.log("📅 Request headers:", Object.fromEntries(request.headers.entries()));
 
@@ -34,7 +35,20 @@ async function handler(request: Request) {  try {
         error: "Missing required parameters", 
         message: "Both scheduleId and websiteUrl are required." 
       }, { status: 400 });
-    }const supabase = await createClient();
+    }
+
+    // Validate UUID format for scheduleId
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(scheduleId);
+    if (!isValidUUID) {
+      console.error(`❌ Invalid schedule ID format: "${scheduleId}"`);
+      return NextResponse.json({ 
+        error: "Invalid schedule ID format", 
+        message: "The schedule ID must be a valid UUID.",
+        schedule_id: scheduleId
+      }, { status: 400 });
+    }
+
+    const supabase = await createClient();
 
     // Log the schedule ID we're trying to find
     console.log(`🔍 Looking for schedule with ID: ${scheduleId}`);
@@ -53,11 +67,42 @@ async function handler(request: Request) {  try {
       if (scheduleError.code === "PGRST116") {
         console.log(`⚠️ Schedule ${scheduleId} not found - it might have been deleted`);
         
-        // Try to log the execution anyway
+        // Check if there's another schedule for the same website URL
+        if (websiteUrl) {
+          console.log(`🔍 Checking for any other schedules for ${websiteUrl}`);
+          const { data: otherSchedules } = await supabase
+            .from("blog_schedules")
+            .select("id, user_id, website_url, is_active")
+            .eq("website_url", websiteUrl)
+            .limit(1);
+            
+          if (otherSchedules && otherSchedules.length > 0) {
+            console.log(`✅ Found another schedule for ${websiteUrl}: ${otherSchedules[0].id}`);
+            const validScheduleId = otherSchedules[0].id;
+            
+            // Log execution with the found schedule
+            await logScheduleExecution(supabase, {
+              schedule_id: validScheduleId,
+              user_id: otherSchedules[0].user_id,
+              status: "failed",
+              message: `Original schedule ${scheduleId} not found, but found another schedule for the same website.`,
+            });
+            
+            return NextResponse.json({ 
+              error: "Original schedule not found", 
+              message: "The original schedule was not found, but we found another schedule for the same website.",
+              original_schedule_id: scheduleId,
+              alternate_schedule_id: validScheduleId,
+              website_url: websiteUrl
+            }, { status: 404 });
+          }
+        }
+        
+        // Try to log the execution anyway with a system user ID
         try {
           await logScheduleExecution(supabase, {
             schedule_id: scheduleId,
-            user_id: "unknown",
+            user_id: "system", // Use "system" which will be handled in the logScheduleExecution function
             status: "failed",
             message: `Schedule not found: ${scheduleId}`,
           });
@@ -129,7 +174,8 @@ async function handler(request: Request) {  try {
 
     // Check if user has enough credits
     if (availableCredits < 1) {
-      console.log(`💳 User ${schedule.user_id} has insufficient credits for schedule ${scheduleId}`);      // Pause the schedule if no credits
+      console.log(`💳 User ${schedule.user_id} has insufficient credits for schedule ${scheduleId}`);
+      // Pause the schedule if no credits
       const { error: pauseError } = await supabase
         .from("blog_schedules")
         .update({ 
@@ -158,7 +204,9 @@ async function handler(request: Request) {  try {
         schedule_id: scheduleId,
         credits_available: availableCredits
       }, { status: 402 });
-    }    // 🎯 Execute blog generation
+    }    
+
+    // 🎯 Execute blog generation
     console.log(`🤖 Calling generateBlog for ${websiteUrl}...`);
     let result;
     let error = null;
@@ -177,7 +225,8 @@ async function handler(request: Request) {  try {
     
     const endTime = Date.now();
     console.log(`⏱️ Blog generation took ${endTime - startTime}ms`);
-      if (error || (result && typeof result === 'object' && 'error' in result)) {
+    
+    if (error || (result && typeof result === 'object' && 'error' in result)) {
       const errorMessage = error ? String(error) : ((result as any)?.error || "Unknown error");
       console.error(`❌ Error generating blog for schedule ${scheduleId}:`, errorMessage);
 
@@ -263,13 +312,16 @@ async function handler(request: Request) {  try {
       console.error("❌ Error updating schedule:", updateError);
     } else {
       console.log("✅ Schedule updated with last_run and next_run");
-    }    // Schedule the next execution with QStash
+    }
+    
+    // Schedule the next execution with QStash
     let nextMessageId = null;
     if (type === "one-time" || !schedule.use_recurring) {
       console.log(`📅 Creating next one-time QStash schedule for ${scheduleId} at ${nextRun.toISOString()}...`);
       nextMessageId = await createQStashSchedule(scheduleId, nextRun, websiteUrl);
       if (nextMessageId) {
-        await supabase.from("blog_schedules").update({ qstash_message_id: nextMessageId }).eq("id", scheduleId);      console.log(`📅 Next QStash schedule created: ${nextMessageId}`);
+        await supabase.from("blog_schedules").update({ qstash_message_id: nextMessageId }).eq("id", scheduleId);
+        console.log(`📅 Next QStash schedule created: ${nextMessageId}`);
       } else {
         console.error("❌ Failed to create next QStash schedule");
       }
@@ -279,7 +331,9 @@ async function handler(request: Request) {  try {
     
     // Get job ID from result
     const jobId = (result as any)?.jobId || (result as any)?.blogPosts?.[0]?.id || "unknown";
-    console.log(`📝 Blog job ID: ${jobId}`);    // Log successful execution
+    console.log(`📝 Blog job ID: ${jobId}`);
+    
+    // Log successful execution
     await logScheduleExecution(supabase, {
       schedule_id: scheduleId,
       user_id: schedule.user_id,
@@ -322,7 +376,8 @@ async function handler(request: Request) {  try {
       message: "Blog generation completed successfully! 🎉",
       action_called: "generateBlog",
       website_url: websiteUrl,
-    });  } catch (error) {
+    });
+  } catch (error) {
     console.error("❌ Error in QStash schedule execution:", error);
     console.error("❌ Error stack:", (error as Error).stack);
 
@@ -335,38 +390,51 @@ async function handler(request: Request) {  try {
 
       console.log(`⚠️ Attempted to process schedule ${scheduleId} for ${websiteUrl}`);
 
-      if (scheduleId) {
-        const supabase = await createClient();
-        
-        // Check if the schedule exists
-        const { data: schedule } = await supabase
-          .from("blog_schedules")
-          .select("user_id, website_url")
-          .eq("id", scheduleId)
-          .single();
+      // Enhanced UUID validation with detailed logging
+      const isValidUUID = scheduleId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(scheduleId);
+      
+      if (!isValidUUID) {
+        console.error(`❌ Invalid schedule ID format: "${scheduleId}". Cannot log execution.`);
+        return NextResponse.json(
+          {
+            error: "Invalid schedule ID format",
+            message: "The schedule ID is not in a valid UUID format",
+            attempted_schedule_id: scheduleId
+          },
+          { status: 400 }
+        );
+      }
+      
+      const supabase = await createClient();
+      
+      // Check if the schedule exists
+      const { data: schedule } = await supabase
+        .from("blog_schedules")
+        .select("user_id, website_url")
+        .eq("id", scheduleId)
+        .single();
 
-        if (schedule) {
-          console.log(`✅ Found schedule ${scheduleId} for logging the error`);
-          
-          await logScheduleExecution(supabase, {
-            schedule_id: scheduleId,
-            user_id: schedule.user_id,
-            status: "failed",
-            message: `Execution failed: ${String(error)}`,
-          });
-          
-          // Update the schedule with error information
-          await supabase
-            .from("blog_schedules")
-            .update({
-              last_error: String(error),
-              last_run: new Date().toISOString(),
-              status_message: `Error: ${String(error).substring(0, 100)}${String(error).length > 100 ? '...' : ''}`
-            })
-            .eq("id", scheduleId);
-        } else {
-          console.error(`❌ Could not find schedule ${scheduleId} for logging`);
-        }
+      if (schedule) {
+        console.log(`✅ Found schedule ${scheduleId} for logging the error`);
+        
+        await logScheduleExecution(supabase, {
+          schedule_id: scheduleId,
+          user_id: schedule.user_id,
+          status: "failed",
+          message: `Execution failed: ${String(error)}`,
+        });
+        
+        // Update the schedule with error information
+        await supabase
+          .from("blog_schedules")
+          .update({
+            last_error: String(error),
+            last_run: new Date().toISOString(),
+            status_message: `Error: ${String(error).substring(0, 100)}${String(error).length > 100 ? '...' : ''}`
+          })
+          .eq("id", scheduleId);
+      } else {
+        console.error(`❌ Could not find schedule ${scheduleId} for logging`);
       }
     } catch (logError) {
       console.error("❌ Error logging failed execution:", logError);
@@ -395,6 +463,29 @@ async function logScheduleExecution(
   }
 ) {
   try {
+    // Enhanced UUID validation to prevent database errors
+    const isValidScheduleId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.schedule_id);
+    const isValidUserId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.user_id) 
+      || data.user_id === "system";
+    
+    // Validate blog_id if provided
+    const isValidBlogId = !data.blog_id || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.blog_id);
+    
+    if (!isValidScheduleId) {
+      console.warn(`⚠️ Not logging execution: Invalid schedule_id format: ${data.schedule_id}`);
+      return;
+    }
+    
+    if (!isValidUserId) {
+      console.warn(`⚠️ Using system user ID instead of invalid user_id: ${data.user_id}`);
+      data.user_id = "system";
+    }
+    
+    if (!isValidBlogId && data.blog_id) {
+      console.warn(`⚠️ Removing invalid blog_id from log: ${data.blog_id}`);
+      data.blog_id = undefined;
+    }
+
     const { error } = await supabase.from("schedule_logs").insert({
       schedule_id: data.schedule_id,
       user_id: data.user_id,
