@@ -15,6 +15,22 @@ export async function createQStashSchedule(scheduleId: string, nextRun: Date, we
       return null
     }
 
+    // Validate inputs
+    if (!scheduleId || typeof scheduleId !== 'string') {
+      console.error("❌ Invalid scheduleId provided:", scheduleId)
+      return null
+    }
+
+    if (!(nextRun instanceof Date) || isNaN(nextRun.getTime())) {
+      console.error("❌ Invalid nextRun date provided:", nextRun)
+      return null
+    }
+
+    if (!websiteUrl || typeof websiteUrl !== 'string') {
+      console.error("❌ Invalid websiteUrl provided:", websiteUrl)
+      return null
+    }
+
     const now = new Date()
     const delayInSeconds = Math.max(0, Math.floor((nextRun.getTime() - now.getTime()) / 1000))
 
