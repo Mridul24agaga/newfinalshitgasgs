@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all blogs for the authenticated user, including scheduled_date
+    // Fix: Use two separate order calls instead of nullsLast
     const { data: blogs, error: blogsError } = await supabase
       .from("blogs")
       .select("id, title, blog_post, scheduled_date")
