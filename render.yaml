@@ -1,0 +1,30 @@
+services:
+  - type: cron
+    name: execute-schedules
+    schedule: "*/15 * * * *"
+    env: node
+    buildCommand: npm ci
+    startCommand: >
+      curl -X GET "$API_URL/api/schedules/execute" \
+        -H "Authorization: Bearer $CRON_SECRET" \
+        -H "Content-Type: application/json"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: API_URL
+        sync: false
+
+  - type: cron
+    name: health-check
+    schedule: "0 */6 * * *"
+    env: node
+    buildCommand: npm ci
+    startCommand: >
+      curl -X GET "$API_URL/api/schedules/health-check" \
+        -H "Authorization: Bearer $CRON_SECRET" \
+        -H "Content-Type: application/json"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: API_URL
+        sync: false
