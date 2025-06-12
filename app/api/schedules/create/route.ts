@@ -58,8 +58,7 @@ export async function POST(request: Request) {
     } else {
       finalNextRun = new Date(nextRun).toISOString();
     }
-    
-    // Update the existing schedule or insert a new one
+      // Update the existing schedule or insert a new one
     const { data: updatedSchedule, error: updateError } = await supabase
       .from("blog_schedules")
       .upsert({
@@ -71,9 +70,8 @@ export async function POST(request: Request) {
         time_of_day: timeOfDay || "12:00",
         day_of_week: dayOfWeek,
         day_of_month: dayOfMonth,
-        use_recurring: useRecurring,
-        qstash_message_id: null, // Clear any QStash message ID
-        last_updated: new Date().toISOString()
+        schedule_type: useRecurring ? "recurring" : "one-time",
+        qstash_message_id: null // Clear any QStash message ID
       })
       .select()
       .single();
