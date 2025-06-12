@@ -42,8 +42,19 @@ export async function POST(request: Request) {
     console.log(`🚀 Creating schedule for ${scheduleId}`);
     console.log(`📅 Next run: ${nextRun}`);
     console.log(`🔄 Type: ${useRecurring ? "recurring" : "one-time"}`);
+      const supabase = await createClient();
     
-    const supabase = await createClient();
+    // Get the current user to ensure we have user_id for RLS
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error("❌ Authentication error:", userError);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Authentication required",
+        message: "You must be logged in to create schedules."
+      }, { status: 401 });
+    }
     
     // Calculate next run time if using recurring schedule
     let finalNextRun;
@@ -58,11 +69,13 @@ export async function POST(request: Request) {
     } else {
       finalNextRun = new Date(nextRun).toISOString();
     }
-      // Update the existing schedule or insert a new one
+    
+    // Update the existing schedule or insert a new one
     const { data: updatedSchedule, error: updateError } = await supabase
       .from("blog_schedules")
       .upsert({
         id: scheduleId,
+        user_id: user.id, // Required for RLS policy
         website_url: websiteUrl,
         is_active: true,
         next_run: finalNextRun,
