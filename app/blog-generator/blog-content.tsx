@@ -19,7 +19,6 @@ interface Schedule {
   created_at: string
   last_run?: string | null
   next_run: string
-  qstash_message_id?: string | null
   schedule_type?: "one-time" | "recurring"
 }
 
@@ -39,7 +38,7 @@ interface GenerateBlogResult {
   error?: string
 }
 
-export default function QStashScheduler() {
+export default function ScheduleManager() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [scheduleLogs, setScheduleLogs] = useState<ScheduleLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,7 +62,6 @@ export default function QStashScheduler() {
     tomorrow.setDate(tomorrow.getDate() + 1)
     return tomorrow.toISOString().split("T")[0]
   })
-  const [qstashStatus, setQstashStatus] = useState<"unknown" | "working" | "failed">("unknown")
   const [useRecurringSchedule, setUseRecurringSchedule] = useState(false)
 
   // Update current time every second
@@ -74,31 +72,6 @@ export default function QStashScheduler() {
 
     return () => clearInterval(timer)
   }, [])
-
-  // Test QStash connection on load
-  useEffect(() => {
-    testQStashConnection()
-  }, [])
-
-  // Test QStash connection
-  const testQStashConnection = async () => {
-    try {
-      console.log("🧪 Testing QStash connection...")
-      const response = await fetch("/api/qstash/test")
-      const data = await response.json()
-
-      if (response.ok && data.status === "success") {
-        setQstashStatus("working")
-        toast("QStash connection successful! 🚀", "success")
-      } else {
-        setQstashStatus("failed")
-        toast("QStash connection failed. Check your configuration.", "error")
-      }
-    } catch (error) {
-      setQstashStatus("failed")
-      toast("QStash connection failed. Check your configuration.", "error")
-    }
-  }
 
   // Toast function
   const toast = (message: string, type: "success" | "error" = "success") => {
@@ -249,16 +222,10 @@ export default function QStashScheduler() {
       setIsLoadingCredits(false)
     }
   }
-
   const createSchedule = async () => {
     try {
       if (!websiteUrl) {
         toast("Please enter a website URL for blog generation.", "error")
-        return
-      }
-
-      if (qstashStatus === "failed") {
-        toast("QStash is not available. Please check your configuration.", "error")
         return
       }
 
@@ -277,7 +244,7 @@ export default function QStashScheduler() {
       console.log("🚀 Creating new schedule...")
       console.log("📅 Next run:", nextRun.toISOString())
 
-      // Create schedule in database first
+      // Create schedule in database
       const { data: newSchedule, error } = await supabase
         .from("blog_schedules")
         .insert({
@@ -303,9 +270,9 @@ export default function QStashScheduler() {
 
       console.log("✅ Schedule created in database:", newSchedule.id)
 
-      // Create QStash schedule
+      // Update the database record to confirm creation
       try {
-        const response = await fetch("/api/qstash/create-schedule", {
+        const response = await fetch("/api/schedules/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -321,30 +288,21 @@ export default function QStashScheduler() {
         })
 
         if (response.ok) {
-          const { messageId, type, message } = await response.json()
-          if (messageId) {
-            await supabase
-              .from("blog_schedules")
-              .update({
-                qstash_message_id: messageId,
-                schedule_type: type,
-              })
-              .eq("id", newSchedule.id)
-
-            console.log("🚀 QStash schedule created:", messageId)
+          const { success, message } = await response.json()
+          if (success) {
+            console.log("🚀 Schedule created successfully")
           }
           toast(
-            message ||
-              `Schedule created successfully with QStash ${type === "recurring" ? "(Recurring)" : "(One-time)"}! 🚀`,
+            message || `Schedule created successfully! 🚀 The Render cron job will execute it automatically.`,
           )
         } else {
           const errorData = await response.json()
-          console.error("❌ QStash setup failed:", errorData)
-          toast("Schedule created but QStash setup failed. It may not execute automatically.", "error")
+          console.error("❌ Schedule setup failed:", errorData)
+          toast("Schedule created but setup failed. It may not execute automatically.", "error")
         }
-      } catch (qstashError) {
-        console.error("❌ Error creating QStash schedule:", qstashError)
-        toast("Schedule created but QStash setup failed. It may not execute automatically.", "error")
+      } catch (scheduleError) {
+        console.error("❌ Error setting up schedule:", scheduleError)
+        toast("Schedule created but setup failed. It may not execute automatically.", "error")
       }
 
       fetchSchedules()
@@ -355,7 +313,6 @@ export default function QStashScheduler() {
       setIsCreating(false)
     }
   }
-
   const toggleScheduleStatus = async (id: string, currentStatus: boolean) => {
     try {
       const supabase = createClient()
@@ -365,54 +322,11 @@ export default function QStashScheduler() {
 
       console.log(`🔄 Toggling schedule ${id}: ${currentStatus ? "deactivating" : "activating"}`)
 
-      // If deactivating, cancel QStash schedule
-      if (currentStatus && schedule.qstash_message_id) {
-        try {
-          await fetch("/api/qstash/cancel-schedule", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
-          })
-          console.log("🗑️ QStash schedule cancelled")
-        } catch (error) {
-          console.error("❌ Error cancelling QStash schedule:", error)
-        }
-      }
-
-      // If activating, create new QStash schedule
-      let newMessageId = null
-      if (!currentStatus) {
-        try {
-          const response = await fetch("/api/qstash/create-schedule", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scheduleId: id,
-              nextRun: schedule.next_run,
-              websiteUrl: schedule.website_url,
-              frequency: schedule.frequency,
-              timeOfDay: schedule.time_of_day,
-              dayOfWeek: schedule.day_of_week,
-              dayOfMonth: schedule.day_of_month,
-              useRecurring: schedule.schedule_type === "recurring",
-            }),
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            newMessageId = data.messageId
-            console.log("🚀 New QStash schedule created:", newMessageId)
-          }
-        } catch (error) {
-          console.error("❌ Error creating QStash schedule:", error)
-        }
-      }
-
+      // Update the database to toggle active status
       const { error } = await supabase
         .from("blog_schedules")
         .update({
           is_active: !currentStatus,
-          qstash_message_id: newMessageId,
         })
         .eq("id", id)
 
@@ -424,7 +338,7 @@ export default function QStashScheduler() {
 
       setSchedules(
         schedules.map((schedule) =>
-          schedule.id === id ? { ...schedule, is_active: !currentStatus, qstash_message_id: newMessageId } : schedule,
+          schedule.id === id ? { ...schedule, is_active: !currentStatus } : schedule,
         ),
       )
 
@@ -433,26 +347,22 @@ export default function QStashScheduler() {
       console.error("❌ Error in toggleScheduleStatus:", error)
     }
   }
-
   const deleteSchedule = async (id: string) => {
     try {
       const supabase = createClient()
-      const schedule = schedules.find((s) => s.id === id)
 
       console.log(`🗑️ Deleting schedule ${id}`)
 
-      // Cancel QStash schedule if exists
-      if (schedule?.qstash_message_id) {
-        try {
-          await fetch("/api/qstash/cancel-schedule", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
-          })
-          console.log("🗑️ QStash schedule cancelled")
-        } catch (error) {
-          console.error("❌ Error cancelling QStash schedule:", error)
-        }
+      // Cancel the schedule via our API
+      try {
+        await fetch("/api/schedules/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scheduleId: id }),
+        })
+        console.log("🗑️ Schedule cancelled via API")
+      } catch (error) {
+        console.error("❌ Error cancelling schedule via API:", error)
       }
 
       const { error } = await supabase.from("blog_schedules").delete().eq("id", id)
@@ -469,7 +379,6 @@ export default function QStashScheduler() {
       console.error("❌ Error in deleteSchedule:", error)
     }
   }
-
   const runScheduleManually = async (schedule: Schedule) => {
     try {
       if (userCredits < 1) {
@@ -506,38 +415,6 @@ export default function QStashScheduler() {
           next_run: nextRun.toISOString(),
         })
         .eq("id", schedule.id)
-
-      // Update QStash schedule for next run (only for one-time schedules)
-      if (schedule.qstash_message_id && schedule.schedule_type !== "recurring") {
-        try {
-          // Cancel old schedule
-          await fetch("/api/qstash/cancel-schedule", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageId: schedule.qstash_message_id }),
-          })
-
-          // Create new schedule
-          const response = await fetch("/api/qstash/create-schedule", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scheduleId: schedule.id,
-              nextRun: nextRun.toISOString(),
-              websiteUrl: schedule.website_url,
-              useRecurring: false,
-            }),
-          })
-
-          if (response.ok) {
-            const { messageId } = await response.json()
-            await supabase.from("blog_schedules").update({ qstash_message_id: messageId }).eq("id", schedule.id)
-            console.log("🚀 Next QStash schedule created:", messageId)
-          }
-        } catch (error) {
-          console.error("❌ Error updating QStash schedule:", error)
-        }
-      }
 
       fetchSchedules()
       fetchUserCredits()
@@ -646,15 +523,13 @@ export default function QStashScheduler() {
     if (hours > 0) return `${hours}h ${minutes}m`
     return `${minutes}m`
   }
-
   const getScheduleStats = () => {
     const total = schedules.length
     const active = schedules.filter((s) => s.is_active).length
-    const qstashEnabled = schedules.filter((s) => s.qstash_message_id).length
     const successful = scheduleLogs.filter((log) => log.status === "success").length
     const failed = scheduleLogs.filter((log) => log.status === "failed").length
 
-    return { total, active, qstashEnabled, successful, failed }
+    return { total, active, successful, failed }
   }
 
   const stats = getScheduleStats()
@@ -708,10 +583,9 @@ export default function QStashScheduler() {
                   />
                 </svg>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">QStash Blog Scheduler</h1>
+              <div>                <h1 className="text-2xl font-bold text-gray-900">Blog Scheduler</h1>
                 <p className="text-sm text-gray-600">
-                  Powered by QStash • Current time: {currentTime.toLocaleString()}
+                  Powered by Render Cron • Current time: {currentTime.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -730,36 +604,10 @@ export default function QStashScheduler() {
                     </span>
                   )}
                 </div>
+              </div>              {/* System Status */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-2 rounded-lg border text-sm font-medium border-green-200 text-green-700">
+                Render Cron: 🚀 Active
               </div>
-
-              {/* QStash Status */}
-              <div
-                className={`px-3 py-2 rounded-lg border text-sm font-medium ${
-                  qstashStatus === "working"
-                    ? "bg-green-50 border-green-200 text-green-700"
-                    : qstashStatus === "failed"
-                      ? "bg-red-50 border-red-200 text-red-700"
-                      : "bg-gray-50 border-gray-200 text-gray-700"
-                }`}
-              >
-                QStash:{" "}
-                {qstashStatus === "working" ? "🚀 Active" : qstashStatus === "failed" ? "❌ Failed" : "❓ Unknown"}
-              </div>
-
-              <button
-                onClick={testQStashConnection}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Test QStash
-              </button>
 
               <button
                 onClick={() => {
@@ -784,50 +632,26 @@ export default function QStashScheduler() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* QStash Status Alert */}
-        {qstashStatus === "working" ? (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                <h3 className="text-sm font-medium text-green-800">🚀 QStash Connected Successfully!</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Your blog schedules are powered by Upstash QStash for 99.9% reliability[^1]. Each schedule will
-                  execute precisely at the scheduled time with automatic retries and error handling.
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">        {/* System Status Alert */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-green-800">🚀 Render Cron Job Active</h3>
+              <p className="text-sm text-green-700 mt-1">
+                Your blog schedules are powered by Render's cron job system for reliable execution. 
+                Schedules are checked every 15 minutes and executed automatically when due.
+              </p>
             </div>
           </div>
-        ) : qstashStatus === "failed" ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                <h3 className="text-sm font-medium text-red-800">❌ QStash Connection Failed</h3>
-                <p className="text-sm text-red-700 mt-1">
-                  Unable to connect to QStash. Please check your QSTASH_TOKEN environment variable and try again.
-                  Schedules may not execute automatically without QStash.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        </div>        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
@@ -857,18 +681,6 @@ export default function QStashScheduler() {
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
                   clipRule="evenodd"
                 />
-              </svg>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">QStash Enabled</p>
-                <p className="text-3xl font-bold text-purple-700">{stats.qstashEnabled}</p>
-              </div>
-              <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
           </div>
@@ -946,10 +758,9 @@ export default function QStashScheduler() {
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Create New QStash Schedule
+                  </svg>                  Create New Schedule
                 </h2>
-                <p className="text-blue-100 text-sm mt-1">Set up automatic blog generation with 99.9% reliability</p>
+                <p className="text-blue-100 text-sm mt-1">Set up automatic blog generation with reliable scheduling</p>
               </div>
 
               <div className="p-6 space-y-6">
@@ -1082,17 +893,15 @@ export default function QStashScheduler() {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Choose when to start the schedule</p>
                   </div>
-                </div>
-
-                {/* Schedule Type Toggle */}
+                </div>                {/* Schedule Type Toggle */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-blue-800">🚀 QStash Schedule Type</h3>
+                      <h3 className="text-sm font-medium text-blue-800">🚀 Schedule Type</h3>
                       <p className="text-xs text-blue-600 mt-1">
                         {useRecurringSchedule
-                          ? "Recurring schedules use QStash cron for automatic repetition"
-                          : "One-time schedules create individual QStash messages for each execution"}
+                          ? "Recurring schedules repeat automatically based on your frequency settings"
+                          : "One-time schedules run once at the specified time"}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1156,7 +965,7 @@ export default function QStashScheduler() {
 
                   <button
                     onClick={createSchedule}
-                    disabled={isCreating || userCredits === 0 || qstashStatus === "failed"}
+                    disabled={isCreating || userCredits === 0}
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
                   >
                     {isCreating ? (
@@ -1169,10 +978,9 @@ export default function QStashScheduler() {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           />
                         </svg>
-                        Creating QStash Schedule...
+                        Creating Schedule...
                       </>
-                    ) : (
-                      <>
+                    ) : (                      <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
                             strokeLinecap="round"
@@ -1181,7 +989,7 @@ export default function QStashScheduler() {
                             d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                           />
                         </svg>
-                        Create QStash Schedule
+                        Create Schedule
                       </>
                     )}
                   </button>
@@ -1190,15 +998,10 @@ export default function QStashScheduler() {
             </div>
 
             {/* Schedules List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-800">Your QStash Schedules</h2>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            <div className="space-y-4">              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Your Schedules</h2>
+                <div className="flex items-center gap-2"><Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                     {schedules.filter((s) => s.is_active).length} Active
-                  </Badge>
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                    {stats.qstashEnabled} QStash Enabled
                   </Badge>
                 </div>
               </div>
@@ -1213,7 +1016,7 @@ export default function QStashScheduler() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span className="ml-2 text-gray-600">Loading your QStash schedules...</span>
+                  <span className="ml-2 text-gray-600">Loading your schedules...</span>
                 </div>
               ) : schedules.length > 0 ? (
                 <div className="space-y-4">
@@ -1245,8 +1048,7 @@ export default function QStashScheduler() {
                                   />
                                 </svg>
                                 {schedule.website_url}
-                              </h3>
-                              <Badge
+                              </h3>                              <Badge
                                 variant={schedule.is_active ? "default" : "secondary"}
                                 className={
                                   schedule.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
@@ -1254,11 +1056,6 @@ export default function QStashScheduler() {
                               >
                                 {schedule.is_active ? "Active" : "Paused"}
                               </Badge>
-                              {schedule.qstash_message_id && (
-                                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                                  🚀 QStash {schedule.schedule_type === "recurring" ? "Cron" : "Scheduled"}
-                                </Badge>
-                              )}
                             </div>
 
                             <div className="flex flex-wrap gap-4 text-sm">
@@ -1354,21 +1151,7 @@ export default function QStashScheduler() {
                                   </svg>
                                   Next run: {formatDate(schedule.next_run)}
                                 </div>
-                              )}
-                              {schedule.qstash_message_id && (
-                                <div className="flex items-center gap-1">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                                    />
-                                  </svg>
-                                  QStash ID: {schedule.qstash_message_id.substring(0, 8)}...
-                                </div>
-                              )}
-                            </div>
+                              )}                            </div>
                           </div>
 
                           <div className="flex items-center gap-3 lg:flex-col lg:items-end">
@@ -1462,11 +1245,10 @@ export default function QStashScheduler() {
                         d="M13 10V3L4 14h7v7l9-11h-7z"
                       />
                     </svg>
-                  </div>
-                  <h3 className="text-xl font-medium text-gray-800 mb-2">No QStash Schedules Yet</h3>
+                  </div>                  <h3 className="text-xl font-medium text-gray-800 mb-2">No Schedules Yet</h3>
                   <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    You haven't created any QStash-powered scheduled blog generations yet. Create your first schedule
-                    above to automate your content creation with 99.9% reliability.
+                    You haven't created any scheduled blog generations yet. Create your first schedule
+                    above to automate your content creation with reliable Render cron jobs.
                   </p>
                   <button
                     onClick={() => (document.querySelector('input[type="text"]') as HTMLInputElement)?.focus()}
@@ -1480,7 +1262,7 @@ export default function QStashScheduler() {
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                       />
                     </svg>
-                    Create Your First QStash Schedule
+                    Create Your First Schedule
                   </button>
                 </div>
               )}
@@ -1489,7 +1271,7 @@ export default function QStashScheduler() {
 
           <TabsContent value="history" className="space-y-6 mt-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-800">QStash Execution History</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Execution History</h2>
               <button
                 onClick={fetchScheduleLogs}
                 disabled={logsLoading}
@@ -1528,7 +1310,7 @@ export default function QStashScheduler() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                <span className="ml-2 text-gray-600">Loading QStash execution history...</span>
+                <span className="ml-2 text-gray-600">Loading execution history...</span>
               </div>
             ) : scheduleLogs.length > 0 ? (
               <div className="space-y-3">
@@ -1560,9 +1342,8 @@ export default function QStashScheduler() {
                             </svg>
                           </div>
                         )}
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            QStash execution {log.status === "success" ? "completed successfully" : "failed"}
+                        <div>                          <p className="font-medium text-gray-800">
+                            Schedule execution {log.status === "success" ? "completed successfully" : "failed"}
                           </p>
                           <p className="text-sm text-gray-500">{formatDate(log.created_at)}</p>
                         </div>
@@ -1595,9 +1376,8 @@ export default function QStashScheduler() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-xl font-medium text-gray-800 mb-2">No Execution History Yet</h3>
-                <p className="text-gray-600">
-                  QStash execution history will appear here once your scheduled blogs start running. Create a schedule
+                <h3 className="text-xl font-medium text-gray-800 mb-2">No Execution History Yet</h3>                <p className="text-gray-600">
+                  Execution history will appear here once your scheduled blogs start running. Create a schedule
                   to get started!
                 </p>
               </div>
